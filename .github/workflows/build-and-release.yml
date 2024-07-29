@@ -62,6 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+#          发布新版本改这里
           tag_name: v0.0.1
           release_name: Release v0.0.1
           draft: false
@@ -73,6 +74,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/Anti-Entity-0.0.1.jar
-          asset_name: Anti-Entity-0.0.1.jar
+#          发布新版本改这里
+          asset_path: target/WorldSafe-0.0.1.jar
+          asset_name: WorldSafe-0.0.1.jar
           asset_content_type: application/java-archive
