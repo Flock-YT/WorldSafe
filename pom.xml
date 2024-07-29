@@ -89,11 +89,17 @@
             <version>4.1.2</version>
         </dependency>
 
-
         <dependency>
             <groupId>dev.rollczi</groupId>
             <artifactId>litecommands-bukkit</artifactId>
             <version>3.4.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.bstats/bstats-bukkit -->
+        <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>3.0.2</version>
         </dependency>
 
     </dependencies>

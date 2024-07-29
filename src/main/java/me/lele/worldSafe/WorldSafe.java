@@ -2,6 +2,7 @@ package me.lele.worldSafe;
 
 import me.lele.worldSafe.listener.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.EnderManBlockPickupProtectionListener;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.spongepowered.configurate.CommentedConfigurationNode;
 import org.spongepowered.configurate.ConfigurateException;
@@ -38,6 +39,9 @@ public final class WorldSafe extends JavaPlugin {
             e.printStackTrace();
             getServer().getPluginManager().disablePlugin(this); // 禁用插件
         }
+
+        //加载bStats
+        Metrics metrics = new Metrics(this, 22831);
         // Plugin startup logic
 
     }
