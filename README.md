@@ -1,6 +1,6 @@
 # 🌍 WorldSafe
 
-**WorldSafe** 是一个轻量级插件，旨在防止部分实体及物品破坏地图。
+**WorldSafe** 是一个轻量级的Minecraft Bukkit插件，旨在防止部分实体及物品破坏地图。
 
 ## 📋 安装要求
 
