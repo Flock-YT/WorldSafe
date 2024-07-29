@@ -74,7 +74,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-#          发布新版本改这里1
+#          发布新版本改这里
           asset_path: target/WorldSafe-0.0.1.jar
           asset_name: WorldSafe-0.0.1.jar
           asset_content_type: application/java-archive
