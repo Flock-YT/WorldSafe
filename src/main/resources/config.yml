@@ -12,7 +12,7 @@ enderManBlockPickupProtection:
   - world_nether
   - world_the_end
 #禁止末影龙破坏方块的世界
-enderManBlockPickupProtection:
+enderDragonBlockDestructionProtection:
   - world_the_end
 #禁止TNT破坏方块的世界
 tntBlockDestructionProtection:
