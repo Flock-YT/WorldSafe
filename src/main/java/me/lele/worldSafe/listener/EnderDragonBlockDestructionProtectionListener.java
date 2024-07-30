@@ -28,7 +28,7 @@ public class EnderDragonBlockDestructionProtectionListener implements Listener {
 		// 判断世界是否为null值
 		if (ed.getWorld() == null) 
 			return;
-		// 判断此世界是否启用该功能
+		// 判断是否启用该世界
 		if (!worlds.contains(ed.getWorld().getName()))
 			return;
 		// 判断是否破坏方块

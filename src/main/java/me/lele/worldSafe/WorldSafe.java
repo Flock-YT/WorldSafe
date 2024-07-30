@@ -7,6 +7,8 @@ import me.lele.worldSafe.config.ConfigManager;
 import me.lele.worldSafe.listener.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.EnderManBlockPickupProtectionListener;
+import me.lele.worldSafe.listener.TNTBlockDestructionProtection;
+
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
@@ -92,13 +94,24 @@ public final class WorldSafe extends JavaPlugin {
 			listeners.add(listener);
 		}
 
-		// 获取配置文件中enderManBlockPickupProtection配置的世界列表
+		// 获取配置文件中enderDragonBlockDestructionProtection配置的世界列表
 		List<String> enderDragonBlockDestructionProtection = configManager.getConfig()
 				.node("enderDragonBlockDestructionProtection").getList(String.class);
 		if (enderDragonBlockDestructionProtection != null && !enderDragonBlockDestructionProtection.isEmpty()) {
-			// 注册Creeper监听器
+			// 注册EnderDragon监听器
 			EnderDragonBlockDestructionProtectionListener listener = new EnderDragonBlockDestructionProtectionListener(
 					enderDragonBlockDestructionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件tntBlockDestructionProtection配置的世界列表
+		List<String> tntBlockDestructionProtection = configManager.getConfig().node("tntBlockDestructionProtection")
+				.getList(String.class);
+		if (tntBlockDestructionProtection != null && !tntBlockDestructionProtection.isEmpty()) {
+			// 注册TNT监听器
+			TNTBlockDestructionProtection listener = new TNTBlockDestructionProtection(tntBlockDestructionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
