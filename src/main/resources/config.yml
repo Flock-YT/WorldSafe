@@ -1,13 +1,16 @@
 #总开关
 enabled: true
 
-#防止苦力怕爆炸时破坏方块
+#防止苦力怕爆炸时破坏方块的世界
 creeperExplosionProtection:
   - world
   - world_nether
   - world_the_end
-#防止末影人搬运方块
+#防止末影人搬运方块的世界
 enderManBlockPickupProtection:
   - world
   - world_nether
+  - world_the_end
+#防止末影龙破坏方块的世界
+enderManBlockPickupProtection:
   - world_the_end
