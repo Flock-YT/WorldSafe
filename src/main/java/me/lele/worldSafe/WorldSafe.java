@@ -7,6 +7,7 @@ import me.lele.worldSafe.config.ConfigManager;
 import me.lele.worldSafe.listener.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.EnderManBlockPickupProtectionListener;
+import me.lele.worldSafe.listener.GhastBlockDestructionProtection;
 import me.lele.worldSafe.listener.TNTBlockDestructionProtection;
 import me.lele.worldSafe.listener.WitherBlockDestructionProtection;
 
@@ -124,6 +125,17 @@ public final class WorldSafe extends JavaPlugin {
 		if (witherBlockDestructionProtection != null && !witherBlockDestructionProtection.isEmpty()) {
 			// 注册TNT监听器
 			WitherBlockDestructionProtection listener = new WitherBlockDestructionProtection(witherBlockDestructionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+		
+		// 获取配置文件ghastBlockDestructionProtection配置的世界列表
+		List<String> ghastBlockDestructionProtection = configManager.getConfig().node("ghastBlockDestructionProtection")
+				.getList(String.class);
+		if (ghastBlockDestructionProtection != null && !ghastBlockDestructionProtection.isEmpty()) {
+			// 注册TNT监听器
+			GhastBlockDestructionProtection listener = new GhastBlockDestructionProtection(witherBlockDestructionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);

@@ -24,3 +24,7 @@ witherBlockDestructionProtection:
   - world
   - world_nether
   - world_the_end
+#禁止恶魂破坏方块的世界
+ghastBlockDestructionProtection:
+  - world_nether
+
