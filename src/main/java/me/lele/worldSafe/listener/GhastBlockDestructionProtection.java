@@ -6,9 +6,10 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-public class GhastBlockDestructionProtection {
+public class GhastBlockDestructionProtection implements Listener {
 	private final List<String> worlds;
 
 	public GhastBlockDestructionProtection(List<String> worlds) {
