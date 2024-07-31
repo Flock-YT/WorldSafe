@@ -18,11 +18,11 @@ public class WitherBlockDestructionProtection implements Listener {
 
 	@EventHandler
 	void onWitherDestroyBlock(EntityChangeBlockEvent e) {
-		// 判断是否为末影龙
-		if (e.getEntityType() != EntityType.WITHER)
+		// 判断是否为凋零/凋零头
+		if (e.getEntityType() != EntityType.WITHER && e.getEntityType() != EntityType.WITHER_SKULL)
 			return;
 		Entity ed = e.getEntity();
-		// 判断方块和末影龙是否在同一世界
+		// 判断方块和凋零/凋零头是否在同一世界
 		if (!e.getBlock().getWorld().equals(ed.getWorld()))
 			return;
 		// 判断世界是否为null值
