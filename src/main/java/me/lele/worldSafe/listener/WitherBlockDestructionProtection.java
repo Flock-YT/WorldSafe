@@ -9,17 +9,17 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-public class EnderDragonBlockDestructionProtectionListener implements Listener {
+public class WitherBlockDestructionProtection implements Listener {
 	private final List<String> worlds;
 
-	public EnderDragonBlockDestructionProtectionListener(List<String> worlds) {
+	public WitherBlockDestructionProtection(List<String> worlds) {
 		this.worlds = worlds;
 	}
 
 	@EventHandler
-	void onEnderDragonDestroyBlock(EntityChangeBlockEvent e) {
+	void onWitherDestroyBlock(EntityChangeBlockEvent e) {
 		// 判断是否为末影龙
-		if (e.getEntityType() != EntityType.ENDER_DRAGON)
+		if (e.getEntityType() != EntityType.WITHER)
 			return;
 		Entity ed = e.getEntity();
 		// 判断方块和末影龙是否在同一世界

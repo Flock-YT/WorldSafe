@@ -8,6 +8,7 @@ import me.lele.worldSafe.listener.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.EnderManBlockPickupProtectionListener;
 import me.lele.worldSafe.listener.TNTBlockDestructionProtection;
+import me.lele.worldSafe.listener.WitherBlockDestructionProtection;
 
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
@@ -112,6 +113,17 @@ public final class WorldSafe extends JavaPlugin {
 		if (tntBlockDestructionProtection != null && !tntBlockDestructionProtection.isEmpty()) {
 			// 注册TNT监听器
 			TNTBlockDestructionProtection listener = new TNTBlockDestructionProtection(tntBlockDestructionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件witherBlockDestructionProtection配置的世界列表
+		List<String> witherBlockDestructionProtection = configManager.getConfig().node("witherBlockDestructionProtection")
+				.getList(String.class);
+		if (witherBlockDestructionProtection != null && !witherBlockDestructionProtection.isEmpty()) {
+			// 注册TNT监听器
+			WitherBlockDestructionProtection listener = new WitherBlockDestructionProtection(witherBlockDestructionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);

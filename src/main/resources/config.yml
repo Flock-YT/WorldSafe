@@ -19,3 +19,8 @@ tntBlockDestructionProtection:
   - world
   - world_nether
   - world_the_end
+#禁止凋零破坏方块的世界
+witherBlockDestructionProtection:
+  - world
+  - world_nether
+  - world_the_end

@@ -17,11 +17,14 @@ public class TNTBlockDestructionProtection implements Listener {
 
 	@EventHandler
 	void onTNTExplode(EntityExplodeEvent e) {
+		// 检测是否为TNT类实体
 		if (e.getEntityType() != EntityType.TNT && e.getEntityType() != EntityType.TNT_MINECART)
 			return;
 		Entity ent = e.getEntity();
+		// 判断世界是否为null值
 		if (ent.getWorld() == null)
 			return;
+		// 判断是否启用该世界
 		if (!worlds.contains(ent.getWorld().getName()))
 			return;
 		// 清空爆炸影响的方块
