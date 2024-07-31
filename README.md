@@ -25,10 +25,10 @@
 
 - ✅ **creeperExplosionProtection** - 防止苦力怕破坏方块
 - ✅ **enderManBlockPickupProtection** - 防止末影人搬运方块
-- ⏳ **enderDragonBlockDestructionProtection** - 防止末影龙破坏方块
-- ⏳ **ghastBlockDestructionProtection** - 防止恶魂破坏方块
-- ⏳ **witherBlockDestructionProtection** - 防止凋零破坏方块
-- ⏳ **tntBlockDestructionProtection** - 防止 TNT 破坏方块
+- ✅ **enderDragonBlockDestructionProtection** - 防止末影龙破坏方块
+- ✅ **ghastBlockDestructionProtection** - 防止恶魂破坏方块
+- ✅ **witherBlockDestructionProtection** - 防止凋零破坏方块
+- ✅ **tntBlockDestructionProtection** - 防止 TNT 破坏方块
 
 ---
 
