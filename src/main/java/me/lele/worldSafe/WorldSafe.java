@@ -95,7 +95,7 @@ public final class WorldSafe extends JavaPlugin {
         List<String> witherExplosionProtection = configManager.getConfig().node("witherExplosionProtection")
                 .getList(String.class);
         if (witherExplosionProtection != null && !witherExplosionProtection.isEmpty()) {
-            // 注册TNT监听器
+            // 注册Wither监听器
             WitherExplosionProtection listener = new WitherExplosionProtection(witherExplosionProtection);
             getServer().getPluginManager().registerEvents(listener, this);
             // 添加到已注册列表,方便后续取消
