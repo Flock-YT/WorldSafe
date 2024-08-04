@@ -1,4 +1,4 @@
-package me.lele.worldSafe.listener;
+package me.lele.worldSafe.listener.biological.explosionprevention;
 
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;

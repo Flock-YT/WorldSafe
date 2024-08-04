@@ -33,7 +33,7 @@ public class WorldSafeCommand {
     }
 
     @Execute(name = "reload")
-    void reloadCommand (@Context CommandSender sender) {
+    void reloadCommand(@Context CommandSender sender) {
         //重载配置
         configManager.reloadConfig();
         //套上线程同步锁,保证重载期间服务器停止处理,避免有生物在重载的几毫秒时间里破坏方块
