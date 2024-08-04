@@ -23,7 +23,7 @@
 
 # 目前实现的功能
 
-## <span style="color: red;">生物类
+## <span style="color: red;">🧬生物类
 
 ### 直接取消爆炸类
 - ⏳ **creeperExplosionCancel** - 防止 苦力怕 爆炸
@@ -39,7 +39,7 @@
 - ✅ **enderManBlockPickupProtection** - 防止 末影人 搬运方块
 - ✅ **enderDragonBlockDestructionProtection** - 防止 末影龙 破坏方块
 
-## <span style="color: red;">方块类
+## <span style="color: red;">🧱方块类
 
 ### 直接取消爆炸类
 - ⏳ **tntExplosionCancel** - 防止 TNT 爆炸
