@@ -1,30 +1,20 @@
 #总开关
 enabled: true
 
-#禁止苦力怕爆炸时破坏方块的世界
+#你需要什么功能就配置什么,用不到的功能就直接不配置就行
+#例如下面这个配置就代表苦力怕爆炸不破坏方块,然后下面是生效的世界.
+#要继续添加功能就继续配置就行,就像下面第二个配置一样,一直叠下去就好
+#可以在这里查看支持的功能:https://github.com/Flock-YT/WorldSafe/blob/master/README.md
+
+#苦力怕爆炸不破坏方块
 creeperExplosionProtection:
   - world
   - world_nether
   - world_the_end
-#禁止末影人搬运方块的世界
-enderManBlockPickupProtection:
+
+#TNT爆炸不破坏方块
+tntExplosionProtection:
   - world
   - world_nether
   - world_the_end
-#禁止末影龙破坏方块的世界
-enderDragonBlockDestructionProtection:
-  - world_the_end
-#禁止TNT破坏方块的世界
-tntBlockDestructionProtection:
-  - world
-  - world_nether
-  - world_the_end
-#禁止凋零破坏方块的世界
-witherBlockDestructionProtection:
-  - world
-  - world_nether
-  - world_the_end
-#禁止恶魂破坏方块的世界
-ghastBlockDestructionProtection:
-  - world_nether
 
