@@ -21,10 +21,10 @@ public class TNTExplosionProtection implements Listener {
         if (e.getEntityType() != EntityType.TNT && e.getEntityType() != EntityType.TNT_MINECART)
             return;
         Entity ent = e.getEntity();
-        // 判断世界是否为null值
+        // 检测世界是否为null值
         if (ent.getWorld() == null)
             return;
-        // 判断是否启用该世界
+        // 判断是否启用这个世界
         if (!worlds.contains(ent.getWorld().getName()))
             return;
         // 清空爆炸影响的方块
