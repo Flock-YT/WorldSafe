@@ -6,7 +6,7 @@
 
     <groupId>me.lele</groupId>
     <artifactId>WorldSafe</artifactId>
-    <version>0.0.4</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <name>WorldSafe</name>
