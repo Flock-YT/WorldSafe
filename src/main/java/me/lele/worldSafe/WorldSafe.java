@@ -5,6 +5,7 @@ import dev.rollczi.litecommands.bukkit.LiteCommandsBukkit;
 import me.lele.worldSafe.command.WorldSafeCommand;
 import me.lele.worldSafe.config.ConfigManager;
 import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtection;
+import me.lele.worldSafe.listener.blocks.other.CropTrampleProtection;
 import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPrevention;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtection;
@@ -163,6 +164,17 @@ public final class WorldSafe extends JavaPlugin {
 			// 注册DragonEgg监听器
 			DragonEggTeleportationPrevention listener = new DragonEggTeleportationPrevention(
 					enderDragonBlockDestructionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件中cropTrampleProtection配置的世界列表
+		List<String> cropTrampleProtection = configManager.getConfig().node("cropTrampleProtection")
+				.getList(String.class);
+		if (cropTrampleProtection != null && !cropTrampleProtection.isEmpty()) {
+			// 注册EntityChangeBlock监听器
+			CropTrampleProtection listener = new CropTrampleProtection(cropTrampleProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
