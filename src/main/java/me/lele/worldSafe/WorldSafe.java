@@ -9,6 +9,7 @@ import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtect
 import me.lele.worldSafe.listener.blocks.other.CropTrampleProtection;
 import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPrevention;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
+import me.lele.worldSafe.listener.entities.explosionprevention.EndCrystalExplosionPrevention;
 import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtection;
 import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionProtection;
 import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
@@ -162,6 +163,17 @@ public final class WorldSafe extends JavaPlugin {
 		if (bedExplosionProtection != null && !bedExplosionProtection.isEmpty()) {
 			// 注册BedExplosion监听器
 			BedExplosionProtection listener = new BedExplosionProtection(bedExplosionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件endCrystalExplosionPrevention配置的世界列表
+		List<String> endCrystalExplosionPrevention = configManager.getConfig().node("endCrystalExplosionPrevention")
+				.getList(String.class);
+		if (endCrystalExplosionPrevention != null && !endCrystalExplosionPrevention.isEmpty()) {
+			// 注册EndCrystal监听器
+			EndCrystalExplosionPrevention listener = new EndCrystalExplosionPrevention(endCrystalExplosionPrevention);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);

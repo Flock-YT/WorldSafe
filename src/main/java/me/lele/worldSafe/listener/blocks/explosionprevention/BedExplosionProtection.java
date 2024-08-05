@@ -21,7 +21,7 @@ public class BedExplosionProtection implements Listener {
         // 检测是否为 床 爆炸
         if (e.getExplodedBlockState().getBlockData() instanceof Bed){
             // 判断是否启用这个世界
-            if (!worlds.contains(e.getBlock().getWorld().getName()))
+            if (!worlds.contains(e.getExplodedBlockState().getLocation().getWorld().getName()))
                 return;
             // 清空爆炸影响的方块
             e.blockList().clear();
