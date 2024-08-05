@@ -25,8 +25,8 @@
 
 ## <span style="color: red;">🧱方块类
 
-### 直接取消爆炸类
-- ✅ **bedExplosionCancel** - 禁止 床 爆炸
+### 直接取消爆炸类 (如果你配置了这个类里的东西,下方对应的[取消破坏方块但保留伤害的类]就可以不用配置了)
+- ✅ **bedExplosionCancel** - 禁止 床 爆炸 (此配置的原理是禁止玩家使用床,如果包含主世界会导致玩家无法睡觉)
 - ✅ **respawnAnchorExplosionCancel** - 禁止 重生锚 爆炸
 - ✅ **tntExplosionCancel** - 禁止 TNT 爆炸
 
@@ -41,7 +41,7 @@
 
 ## <span style="color: red;">🧬实体类
 
-### 直接取消爆炸类
+### 直接取消爆炸类 (如果你配置了这个类里的东西,下方对应的[取消破坏方块但保留伤害的类]就可以不用配置了)
 - ✅ **creeperExplosionCancel** - 禁止 苦力怕 爆炸
 - ✅ **endCrystalExplosionCancel** - 禁止 末地水晶 爆炸
 - ✅ **ghastExplosionCancel** - 禁止 恶魂火球 爆炸
