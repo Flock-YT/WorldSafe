@@ -54,8 +54,8 @@
 - ⏳ **respawnAnchorExplosionPrevention** - 禁止 重生锚 爆炸破坏方块
 
 ### 其他类
-- ⏳ **cropTrampleProtection** - 禁止 田 被踩坏
-- ⏳ **dragonEggTeleportationPrevention** - 禁止 龙蛋 瞬移
+- ✅ **cropTrampleProtection** - 禁止 田 被踩坏
+- ✅ **dragonEggTeleportationPrevention** - 禁止 龙蛋 瞬移
 
 ---
 
