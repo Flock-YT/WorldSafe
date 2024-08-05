@@ -36,20 +36,16 @@ public class GhastExplosionCancel implements Listener {
 	@EventHandler
 	void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
 		// 检测造成伤害的实体是否为火球
-		System.out.println(1);
 		if (e.getDamager().getType() != EntityType.FIREBALL)
 			return;
 		Fireball ent = (Fireball) e.getDamager();
 		// 检测此世界是否启用
-		System.out.println(2);
 		if (!worlds.contains(ent.getWorld().getName()))
 			return;
 		// 检测是否为恶魂发出的火球
-		System.out.println(3);
 		if (!(ent.getShooter() instanceof Ghast))
 			return;
 		//消除火球伤害
-		System.out.println(4);
 		e.setCancelled(true);
 	}
 }

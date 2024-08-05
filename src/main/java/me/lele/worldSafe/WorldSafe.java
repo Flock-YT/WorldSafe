@@ -4,6 +4,9 @@ import dev.rollczi.litecommands.LiteCommands;
 import dev.rollczi.litecommands.bukkit.LiteCommandsBukkit;
 import me.lele.worldSafe.command.WorldSafeCommand;
 import me.lele.worldSafe.config.ConfigManager;
+import me.lele.worldSafe.listener.blocks.explosioncancel.BedExplosionCancel;
+import me.lele.worldSafe.listener.blocks.explosioncancel.RespawnAnchorExplosionCancel;
+import me.lele.worldSafe.listener.blocks.explosioncancel.TNTExplosionCancel;
 import me.lele.worldSafe.listener.blocks.explosionprevention.BedExplosionProtection;
 import me.lele.worldSafe.listener.blocks.explosionprevention.RespawnAnchorExplosionPrevention;
 import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtection;
@@ -83,6 +86,39 @@ public final class WorldSafe extends JavaPlugin {
 
 //TODO:方块类
 	// TODO:直接取消爆炸类
+
+		// 获取配置文件bedExplosionCancel配置的世界列表
+		List<String> bedExplosionCancel = configManager.getConfig().node("bedExplosionCancel")
+				.getList(String.class);
+		if (bedExplosionCancel != null && !bedExplosionCancel.isEmpty()) {
+			// 注册BedExplosion监听器
+			BedExplosionCancel listener = new BedExplosionCancel(bedExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件respawnAnchorExplosionCancel配置的世界列表
+		List<String> respawnAnchorExplosionCancel = configManager.getConfig().node("respawnAnchorExplosionCancel")
+				.getList(String.class);
+		if (respawnAnchorExplosionCancel != null && !respawnAnchorExplosionCancel.isEmpty()) {
+			// 注册EndCrystal监听器
+			RespawnAnchorExplosionCancel listener = new RespawnAnchorExplosionCancel(respawnAnchorExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件tntExplosionCancel配置的世界列表
+		List<String> tntExplosionCancel = configManager.getConfig().node("tntExplosionCancel")
+				.getList(String.class);
+		if (tntExplosionCancel != null && !tntExplosionCancel.isEmpty()) {
+			// 注册TNT监听器
+			TNTExplosionCancel listener = new TNTExplosionCancel(tntExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
 
 	// TODO:取消破坏方块保留伤害类
 

@@ -26,9 +26,9 @@
 ## <span style="color: red;">🧱方块类
 
 ### 直接取消爆炸类
-- ⏳ **bedExplosionCancel** - 禁止 床 爆炸
-- ⏳ **respawnAnchorExplosionCancel** - 禁止 重生锚 爆炸
-- ⏳ **tntExplosionCancel** - 禁止 TNT 爆炸
+- ✅ **bedExplosionCancel** - 禁止 床 爆炸
+- ✅ **respawnAnchorExplosionCancel** - 禁止 重生锚 爆炸
+- ✅ **tntExplosionCancel** - 禁止 TNT 爆炸
 
 ### 取消破坏方块但保留伤害类
 - ✅ **bedExplosionProtection** - 禁止 床 爆炸破坏方块
