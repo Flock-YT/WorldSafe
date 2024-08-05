@@ -1,3 +1,5 @@
+**English** | [中文](README_CN.md)
+
 # 🌍 WorldSafe
 
 **WorldSafe** is a lightweight Minecraft Bukkit plugin designed to prevent certain entities and items from destroying the map.
