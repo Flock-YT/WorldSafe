@@ -26,36 +26,36 @@
 ## <span style="color: red;">🧬实体类
 
 ### 直接取消爆炸类
-- ⏳ **creeperExplosionCancel** - 防止 苦力怕 爆炸
-- ⏳ **ghastExplosionCancel** - 防止 恶魂火球 爆炸
-- ⏳ **witherExplosionCancel** - 防止 凋零 爆炸
+- ⏳ **creeperExplosionCancel** - 禁止 苦力怕 爆炸
+- ⏳ **ghastExplosionCancel** - 禁止 恶魂火球 爆炸
+- ⏳ **witherExplosionCancel** - 禁止 凋零 爆炸
 
 ### 取消破坏方块但保留爆炸伤害类
-- ✅ **creeperExplosionProtection** - 防止 苦力怕 爆炸破坏方块
-- ✅ **ghastExplosionProtection** - 防止 恶魂火球 爆炸破坏方块
-- ✅ **witherExplosionProtection** - 防止 凋零 爆炸破坏方块
+- ✅ **creeperExplosionProtection** - 禁止 苦力怕 爆炸破坏方块
+- ✅ **ghastExplosionProtection** - 禁止 恶魂火球 爆炸破坏方块
+- ✅ **witherExplosionProtection** - 禁止 凋零 爆炸破坏方块
 
 ### 其他类
-- ✅ **enderManBlockPickupProtection** - 防止 末影人 搬运方块
-- ✅ **enderDragonBlockDestructionProtection** - 防止 末影龙 破坏方块
+- ✅ **enderManBlockPickupProtection** - 禁止 末影人 搬运方块
+- ✅ **enderDragonBlockDestructionProtection** - 禁止 末影龙 破坏方块
 
 ## <span style="color: red;">🧱方块类
 
 ### 直接取消爆炸类
-- ⏳ **tntExplosionCancel** - 防止 TNT 爆炸
-- ⏳ **bedExplosionCancel** - 防止 床 爆炸
-- ⏳ **endCrystalExplosionCancel** - 防止 末地水晶 爆炸
-- ⏳ **respawnAnchorExplosionCancel** - 防止 重生锚 爆炸
+- ⏳ **tntExplosionCancel** - 禁止 TNT 爆炸
+- ⏳ **bedExplosionCancel** - 禁止 床 爆炸
+- ⏳ **endCrystalExplosionCancel** - 禁止 末地水晶 爆炸
+- ⏳ **respawnAnchorExplosionCancel** - 禁止 重生锚 爆炸
 
 ### 取消破坏方块但保留伤害类
-- ✅ **tntExplosionProtection** - 防止 TNT 爆炸破坏方块
-- ⏳ **bedExplosionProtection** - 防止 床 爆炸破坏方块
-- ⏳ **endCrystalExplosionPrevention** - 防止 末地水晶 爆炸破坏方块
-- ⏳ **respawnAnchorExplosionPrevention** - 防止 重生锚 爆炸破坏方块
+- ✅ **tntExplosionProtection** - 禁止 TNT 爆炸破坏方块
+- ⏳ **bedExplosionProtection** - 禁止 床 爆炸破坏方块
+- ⏳ **endCrystalExplosionPrevention** - 禁止 末地水晶 爆炸破坏方块
+- ⏳ **respawnAnchorExplosionPrevention** - 禁止 重生锚 爆炸破坏方块
 
 ### 其他类
-- ⏳ **cropTrampleProtection** - 防止 田 被踩坏
-- ⏳ **dragonEggTeleportationPrevention** - 防止 龙蛋 瞬移
+- ⏳ **cropTrampleProtection** - 禁止 田 被踩坏
+- ⏳ **dragonEggTeleportationPrevention** - 禁止 龙蛋 瞬移
 
 ---
 
