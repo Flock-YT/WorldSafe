@@ -15,6 +15,7 @@ import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPrevention;
 import me.lele.worldSafe.listener.entities.explosioncancel.CreeperExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.EndCrystalExplosionCancel;
 import me.lele.worldSafe.listener.entities.explosioncancel.GhastExplosionCancel;
+import me.lele.worldSafe.listener.entities.explosioncancel.WitherExplosionCancel;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.EndCrystalExplosionPrevention;
 import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtection;
@@ -212,6 +213,17 @@ public final class WorldSafe extends JavaPlugin {
 		if (ghastExplosionCancel != null && !ghastExplosionCancel.isEmpty()) {
 			// 注册TNT监听器
 			GhastExplosionCancel listener = new GhastExplosionCancel(ghastExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件witherExplosionCancel配置的世界列表
+		List<String> witherExplosionCancel = configManager.getConfig().node("witherExplosionCancel")
+				.getList(String.class);
+		if (witherExplosionCancel != null && !witherExplosionCancel.isEmpty()) {
+			// 注册TNT监听器
+			WitherExplosionCancel listener = new WitherExplosionCancel(witherExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
