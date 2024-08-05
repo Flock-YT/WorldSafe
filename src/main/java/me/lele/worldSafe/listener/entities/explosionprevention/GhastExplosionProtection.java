@@ -1,4 +1,4 @@
-package me.lele.worldSafe.listener.biological.explosionprevention;
+package me.lele.worldSafe.listener.entities.explosionprevention;
 
 import java.util.List;
 

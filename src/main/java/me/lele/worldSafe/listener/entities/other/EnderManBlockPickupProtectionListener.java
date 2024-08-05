@@ -1,4 +1,4 @@
-package me.lele.worldSafe.listener.biological.other;
+package me.lele.worldSafe.listener.entities.other;
 
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;

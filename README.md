@@ -23,7 +23,7 @@
 
 # 目前实现的功能
 
-## <span style="color: red;">🧬生物类
+## <span style="color: red;">🧬实体类
 
 ### 直接取消爆炸类
 - ⏳ **creeperExplosionCancel** - 防止 苦力怕 爆炸

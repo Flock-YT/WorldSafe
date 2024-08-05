@@ -1,4 +1,4 @@
-package me.lele.worldSafe.listener.biological.explosionprevention;
+package me.lele.worldSafe.listener.entities.other;
 
 import java.util.List;
 
@@ -9,20 +9,20 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-public class WitherExplosionProtection implements Listener {
+public class EnderDragonBlockDestructionProtectionListener implements Listener {
     private final List<String> worlds;
 
-    public WitherExplosionProtection(List<String> worlds) {
+    public EnderDragonBlockDestructionProtectionListener(List<String> worlds) {
         this.worlds = worlds;
     }
 
     @EventHandler
-    void onWitherDestroyBlock(EntityChangeBlockEvent e) {
-        // 判断是否为凋零/凋零头
-        if (e.getEntityType() != EntityType.WITHER && e.getEntityType() != EntityType.WITHER_SKULL)
+    void onEnderDragonDestroyBlock(EntityChangeBlockEvent e) {
+        // 判断是否为末影龙
+        if (e.getEntityType() != EntityType.ENDER_DRAGON)
             return;
         Entity ed = e.getEntity();
-        // 判断方块和凋零/凋零头是否在同一世界
+        // 判断方块和末影龙是否在同一世界
         if (!e.getBlock().getWorld().equals(ed.getWorld()))
             return;
         // 判断世界是否为null值

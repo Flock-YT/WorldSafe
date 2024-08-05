@@ -4,12 +4,12 @@ import dev.rollczi.litecommands.LiteCommands;
 import dev.rollczi.litecommands.bukkit.LiteCommandsBukkit;
 import me.lele.worldSafe.command.WorldSafeCommand;
 import me.lele.worldSafe.config.ConfigManager;
-import me.lele.worldSafe.listener.biological.explosionprevention.CreeperExplosionProtectionListener;
-import me.lele.worldSafe.listener.biological.other.EnderDragonBlockDestructionProtectionListener;
-import me.lele.worldSafe.listener.biological.other.EnderManBlockPickupProtectionListener;
-import me.lele.worldSafe.listener.biological.explosionprevention.GhastExplosionProtection;
 import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtection;
-import me.lele.worldSafe.listener.biological.explosionprevention.WitherExplosionProtection;
+import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
+import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtection;
+import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionProtection;
+import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
+import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionListener;
 
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
