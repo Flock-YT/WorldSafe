@@ -9,6 +9,9 @@ import me.lele.worldSafe.listener.blocks.explosionprevention.RespawnAnchorExplos
 import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtection;
 import me.lele.worldSafe.listener.blocks.other.CropTrampleProtection;
 import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPrevention;
+import me.lele.worldSafe.listener.entities.explosioncancel.CreeperExplosionCancelListener;
+import me.lele.worldSafe.listener.entities.explosioncancel.EndCrystalExplosionCancel;
+import me.lele.worldSafe.listener.entities.explosioncancel.GhastExplosionCancel;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.EndCrystalExplosionPrevention;
 import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtection;
@@ -77,86 +80,11 @@ public final class WorldSafe extends JavaPlugin {
 			return;
 		}
 
-//TODO:生物类
-		// TODO:直接取消爆炸类
-
-		// TODO:取消破坏方块保留伤害类
-
-		// 获取配置文件中creeperExplosionProtection配置的世界列表
-		List<String> creeperExplosionProtection = configManager.getConfig().node("creeperExplosionProtection")
-				.getList(String.class);
-		if (creeperExplosionProtection != null && !creeperExplosionProtection.isEmpty()) {
-			// 注册Creeper监听器
-			CreeperExplosionProtectionListener listener = new CreeperExplosionProtectionListener(
-					creeperExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件witherExplosionProtection配置的世界列表
-		List<String> witherExplosionProtection = configManager.getConfig().node("witherExplosionProtection")
-				.getList(String.class);
-		if (witherExplosionProtection != null && !witherExplosionProtection.isEmpty()) {
-			// 注册Wither监听器
-			WitherExplosionProtection listener = new WitherExplosionProtection(witherExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件ghastExplosionProtection配置的世界列表
-		List<String> ghastExplosionProtection = configManager.getConfig().node("ghastExplosionProtection")
-				.getList(String.class);
-		if (ghastExplosionProtection != null && !ghastExplosionProtection.isEmpty()) {
-			// 注册TNT监听器
-			GhastExplosionProtection listener = new GhastExplosionProtection(ghastExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// TODO:其他类
-
-		// 获取配置文件中enderManBlockPickupProtection配置的世界列表
-		List<String> enderManBlockPickupProtection = configManager.getConfig().node("enderManBlockPickupProtection")
-				.getList(String.class);
-		if (enderManBlockPickupProtection != null && !enderManBlockPickupProtection.isEmpty()) {
-			// 注册EnderMan监听器
-			EnderManBlockPickupProtectionListener listener = new EnderManBlockPickupProtectionListener(
-					enderManBlockPickupProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件中enderDragonBlockDestructionProtection配置的世界列表
-		List<String> enderDragonBlockDestructionProtection = configManager.getConfig()
-				.node("enderDragonBlockDestructionProtection").getList(String.class);
-		if (enderDragonBlockDestructionProtection != null && !enderDragonBlockDestructionProtection.isEmpty()) {
-			// 注册EnderDragon监听器
-			EnderDragonBlockDestructionProtectionListener listener = new EnderDragonBlockDestructionProtectionListener(
-					enderDragonBlockDestructionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
 
 //TODO:方块类
-		// TODO:直接取消爆炸类
+	// TODO:直接取消爆炸类
 
-		// TODO:取消破坏方块保留伤害类
-
-		// 获取配置文件tntExplosionProtection配置的世界列表
-		List<String> tntExplosionProtection = configManager.getConfig().node("tntExplosionProtection")
-				.getList(String.class);
-		if (tntExplosionProtection != null && !tntExplosionProtection.isEmpty()) {
-			// 注册TNT监听器
-			TNTExplosionProtection listener = new TNTExplosionProtection(tntExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+	// TODO:取消破坏方块保留伤害类
 
 		// 获取配置文件bedExplosionProtection配置的世界列表
 		List<String> bedExplosionProtection = configManager.getConfig().node("bedExplosionProtection")
@@ -169,18 +97,6 @@ public final class WorldSafe extends JavaPlugin {
 			listeners.add(listener);
 		}
 
-		// 获取配置文件endCrystalExplosionPrevention配置的世界列表
-		List<String> endCrystalExplosionPrevention = configManager.getConfig().node("endCrystalExplosionPrevention")
-				.getList(String.class);
-		if (endCrystalExplosionPrevention != null && !endCrystalExplosionPrevention.isEmpty()) {
-			// 注册EndCrystal监听器
-			EndCrystalExplosionPrevention listener = new EndCrystalExplosionPrevention(endCrystalExplosionPrevention);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-
 		// 获取配置文件respawnAnchorExplosionPrevention配置的世界列表
 		List<String> respawnAnchorExplosionPrevention = configManager.getConfig().node("respawnAnchorExplosionPrevention")
 				.getList(String.class);
@@ -192,7 +108,18 @@ public final class WorldSafe extends JavaPlugin {
 			listeners.add(listener);
 		}
 
-		// TODO:其他类
+		// 获取配置文件tntExplosionProtection配置的世界列表
+		List<String> tntExplosionProtection = configManager.getConfig().node("tntExplosionProtection")
+				.getList(String.class);
+		if (tntExplosionProtection != null && !tntExplosionProtection.isEmpty()) {
+			// 注册TNT监听器
+			TNTExplosionProtection listener = new TNTExplosionProtection(tntExplosionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+	// TODO:其他类
 
 		// 获取配置文件中cropTrampleProtection配置的世界列表
 		List<String> cropTrampleProtection = configManager.getConfig().node("cropTrampleProtection")
@@ -211,13 +138,126 @@ public final class WorldSafe extends JavaPlugin {
 		if (dragonEggTeleportationPrevention != null && !dragonEggTeleportationPrevention.isEmpty()) {
 			// 注册DragonEgg监听器
 			DragonEggTeleportationPrevention listener = new DragonEggTeleportationPrevention(
+					dragonEggTeleportationPrevention);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+//TODO:实体类
+	// TODO:直接取消爆炸类
+
+		// 获取配置文件中creeperExplosionCancel配置的世界列表
+		List<String> creeperExplosionCancel = configManager.getConfig().node("creeperExplosionCancel")
+				.getList(String.class);
+		if (creeperExplosionCancel != null && !creeperExplosionCancel.isEmpty()) {
+			// 注册Creeper监听器
+			CreeperExplosionCancelListener listener = new CreeperExplosionCancelListener(
+					creeperExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件endCrystalExplosionCancel配置的世界列表
+		List<String> endCrystalExplosionCancel = configManager.getConfig().node("endCrystalExplosionCancel")
+				.getList(String.class);
+		if (endCrystalExplosionCancel != null && !endCrystalExplosionCancel.isEmpty()) {
+			// 注册EndCrystal监听器
+			EndCrystalExplosionCancel listener = new EndCrystalExplosionCancel(endCrystalExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件ghastExplosionCancel配置的世界列表
+		List<String> ghastExplosionCancel = configManager.getConfig().node("ghastExplosionCancel")
+				.getList(String.class);
+		if (ghastExplosionCancel != null && !ghastExplosionCancel.isEmpty()) {
+			// 注册TNT监听器
+			GhastExplosionCancel listener = new GhastExplosionCancel(ghastExplosionCancel);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+	// TODO:取消破坏方块保留伤害类
+
+		// 获取配置文件中creeperExplosionProtection配置的世界列表
+		List<String> creeperExplosionProtection = configManager.getConfig().node("creeperExplosionProtection")
+				.getList(String.class);
+		if (creeperExplosionProtection != null && !creeperExplosionProtection.isEmpty()) {
+			// 注册Creeper监听器
+			CreeperExplosionProtectionListener listener = new CreeperExplosionProtectionListener(
+					creeperExplosionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件endCrystalExplosionPrevention配置的世界列表
+		List<String> endCrystalExplosionPrevention = configManager.getConfig().node("endCrystalExplosionPrevention")
+				.getList(String.class);
+		if (endCrystalExplosionPrevention != null && !endCrystalExplosionPrevention.isEmpty()) {
+			// 注册EndCrystal监听器
+			EndCrystalExplosionPrevention listener = new EndCrystalExplosionPrevention(endCrystalExplosionPrevention);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件ghastExplosionProtection配置的世界列表
+		List<String> ghastExplosionProtection = configManager.getConfig().node("ghastExplosionProtection")
+				.getList(String.class);
+		if (ghastExplosionProtection != null && !ghastExplosionProtection.isEmpty()) {
+			// 注册TNT监听器
+			GhastExplosionProtection listener = new GhastExplosionProtection(ghastExplosionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+		// 获取配置文件witherExplosionProtection配置的世界列表
+		List<String> witherExplosionProtection = configManager.getConfig().node("witherExplosionProtection")
+				.getList(String.class);
+		if (witherExplosionProtection != null && !witherExplosionProtection.isEmpty()) {
+			// 注册Wither监听器
+			WitherExplosionProtection listener = new WitherExplosionProtection(witherExplosionProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+	// TODO:其他类
+
+		// 获取配置文件中enderDragonBlockDestructionProtection配置的世界列表
+		List<String> enderDragonBlockDestructionProtection = configManager.getConfig()
+				.node("enderDragonBlockDestructionProtection").getList(String.class);
+		if (enderDragonBlockDestructionProtection != null && !enderDragonBlockDestructionProtection.isEmpty()) {
+			// 注册EnderDragon监听器
+			EnderDragonBlockDestructionProtectionListener listener = new EnderDragonBlockDestructionProtectionListener(
 					enderDragonBlockDestructionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
 		}
 
+		// 获取配置文件中enderManBlockPickupProtection配置的世界列表
+		List<String> enderManBlockPickupProtection = configManager.getConfig().node("enderManBlockPickupProtection")
+				.getList(String.class);
+		if (enderManBlockPickupProtection != null && !enderManBlockPickupProtection.isEmpty()) {
+			// 注册EnderMan监听器
+			EnderManBlockPickupProtectionListener listener = new EnderManBlockPickupProtectionListener(
+					enderManBlockPickupProtection);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
+
+
 	}
+
+
 
 	private void loadCommand() {
 
