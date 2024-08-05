@@ -53,7 +53,7 @@
 - ✅ **creeperExplosionCancel** - 禁止苦力怕爆炸
 - ✅ **endCrystalExplosionCancel** - 禁止末地水晶爆炸
 - ✅ **ghastExplosionCancel** - 禁止恶魂火球爆炸
-- ⏳ **witherExplosionCancel** - 禁止凋零爆炸
+- ✅ **witherExplosionCancel** - 禁止凋零爆炸
 
 ### 取消破坏方块但保留爆炸伤害类
 

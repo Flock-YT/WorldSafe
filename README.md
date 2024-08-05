@@ -53,7 +53,7 @@ The plugin is currently undergoing updates. Please keep an eye on future updates
 - ✅ **creeperExplosionCancel** - Prevent creeper explosions
 - ✅ **endCrystalExplosionCancel** - Prevent end crystal explosions
 - ✅ **ghastExplosionCancel** - Prevent ghast fireball explosions
-- ⏳ **witherExplosionCancel** - Prevent wither explosions
+- ✅ **witherExplosionCancel** - Prevent wither explosions
 
 ### Block Destruction Prevention with Explosion Damage Retained
 
