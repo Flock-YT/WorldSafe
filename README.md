@@ -23,39 +23,47 @@
 
 # 目前实现的功能
 
-## <span style="color: red;">🧱方块类
+## 🧱 方块类
 
 ### 直接取消爆炸类
-- ✅ **bedExplosionCancel** - 禁止 床 爆炸
-- ✅ **respawnAnchorExplosionCancel** - 禁止 重生锚 爆炸
-- ✅ **tntExplosionCancel** - 禁止 TNT 爆炸
+*(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留伤害的类”就可以不用配置了)*
+
+- ✅ **bedExplosionCancel** - 禁止床爆炸（此配置的原理是禁止玩家使用床，如果包含主世界会导致玩家无法睡觉）
+- ✅ **respawnAnchorExplosionCancel** - 禁止重生锚爆炸
+- ✅ **tntExplosionCancel** - 禁止TNT爆炸
 
 ### 取消破坏方块但保留伤害类
-- ✅ **bedExplosionProtection** - 禁止 床 爆炸破坏方块
-- ✅ **respawnAnchorExplosionPrevention** - 禁止 重生锚 爆炸破坏方块
-- ✅ **tntExplosionProtection** - 禁止 TNT 爆炸破坏方块
+
+- ✅ **bedExplosionProtection** - 禁止床爆炸破坏方块
+- ✅ **respawnAnchorExplosionPrevention** - 禁止重生锚爆炸破坏方块
+- ✅ **tntExplosionProtection** - 禁止TNT爆炸破坏方块
 
 ### 其他类
-- ✅ **cropTrampleProtection** - 禁止 田 被踩坏
-- ✅ **dragonEggTeleportationPrevention** - 禁止 龙蛋 瞬移
 
-## <span style="color: red;">🧬实体类
+- ✅ **cropTrampleProtection** - 禁止田被踩坏
+- ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
+
+## 🧬 实体类
 
 ### 直接取消爆炸类
-- ✅ **creeperExplosionCancel** - 禁止 苦力怕 爆炸
-- ✅ **endCrystalExplosionCancel** - 禁止 末地水晶 爆炸
-- ✅ **ghastExplosionCancel** - 禁止 恶魂火球 爆炸
-- ⏳ **witherExplosionCancel** - 禁止 凋零 爆炸
+*(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留爆炸伤害的类”就可以不用配置了)*
+
+- ✅ **creeperExplosionCancel** - 禁止苦力怕爆炸
+- ✅ **endCrystalExplosionCancel** - 禁止末地水晶爆炸
+- ✅ **ghastExplosionCancel** - 禁止恶魂火球爆炸
+- ⏳ **witherExplosionCancel** - 禁止凋零爆炸
 
 ### 取消破坏方块但保留爆炸伤害类
-- ✅ **creeperExplosionProtection** - 禁止 苦力怕 爆炸破坏方块
-- ✅  **endCrystalExplosionPrevention** - 禁止 末地水晶 爆炸破坏方块
-- ✅ **ghastExplosionProtection** - 禁止 恶魂火球 爆炸破坏方块
-- ✅ **witherExplosionProtection** - 禁止 凋零 爆炸破坏方块
+
+- ✅ **creeperExplosionProtection** - 禁止苦力怕爆炸破坏方块
+- ✅ **endCrystalExplosionPrevention** - 禁止末地水晶爆炸破坏方块
+- ✅ **ghastExplosionProtection** - 禁止恶魂火球爆炸破坏方块
+- ✅ **witherExplosionProtection** - 禁止凋零爆炸破坏方块
 
 ### 其他类
-- ✅ **enderDragonBlockDestructionProtection** - 禁止 末影龙 破坏方块
-- ✅ **enderManBlockPickupProtection** - 禁止 末影人 搬运方块
+
+- ✅ **enderDragonBlockDestructionProtection** - 禁止末影龙破坏方块
+- ✅ **enderManBlockPickupProtection** - 禁止末影人搬运方块
 
 ---
 
