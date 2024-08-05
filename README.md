@@ -51,7 +51,7 @@
 - ✅ **tntExplosionProtection** - 禁止 TNT 爆炸破坏方块
 - ✅ **bedExplosionProtection** - 禁止 床 爆炸破坏方块
 - ✅  **endCrystalExplosionPrevention** - 禁止 末地水晶 爆炸破坏方块
-- ⏳ **respawnAnchorExplosionPrevention** - 禁止 重生锚 爆炸破坏方块
+- ✅ **respawnAnchorExplosionPrevention** - 禁止 重生锚 爆炸破坏方块
 
 ### 其他类
 - ✅ **cropTrampleProtection** - 禁止 田 被踩坏
