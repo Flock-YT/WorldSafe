@@ -9,25 +9,22 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 public class TNTExplosionProtection implements Listener {
-    private final List<String> worlds;
+	private final List<String> worlds;
 
-    public TNTExplosionProtection(List<String> worlds) {
-        this.worlds = worlds;
-    }
+	public TNTExplosionProtection(List<String> worlds) {
+		this.worlds = worlds;
+	}
 
-    @EventHandler
-    void onTNTExplode(EntityExplodeEvent e) {
-        // 检测是否为TNT类实体
-        if (e.getEntityType() != EntityType.TNT && e.getEntityType() != EntityType.TNT_MINECART)
-            return;
-        Entity ent = e.getEntity();
-        // 检测世界是否为null值
-        if (ent.getWorld() == null)
-            return;
-        // 判断是否启用这个世界
-        if (!worlds.contains(ent.getWorld().getName()))
-            return;
-        // 清空爆炸影响的方块
-        e.blockList().clear();
-    }
+	@EventHandler
+	void onTNTExplode(EntityExplodeEvent e) {
+		// 检测是否为TNT类实体
+		if (e.getEntityType() != EntityType.TNT && e.getEntityType() != EntityType.TNT_MINECART)
+			return;
+		Entity ent = e.getEntity();
+		// 判断是否启用这个世界
+		if (!worlds.contains(ent.getWorld().getName()))
+			return;
+		// 清空爆炸影响的方块
+		e.blockList().clear();
+	}
 }

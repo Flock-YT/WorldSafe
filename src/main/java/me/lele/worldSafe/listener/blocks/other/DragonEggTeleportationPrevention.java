@@ -21,9 +21,6 @@ public class DragonEggTeleportationPrevention implements Listener {
 		// 检测方块是否为龙蛋
 		if (b.getType() != Material.DRAGON_EGG)
 			return;
-        // 检测世界是否为null值
-		if (b.getWorld() == null)
-			return;
 		// 判断是否启动这个世界
 		if (!worlds.contains(b.getWorld().getName()))
 			return;

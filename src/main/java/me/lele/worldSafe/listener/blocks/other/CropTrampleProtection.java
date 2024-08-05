@@ -24,9 +24,6 @@ public class CropTrampleProtection implements Listener {
 		// 检测是否为踩踏
 		if (e.getTo() != Material.DIRT && e.getTo() != Material.GRASS_BLOCK)
 			return;
-		// 检测世界是否为null值
-		if (b.getLocation().getWorld() == null)
-			return;
 		// 检测世界是否启用
 		if (!worlds.contains(b.getLocation().getWorld().getName()))
 			return;
