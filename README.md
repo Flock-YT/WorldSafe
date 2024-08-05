@@ -1,70 +1,70 @@
 # 🌍 WorldSafe
 
-**WorldSafe** 是一个轻量级的Minecraft Bukkit插件，旨在防止部分实体及物品破坏地图。
+**WorldSafe** is a lightweight Minecraft Bukkit plugin designed to prevent certain entities and items from destroying the map.
 
-## 📋 安装要求
+## 📋 Installation Requirements
 
-- **Java 21**: 本插件需要 Java 21 运行时环境。
+- **Java 21**: This plugin requires Java 21 runtime environment.
 
-## ✨ 特性
+## ✨ Features
 
-- **轻量级**: 对性能影响最小,只加载需要的监听器,最大可能减少无关判断。
-- **简易配置**: 使用方便，配置简单。
+- **Lightweight**: Minimal impact on performance, only loads necessary listeners to minimize unrelated checks.
+- **Easy Configuration**: User-friendly and simple to configure.
 
-## 📖 使用方法
+## 📖 Usage
 
-1. 下载插件并将其放置在 `plugins` 文件夹中。
-2. 重启服务器以加载插件。
-3. 在配置文件中进行必要的设置。
+1. Download the plugin and place it in the `plugins` folder.
+2. Restart the server to load the plugin.
+3. Make necessary settings in the configuration file.
 
-## 🛠️ 计划
+## 🛠️ Planned Features
 
-目前插件正在进行陆续更新中，请关注后续更新！
+The plugin is currently undergoing updates. Please keep an eye on future updates!
 
-# 目前实现的功能
+# Currently Implemented Features
 
-## 🧱 方块类
+## 🧱 Block Types
 
-### 直接取消爆炸类
-*(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留伤害的类”就可以不用配置了)*
+### Direct Explosion Cancellation
+*(If you configure the items in this category, the corresponding “Block Destruction Prevention with Explosion Damage Retained” category below can be left unconfigured)*
 
-- ✅ **bedExplosionCancel** - 禁止床爆炸（此配置的原理是禁止玩家使用床，如果包含主世界会导致玩家无法睡觉）
-- ✅ **respawnAnchorExplosionCancel** - 禁止重生锚爆炸
-- ✅ **tntExplosionCancel** - 禁止TNT爆炸
+- ✅ **bedExplosionCancel** - Prevent bed explosions (This configuration prevents players from using beds; if the Overworld is included, players will not be able to sleep.)
+- ✅ **respawnAnchorExplosionCancel** - Prevent respawn anchor explosions
+- ✅ **tntExplosionCancel** - Prevent TNT explosions
 
-### 取消破坏方块但保留伤害类
+### Block Destruction Prevention with Explosion Damage Retained
 
-- ✅ **bedExplosionProtection** - 禁止床爆炸破坏方块
-- ✅ **respawnAnchorExplosionPrevention** - 禁止重生锚爆炸破坏方块
-- ✅ **tntExplosionProtection** - 禁止TNT爆炸破坏方块
+- ✅ **bedExplosionProtection** - Prevent bed explosions from destroying blocks
+- ✅ **respawnAnchorExplosionPrevention** - Prevent respawn anchor explosions from destroying blocks
+- ✅ **tntExplosionProtection** - Prevent TNT explosions from destroying blocks
 
-### 其他类
+### Other Types
 
-- ✅ **cropTrampleProtection** - 禁止田被踩坏
-- ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
+- ✅ **cropTrampleProtection** - Prevent crops from being trampled
+- ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
 
-## 🧬 实体类
+## 🧬 Entity Types
 
-### 直接取消爆炸类
-*(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留爆炸伤害的类”就可以不用配置了)*
+### Direct Explosion Cancellation
+*(If you configure the items in this category, the corresponding “Block Destruction Prevention with Explosion Damage Retained” category below can be left unconfigured)*
 
-- ✅ **creeperExplosionCancel** - 禁止苦力怕爆炸
-- ✅ **endCrystalExplosionCancel** - 禁止末地水晶爆炸
-- ✅ **ghastExplosionCancel** - 禁止恶魂火球爆炸
-- ⏳ **witherExplosionCancel** - 禁止凋零爆炸
+- ✅ **creeperExplosionCancel** - Prevent creeper explosions
+- ✅ **endCrystalExplosionCancel** - Prevent end crystal explosions
+- ✅ **ghastExplosionCancel** - Prevent ghast fireball explosions
+- ⏳ **witherExplosionCancel** - Prevent wither explosions
 
-### 取消破坏方块但保留爆炸伤害类
+### Block Destruction Prevention with Explosion Damage Retained
 
-- ✅ **creeperExplosionProtection** - 禁止苦力怕爆炸破坏方块
-- ✅ **endCrystalExplosionPrevention** - 禁止末地水晶爆炸破坏方块
-- ✅ **ghastExplosionProtection** - 禁止恶魂火球爆炸破坏方块
-- ✅ **witherExplosionProtection** - 禁止凋零爆炸破坏方块
+- ✅ **creeperExplosionProtection** - Prevent creeper explosions from destroying blocks
+- ✅ **endCrystalExplosionPrevention** - Prevent end crystal explosions from destroying blocks
+- ✅ **ghastExplosionProtection** - Prevent ghast fireball explosions from destroying blocks
+- ✅ **witherExplosionProtection** - Prevent wither explosions from destroying blocks
 
-### 其他类
+### Other Types
 
-- ✅ **enderDragonBlockDestructionProtection** - 禁止末影龙破坏方块
-- ✅ **enderManBlockPickupProtection** - 禁止末影人搬运方块
+- ✅ **enderDragonBlockDestructionProtection** - Prevent the Ender Dragon from destroying blocks
+- ✅ **enderManBlockPickupProtection** - Prevent Endermen from picking up blocks
 
 ---
 
-**版权声明**: 本插件由 [Eric.乐乐 & 追求at](#) 开发，遵循 [MIT 许可证](#)。
+**Copyright Notice**: This plugin is developed by [Eric.乐乐 & 追求at](#), and follows the [MIT License](#).
