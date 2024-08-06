@@ -1,4 +1,4 @@
-package me.lele.worldSafe.listener.entities.explosioncancel;
+package me.lele.worldSafe.listener.entities.explosionprevention;
 
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -7,11 +7,11 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
 
-public class EndCrystalExplosionCancel implements Listener {
+public class EndCrystalExplosionPreventionListener implements Listener {
 
     private final List<String> worlds;
 
-    public EndCrystalExplosionCancel(List<String> worlds) {
+    public EndCrystalExplosionPreventionListener(List<String> worlds) {
         this.worlds = worlds;
     }
 
@@ -23,7 +23,7 @@ public class EndCrystalExplosionCancel implements Listener {
             if (!worlds.contains(event.getLocation().getWorld().getName()))
                 return;
             // 清空爆炸影响的方块
-            event.setCancelled(true);
+            event.blockList().clear();
         }
     }
 

@@ -10,10 +10,10 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
 
-public class GhastExplosionCancel implements Listener {
+public class GhastExplosionCancelListener implements Listener {
 	private final List<String> worlds;
 
-	public GhastExplosionCancel(List<String> worlds) {
+	public GhastExplosionCancelListener(List<String> worlds) {
 		this.worlds = worlds;
 	}
 

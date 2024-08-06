@@ -8,10 +8,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-public class CropTrampleProtection implements Listener {
+public class CropTrampleProtectionListener implements Listener {
 	private final List<String> worlds;
 
-	public CropTrampleProtection(List<String> worlds) {
+	public CropTrampleProtectionListener(List<String> worlds) {
 		this.worlds = worlds;
 	}
 

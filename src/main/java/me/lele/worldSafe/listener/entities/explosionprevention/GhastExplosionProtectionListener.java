@@ -9,10 +9,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-public class GhastExplosionProtection implements Listener {
+public class GhastExplosionProtectionListener implements Listener {
 	private final List<String> worlds;
 
-	public GhastExplosionProtection(List<String> worlds) {
+	public GhastExplosionProtectionListener(List<String> worlds) {
 		this.worlds = worlds;
 	}
 

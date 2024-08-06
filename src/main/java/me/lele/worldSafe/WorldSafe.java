@@ -4,26 +4,26 @@ import dev.rollczi.litecommands.LiteCommands;
 import dev.rollczi.litecommands.bukkit.LiteCommandsBukkit;
 import me.lele.worldSafe.command.WorldSafeCommand;
 import me.lele.worldSafe.config.ConfigManager;
-import me.lele.worldSafe.listener.blocks.explosioncancel.BedExplosionCancel;
-import me.lele.worldSafe.listener.blocks.explosioncancel.RespawnAnchorExplosionCancel;
-import me.lele.worldSafe.listener.blocks.explosioncancel.TNTExplosionCancel;
-import me.lele.worldSafe.listener.blocks.explosionprevention.BedExplosionProtection;
-import me.lele.worldSafe.listener.blocks.explosionprevention.RespawnAnchorExplosionPrevention;
-import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtection;
-import me.lele.worldSafe.listener.blocks.other.CropTrampleProtection;
-import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPrevention;
+import me.lele.worldSafe.listener.blocks.explosioncancel.BedExplosionCancelListener;
+import me.lele.worldSafe.listener.blocks.explosioncancel.RespawnAnchorExplosionCancelListener;
+import me.lele.worldSafe.listener.blocks.explosioncancel.TNTExplosionCancelListener;
+import me.lele.worldSafe.listener.blocks.explosionprevention.BedExplosionProtectionListener;
+import me.lele.worldSafe.listener.blocks.explosionprevention.RespawnAnchorExplosionPreventionListener;
+import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtectionListener;
+import me.lele.worldSafe.listener.blocks.other.CropTrampleProtectionListener;
+import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPreventionListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.CreeperExplosionCancelListener;
-import me.lele.worldSafe.listener.entities.explosioncancel.EndCrystalExplosionCancel;
-import me.lele.worldSafe.listener.entities.explosioncancel.GhastExplosionCancel;
-import me.lele.worldSafe.listener.entities.explosioncancel.WitherExplosionCancel;
+import me.lele.worldSafe.listener.entities.explosioncancel.EndCrystalExplosionCancelListener;
+import me.lele.worldSafe.listener.entities.explosioncancel.GhastExplosionCancelListener;
+import me.lele.worldSafe.listener.entities.explosioncancel.WitherExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
-import me.lele.worldSafe.listener.entities.explosionprevention.EndCrystalExplosionPrevention;
-import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtection;
-import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionProtection;
+import me.lele.worldSafe.listener.entities.explosionprevention.EndCrystalExplosionPreventionListener;
+import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtectionListener;
+import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionListener;
 
-import me.lele.worldSafe.listener.entities.other.PhantomDamagePrevention;
+import me.lele.worldSafe.listener.entities.other.PhantomDamagePreventionListener;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
@@ -97,7 +97,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (bedExplosionCancel != null && !bedExplosionCancel.isEmpty()) {
 			// 注册BedExplosion监听器
-			BedExplosionCancel listener = new BedExplosionCancel(bedExplosionCancel);
+			BedExplosionCancelListener listener = new BedExplosionCancelListener(bedExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -108,7 +108,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (respawnAnchorExplosionCancel != null && !respawnAnchorExplosionCancel.isEmpty()) {
 			// 注册EndCrystal监听器
-			RespawnAnchorExplosionCancel listener = new RespawnAnchorExplosionCancel(respawnAnchorExplosionCancel);
+			RespawnAnchorExplosionCancelListener listener = new RespawnAnchorExplosionCancelListener(respawnAnchorExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -119,7 +119,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (tntExplosionCancel != null && !tntExplosionCancel.isEmpty()) {
 			// 注册TNT监听器
-			TNTExplosionCancel listener = new TNTExplosionCancel(tntExplosionCancel);
+			TNTExplosionCancelListener listener = new TNTExplosionCancelListener(tntExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -132,7 +132,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (bedExplosionProtection != null && !bedExplosionProtection.isEmpty()) {
 			// 注册BedExplosion监听器
-			BedExplosionProtection listener = new BedExplosionProtection(bedExplosionProtection);
+			BedExplosionProtectionListener listener = new BedExplosionProtectionListener(bedExplosionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -143,7 +143,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (respawnAnchorExplosionPrevention != null && !respawnAnchorExplosionPrevention.isEmpty()) {
 			// 注册EndCrystal监听器
-			RespawnAnchorExplosionPrevention listener = new RespawnAnchorExplosionPrevention(respawnAnchorExplosionPrevention);
+			RespawnAnchorExplosionPreventionListener listener = new RespawnAnchorExplosionPreventionListener(respawnAnchorExplosionPrevention);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -154,7 +154,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (tntExplosionProtection != null && !tntExplosionProtection.isEmpty()) {
 			// 注册TNT监听器
-			TNTExplosionProtection listener = new TNTExplosionProtection(tntExplosionProtection);
+			TNTExplosionProtectionListener listener = new TNTExplosionProtectionListener(tntExplosionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -167,7 +167,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (cropTrampleProtection != null && !cropTrampleProtection.isEmpty()) {
 			// 注册EntityChangeBlock监听器
-			CropTrampleProtection listener = new CropTrampleProtection(cropTrampleProtection);
+			CropTrampleProtectionListener listener = new CropTrampleProtectionListener(cropTrampleProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -178,7 +178,7 @@ public final class WorldSafe extends JavaPlugin {
 				.node("dragonEggTeleportationPrevention").getList(String.class);
 		if (dragonEggTeleportationPrevention != null && !dragonEggTeleportationPrevention.isEmpty()) {
 			// 注册DragonEgg监听器
-			DragonEggTeleportationPrevention listener = new DragonEggTeleportationPrevention(
+			DragonEggTeleportationPreventionListener listener = new DragonEggTeleportationPreventionListener(
 					dragonEggTeleportationPrevention);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
@@ -205,7 +205,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (endCrystalExplosionCancel != null && !endCrystalExplosionCancel.isEmpty()) {
 			// 注册EndCrystal监听器
-			EndCrystalExplosionCancel listener = new EndCrystalExplosionCancel(endCrystalExplosionCancel);
+			EndCrystalExplosionCancelListener listener = new EndCrystalExplosionCancelListener(endCrystalExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -216,7 +216,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (ghastExplosionCancel != null && !ghastExplosionCancel.isEmpty()) {
 			// 注册TNT监听器
-			GhastExplosionCancel listener = new GhastExplosionCancel(ghastExplosionCancel);
+			GhastExplosionCancelListener listener = new GhastExplosionCancelListener(ghastExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -227,7 +227,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (witherExplosionCancel != null && !witherExplosionCancel.isEmpty()) {
 			// 注册TNT监听器
-			WitherExplosionCancel listener = new WitherExplosionCancel(witherExplosionCancel);
+			WitherExplosionCancelListener listener = new WitherExplosionCancelListener(witherExplosionCancel);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -252,7 +252,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (endCrystalExplosionPrevention != null && !endCrystalExplosionPrevention.isEmpty()) {
 			// 注册EndCrystal监听器
-			EndCrystalExplosionPrevention listener = new EndCrystalExplosionPrevention(endCrystalExplosionPrevention);
+			EndCrystalExplosionPreventionListener listener = new EndCrystalExplosionPreventionListener(endCrystalExplosionPrevention);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -263,7 +263,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (ghastExplosionProtection != null && !ghastExplosionProtection.isEmpty()) {
 			// 注册TNT监听器
-			GhastExplosionProtection listener = new GhastExplosionProtection(ghastExplosionProtection);
+			GhastExplosionProtectionListener listener = new GhastExplosionProtectionListener(ghastExplosionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -274,7 +274,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (witherExplosionProtection != null && !witherExplosionProtection.isEmpty()) {
 			// 注册Wither监听器
-			WitherExplosionProtection listener = new WitherExplosionProtection(witherExplosionProtection);
+			WitherExplosionProtectionListener listener = new WitherExplosionProtectionListener(witherExplosionProtection);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消
 			listeners.add(listener);
@@ -311,7 +311,7 @@ public final class WorldSafe extends JavaPlugin {
 				.getList(String.class);
 		if (phantomDamagePrevention != null && !phantomDamagePrevention.isEmpty()) {
 			// 注册EnderMan监听器
-			PhantomDamagePrevention listener = new PhantomDamagePrevention(
+			PhantomDamagePreventionListener listener = new PhantomDamagePreventionListener(
 					phantomDamagePrevention);
 			getServer().getPluginManager().registerEvents(listener, this);
 			// 添加到已注册列表,方便后续取消

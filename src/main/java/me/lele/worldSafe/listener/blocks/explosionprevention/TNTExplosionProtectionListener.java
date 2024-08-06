@@ -8,10 +8,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-public class TNTExplosionProtection implements Listener {
+public class TNTExplosionProtectionListener implements Listener {
 	private final List<String> worlds;
 
-	public TNTExplosionProtection(List<String> worlds) {
+	public TNTExplosionProtectionListener(List<String> worlds) {
 		this.worlds = worlds;
 	}
 

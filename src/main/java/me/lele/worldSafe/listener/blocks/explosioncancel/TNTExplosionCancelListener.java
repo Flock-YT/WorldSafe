@@ -8,10 +8,10 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
 
-public class TNTExplosionCancel implements Listener {
+public class TNTExplosionCancelListener implements Listener {
 	private final List<String> worlds;
 
-	public TNTExplosionCancel(List<String> worlds) {
+	public TNTExplosionCancelListener(List<String> worlds) {
 		this.worlds = worlds;
 	}
 

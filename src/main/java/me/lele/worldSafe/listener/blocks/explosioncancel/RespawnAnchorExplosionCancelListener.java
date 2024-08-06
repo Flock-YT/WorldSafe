@@ -1,4 +1,4 @@
-package me.lele.worldSafe.listener.blocks.explosionprevention;
+package me.lele.worldSafe.listener.blocks.explosioncancel;
 
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
@@ -7,11 +7,11 @@ import org.bukkit.event.block.BlockExplodeEvent;
 
 import java.util.List;
 
-public class RespawnAnchorExplosionPrevention implements Listener {
+public class RespawnAnchorExplosionCancelListener implements Listener {
 
     private final List<String> worlds;
 
-    public RespawnAnchorExplosionPrevention(List<String> worlds) {
+    public RespawnAnchorExplosionCancelListener(List<String> worlds) {
         this.worlds = worlds;
     }
 
@@ -24,7 +24,7 @@ public class RespawnAnchorExplosionPrevention implements Listener {
             if (!worlds.contains(e.getExplodedBlockState().getLocation().getWorld().getName()))
                 return;
             // 清空爆炸影响的方块
-            e.blockList().clear();
+            e.setCancelled(true);
 
         }
 

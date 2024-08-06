@@ -7,13 +7,13 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.util.List;
 
-public class PhantomDamagePrevention implements Listener {
+public class PhantomDamagePreventionListener implements Listener {
 
     // 定义生效的世界
     private final List<String> worlds;
 
     // 把配置文件中的生效世界赋值到worlds
-    public PhantomDamagePrevention(List<String> worlds) {
+    public PhantomDamagePreventionListener(List<String> worlds) {
         this.worlds = worlds;
     }
 

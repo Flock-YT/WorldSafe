@@ -1,20 +1,18 @@
 package me.lele.worldSafe.listener.blocks.explosioncancel;
 
-import org.bukkit.Material;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.util.List;
 
-public class BedExplosionCancel implements Listener {
+public class BedExplosionCancelListener implements Listener {
 
     private final List<String> worlds;
 
-    public BedExplosionCancel(List<String> worlds) {
+    public BedExplosionCancelListener(List<String> worlds) {
         this.worlds = worlds;
     }
 

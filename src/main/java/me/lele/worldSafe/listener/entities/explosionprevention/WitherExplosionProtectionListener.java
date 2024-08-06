@@ -9,10 +9,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-public class WitherExplosionProtection implements Listener {
+public class WitherExplosionProtectionListener implements Listener {
 	private final List<String> worlds;
 
-	public WitherExplosionProtection(List<String> worlds) {
+	public WitherExplosionProtectionListener(List<String> worlds) {
 		this.worlds = worlds;
 	}
 

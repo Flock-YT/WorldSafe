@@ -7,11 +7,11 @@ import org.bukkit.event.block.BlockExplodeEvent;
 
 import java.util.List;
 
-public class BedExplosionProtection implements Listener {
+public class BedExplosionProtectionListener implements Listener {
 
     private final List<String> worlds;
 
-    public BedExplosionProtection(List<String> worlds) {
+    public BedExplosionProtectionListener(List<String> worlds) {
         this.worlds = worlds;
     }
 
