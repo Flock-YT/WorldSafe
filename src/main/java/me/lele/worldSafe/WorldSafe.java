@@ -23,6 +23,7 @@ import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionPr
 import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionListener;
 
+import me.lele.worldSafe.listener.entities.other.PhantomDamagePrevention;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
@@ -302,6 +303,17 @@ public final class WorldSafe extends JavaPlugin {
 			listeners.add(listener);
 		}
 
+		// 获取配置文件中phantomDamagePrevention配置的世界列表
+		List<String> phantomDamagePrevention = configManager.getConfig().node("phantomDamagePrevention")
+				.getList(String.class);
+		if (phantomDamagePrevention != null && !phantomDamagePrevention.isEmpty()) {
+			// 注册EnderMan监听器
+			PhantomDamagePrevention listener = new PhantomDamagePrevention(
+					phantomDamagePrevention);
+			getServer().getPluginManager().registerEvents(listener, this);
+			// 添加到已注册列表,方便后续取消
+			listeners.add(listener);
+		}
 
 	}
 

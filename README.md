@@ -2,7 +2,7 @@
 
 # 🌍 WorldSafe
 
-**WorldSafe** is a lightweight Minecraft Bukkit plugin designed to prevent certain entities and items from destroying the map.
+**WorldSafe** is a lightweight Minecraft Bukkit plugin designed to prevent certain entities and items from damaging the map.
 
 ## 📋 Installation Requirements
 
@@ -10,8 +10,8 @@
 
 ## ✨ Features
 
-- **Lightweight**: Minimal impact on performance, only loads necessary listeners to minimize unrelated checks.
-- **Easy Configuration**: User-friendly and simple to configure.
+- **Lightweight**: Minimal performance impact, only loads necessary listeners, and minimizes irrelevant checks.
+- **Easy Configuration**: User-friendly and simple configuration.
 
 ## 📖 Usage
 
@@ -19,53 +19,66 @@
 2. Restart the server to load the plugin.
 3. Make necessary settings in the configuration file.
 
-## 🛠️ Planned Features
+## 🛠️ Roadmap
 
-The plugin is currently undergoing updates. Please keep an eye on future updates!
+The plugin is continuously being updated. Please stay tuned for future updates. You can submit your requests in the issue section!
 
-# Currently Implemented Features
+## 🔐 Permissions
 
-## 🧱 Block Types
+Currently, there is only one permission: `worldsafe.admin`
+
+## ➡️ Commands
+
+### `/worldsafe help`
+View plugin help
+
+### `/worldsafe reload`
+Reload the plugin configuration
+
+# Implemented Features
+
+## 🧱 Block Classes
 
 ### Direct Explosion Cancellation
-*(If you configure the items in this category, the corresponding “Block Destruction Prevention with Explosion Damage Retained” category below can be left unconfigured)*
+*(If you configure items in this class, there's no need to configure items in the "Cancel block destruction but keep damage" class below)*
 
-- ✅ **bedExplosionCancel** - Prevent bed explosions (This configuration prevents players from using beds; if the Overworld is included, players will not be able to sleep.)
+- ✅ **bedExplosionCancel** - Prevent bed explosions (this configuration prevents players from using beds, which will cause them to be unable to sleep in the overworld)
 - ✅ **respawnAnchorExplosionCancel** - Prevent respawn anchor explosions
 - ✅ **tntExplosionCancel** - Prevent TNT explosions
 
-### Block Destruction Prevention with Explosion Damage Retained
+### Cancel Block Destruction but Keep Damage
 
 - ✅ **bedExplosionProtection** - Prevent bed explosions from destroying blocks
 - ✅ **respawnAnchorExplosionPrevention** - Prevent respawn anchor explosions from destroying blocks
 - ✅ **tntExplosionProtection** - Prevent TNT explosions from destroying blocks
 
-### Other Types
+### Other Classes
 
 - ✅ **cropTrampleProtection** - Prevent crops from being trampled
 - ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
 
-## 🧬 Entity Types
+## 🧬 Entity Classes
 
 ### Direct Explosion Cancellation
-*(If you configure the items in this category, the corresponding “Block Destruction Prevention with Explosion Damage Retained” category below can be left unconfigured)*
+*(If you configure items in this class, there's no need to configure items in the "Cancel block destruction but keep explosion damage" class below)*
 
 - ✅ **creeperExplosionCancel** - Prevent creeper explosions
 - ✅ **endCrystalExplosionCancel** - Prevent end crystal explosions
 - ✅ **ghastExplosionCancel** - Prevent ghast fireball explosions
 - ✅ **witherExplosionCancel** - Prevent wither explosions
 
-### Block Destruction Prevention with Explosion Damage Retained
+### Cancel Block Destruction but Keep Explosion Damage
 
 - ✅ **creeperExplosionProtection** - Prevent creeper explosions from destroying blocks
 - ✅ **endCrystalExplosionPrevention** - Prevent end crystal explosions from destroying blocks
 - ✅ **ghastExplosionProtection** - Prevent ghast fireball explosions from destroying blocks
 - ✅ **witherExplosionProtection** - Prevent wither explosions from destroying blocks
 
-### Other Types
+### Other Classes
 
-- ✅ **enderDragonBlockDestructionProtection** - Prevent the Ender Dragon from destroying blocks
-- ✅ **enderManBlockPickupProtection** - Prevent Endermen from picking up blocks
+- ✅ **enderDragonBlockDestructionProtection** - Prevent ender dragon from destroying blocks
+- ✅ **enderManBlockPickupProtection** - Prevent endermen from picking up blocks
+- ✅ **phantomDamagePrevention** - Prevent phantoms from causing damage
 
 ---
 

@@ -1,20 +1,23 @@
-#总开关
+# Main Switch / 总开关
 enabled: true
 
-#你需要什么功能就配置什么,用不到的功能就直接不配置就行
-#例如下面这个配置就代表苦力怕爆炸不破坏方块,然后下面是生效的世界.
-#要继续添加功能就继续配置就行,就像下面第二个配置一样,一直叠下去就好
-#可以在这里查看支持的功能:https://github.com/Flock-YT/WorldSafe/blob/master/README.md
+# Configure only the features you need, leave out the ones you don't need.
+# 你需要什么功能就配置什么，用不到的功能就直接不配置就行
+# For example, the configuration below means Creeper explosions do not destroy blocks, and it applies to the worlds listed below.
+# 例如下面这个配置就代表苦力怕爆炸不破坏方块，然后下面是生效的世界。
+# To add more features, continue configuring as shown in the second example below.
+# 要继续添加功能就继续配置就行，就像下面第二个配置一样，一直叠下去就好
+# You can view the supported features here: https://github.com/Flock-YT/WorldSafe?tab=readme-ov-file#currently-implemented-features
+# 可以在这里查看支持的功能: https://github.com/Flock-YT/WorldSafe/blob/master/README_CN.md#%E7%9B%AE%E5%89%8D%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%8A%9F%E8%83%BD
 
-#苦力怕爆炸不破坏方块
+# Creeper Explosion Protection / 苦力怕爆炸不破坏方块
 creeperExplosionProtection:
   - world
   - world_nether
   - world_the_end
 
-#TNT爆炸不破坏方块
+# TNT Explosion Protection / TNT爆炸不破坏方块
 tntExplosionProtection:
   - world
   - world_nether
   - world_the_end
-

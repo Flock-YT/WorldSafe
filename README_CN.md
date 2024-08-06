@@ -1,3 +1,4 @@
+
 [English](README.md) | **中文**
 
 # 🌍 WorldSafe
@@ -21,7 +22,19 @@
 
 ## 🛠️ 计划
 
-目前插件正在进行陆续更新中，请关注后续更新！
+目前插件正在进行陆续更新中，请关注后续更新，你可以在issue中提出你的需求！
+
+## 🔐 权限
+
+目前仅有一个权限：`worldsafe.admin`
+
+## ➡️ 指令
+
+### `/worldsafe help`
+查看插件帮助
+
+### `/worldsafe reload`
+重载插件配置
 
 # 目前实现的功能
 
@@ -66,6 +79,7 @@
 
 - ✅ **enderDragonBlockDestructionProtection** - 禁止末影龙破坏方块
 - ✅ **enderManBlockPickupProtection** - 禁止末影人搬运方块
+- ✅ **phantomDamagePrevention** - 禁止幻翼造成伤害
 
 ---
 
