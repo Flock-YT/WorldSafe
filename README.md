@@ -82,4 +82,6 @@ Reload the plugin configuration
 
 ---
 
+![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
+
 **Copyright Notice**: This plugin is developed by [Eric.乐乐 & 追求at](#), and follows the [MIT License](#).

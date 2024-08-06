@@ -64,7 +64,10 @@ public final class WorldSafe extends JavaPlugin {
 		loadCommand();
 
 		// 加载bStats
-		Metrics metrics = new Metrics(this, 22831);
+		if (configManager.getConfig().node("enabled-bstats").getBoolean(true)) {
+			Metrics metrics = new Metrics(this, 22831);
+		}
+
 		// Plugin startup logic
 
 		getLogger().info("插件加载完毕!");
@@ -318,13 +321,13 @@ public final class WorldSafe extends JavaPlugin {
 	}
 
 
-
 	private void loadCommand() {
 
 		// 注册重载命令
 		this.liteCommands = LiteCommandsBukkit.builder("WorldSafe").commands(new WorldSafeCommand(this)).build();
 
 	}
+
 
 	public void reloadFeatures() {
 		try {
@@ -334,5 +337,7 @@ public final class WorldSafe extends JavaPlugin {
 			e.printStackTrace();
 		}
 	}
+
+
 
 }

@@ -1,6 +1,9 @@
 # Main Switch / 总开关
 enabled: true
 
+# Allow bstats to collect plugin data / 允许bstats收集插件数据
+enabled-bstats: true
+
 # Configure only the features you need, leave out the ones you don't need.
 # 你需要什么功能就配置什么，用不到的功能就直接不配置就行
 # For example, the configuration below means Creeper explosions do not destroy blocks, and it applies to the worlds listed below.

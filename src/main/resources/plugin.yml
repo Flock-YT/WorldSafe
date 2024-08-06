@@ -1,4 +1,4 @@
 name: WorldSafe
-version: '1.0.1'
+version: '1.0.2'
 main: me.lele.worldSafe.WorldSafe
 api-version: '1.21'
