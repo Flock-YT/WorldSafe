@@ -43,7 +43,7 @@
 ### 直接取消爆炸类
 *(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留伤害的类”就可以不用配置了)*
 
-- ✅ **bedExplosionCancel** - 禁止床爆炸（此配置的原理是禁止玩家使用床，如果包含主世界会导致玩家无法睡觉）
+- ✅ **bedExplosionCancel** - 禁止床爆炸（此配置请勿包含主世界）
 - ✅ **respawnAnchorExplosionCancel** - 禁止重生锚爆炸
 - ✅ **tntExplosionCancel** - 禁止TNT爆炸
 

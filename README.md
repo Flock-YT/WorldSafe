@@ -42,7 +42,7 @@ Reload the plugin configuration
 ### Direct Explosion Cancellation
 *(If you configure items in this class, there's no need to configure items in the "Cancel block destruction but keep damage" class below)*
 
-- ✅ **bedExplosionCancel** - Prevent bed explosions (this configuration prevents players from using beds, which will cause them to be unable to sleep in the overworld)
+- ✅ **bedExplosionCancel** - Prevent bed explosions “(This configuration should not include the overworld)”
 - ✅ **respawnAnchorExplosionCancel** - Prevent respawn anchor explosions
 - ✅ **tntExplosionCancel** - Prevent TNT explosions
 
