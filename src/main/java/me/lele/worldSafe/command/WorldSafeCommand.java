@@ -28,7 +28,7 @@ public class WorldSafeCommand {
 
     @Execute(name = "help")
     public void helpCommand(@Context CommandSender sender) {
-        sender.sendMessage("/worldSafe reload - 重载命令");
+        sender.sendMessage("/worldsafe reload - 重载命令");
     }
 
     @Execute(name = "reload")

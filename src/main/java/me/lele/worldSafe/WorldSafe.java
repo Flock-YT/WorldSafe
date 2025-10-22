@@ -117,10 +117,22 @@ public final class WorldSafe extends JavaPlugin {
 
     public void reloadFeatures() throws ConfigurateException, SerializationException {
         synchronized (listeners) {
-            configManager.reloadConfig();
+            try {
+                configManager.reloadConfig();
+            } catch (ConfigurateException e) {
+                getLogger().log(Level.SEVERE, "无法重新加载配置文件，请检查 config.yml 是否存在语法错误。", e);
+                throw e;
+            }
+
             configureMetrics();
             unregisterListeners();
-            loadFeatures();
+
+            try {
+                loadFeatures();
+            } catch (SerializationException e) {
+                getLogger().log(Level.SEVERE, "无法重新加载插件功能，请检查配置格式。", e);
+                throw e;
+            }
         }
         getLogger().info("配置已重新加载。");
     }
