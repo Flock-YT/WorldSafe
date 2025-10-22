@@ -6,11 +6,10 @@ import dev.rollczi.litecommands.annotations.execute.Execute;
 import dev.rollczi.litecommands.annotations.permission.Permission;
 import me.lele.worldSafe.WorldSafe;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
+import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.serialize.SerializationException;
 
-import static me.lele.worldSafe.WorldSafe.configManager;
-import static me.lele.worldSafe.WorldSafe.listeners;
+import java.util.logging.Level;
 
 @Command(name = "worldsafe")
 @Permission("worldsafe.admin")
@@ -34,21 +33,13 @@ public class WorldSafeCommand {
 
     @Execute(name = "reload")
     void reloadCommand(@Context CommandSender sender) {
-        //重载配置
-        configManager.reloadConfig();
-        //套上线程同步锁,保证重载期间服务器停止处理,避免有生物在重载的几毫秒时间里破坏方块
-        synchronized (this) {
-            //重载监听器
-            for (Listener listener : listeners) {
-                HandlerList.unregisterAll(listener);
-            }
-            // 清空监听器列表
-            listeners.clear();
-            //重新注册监听器
+        try {
             plugin.reloadFeatures();
+            sender.sendMessage("配置已重载！");
+        } catch (ConfigurateException | SerializationException e) {
+            plugin.getLogger().log(Level.SEVERE, "重载配置失败", e);
+            sender.sendMessage("配置重载失败，请查看控制台以获取详细信息。");
         }
-
-        sender.sendMessage("配置已重载！");
     }
 
 }
