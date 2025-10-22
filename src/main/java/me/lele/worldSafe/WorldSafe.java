@@ -22,322 +22,159 @@ import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionPro
 import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionListener;
-
 import me.lele.worldSafe.listener.entities.other.PhantomDamagePreventionListener;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.serialize.SerializationException;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
+import java.util.logging.Level;
 
 public final class WorldSafe extends JavaPlugin {
 
-	public static List<Listener> listeners = new ArrayList<>();
-	public static ConfigManager configManager;
-	private LiteCommands<CommandSender> liteCommands;
+    private final List<Listener> listeners = new ArrayList<>();
+    private ConfigManager configManager;
+    private LiteCommands<CommandSender> liteCommands;
+    private Metrics metrics;
 
-	@Override
-	public void onEnable() {
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
 
-		// 确保配置文件存在，如果不存在则创建一个默认的
-		saveDefaultConfig();
+        File configFile = new File(getDataFolder(), "config.yml");
+        try {
+            configManager = new ConfigManager(configFile);
+            configureMetrics();
+            loadFeatures();
+        } catch (ConfigurateException e) {
+            getLogger().log(Level.SEVERE, "无法加载配置文件，请检查 config.yml 是否符合要求。", e);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        } catch (SerializationException e) {
+            getLogger().log(Level.SEVERE, "无法加载插件功能，请检查配置格式。", e);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
 
-		// 初始化 ConfigManager
-		File configFile = new File(getDataFolder(), "config.yml");
-		configManager = new ConfigManager(configFile);
+        loadCommand();
 
-		// 加载功能
-		try {
-			loadFeatures();
-		} catch (SerializationException e) {
-			getLogger().severe("无法加载插件,请联系开发者QQ:3288732918");
-			e.printStackTrace();
-			getServer().getPluginManager().disablePlugin(this); // 禁用插件
-		}
+        getLogger().info("插件加载完毕!");
+    }
 
-		// 加载指令
-		loadCommand();
+    @Override
+    public void onDisable() {
+        unregisterListeners();
+        if (liteCommands != null) {
+            liteCommands.unregister();
+            liteCommands = null;
+        }
+        getLogger().info("插件已卸载!");
+    }
 
-		// 加载bStats
-		if (configManager.getConfig().node("enabled-bstats").getBoolean(true)) {
-			Metrics metrics = new Metrics(this, 22831);
-		}
+    private void loadCommand() {
+        if (this.liteCommands != null) {
+            this.liteCommands.unregister();
+        }
 
-		// Plugin startup logic
+        this.liteCommands = LiteCommandsBukkit.builder("WorldSafe")
+                .commands(new WorldSafeCommand(this))
+                .build();
+    }
 
-		getLogger().info("插件加载完毕!");
+    private void loadFeatures() throws SerializationException {
+        boolean enabled = configManager.getConfig().node("enabled").getBoolean(true);
+        if (!enabled) {
+            getLogger().info("插件已禁用，未加载任何功能。");
+            return;
+        }
 
-	}
+        // 方块相关功能
+        registerListener("bedExplosionCancel", BedExplosionCancelListener::new);
+        registerListener("respawnAnchorExplosionCancel", RespawnAnchorExplosionCancelListener::new);
+        registerListener("tntExplosionCancel", TNTExplosionCancelListener::new);
 
-	@Override
-	public void onDisable() {
-		getLogger().info("插件已卸载!");
-		// Plugin shutdown logic
-	}
+        registerListener("bedExplosionProtection", BedExplosionProtectionListener::new);
+        registerListener("respawnAnchorExplosionPrevention", RespawnAnchorExplosionPreventionListener::new);
+        registerListener("tntExplosionProtection", TNTExplosionProtectionListener::new);
 
-	public void loadFeatures() throws SerializationException {
-		// 获取配置文件中的总开关
-		boolean enabled = configManager.getConfig().node("enabled").getBoolean();
-		if (!enabled) {
-			getLogger().info("插件已禁用，未加载任何功能。");
-			return;
-		}
+        registerListener("cropTrampleProtection", CropTrampleProtectionListener::new);
+        registerListener("dragonEggTeleportationPrevention", DragonEggTeleportationPreventionListener::new);
 
+        // 实体相关功能
+        registerListener("creeperExplosionCancel", CreeperExplosionCancelListener::new);
+        registerListener("endCrystalExplosionCancel", EndCrystalExplosionCancelListener::new);
+        registerListener("ghastExplosionCancel", GhastExplosionCancelListener::new);
+        registerListener("witherExplosionCancel", WitherExplosionCancelListener::new);
 
-//TODO:方块类
-	// TODO:直接取消爆炸类
+        registerListener("creeperExplosionProtection", CreeperExplosionProtectionListener::new);
+        registerListener("endCrystalExplosionPrevention", EndCrystalExplosionPreventionListener::new);
+        registerListener("ghastExplosionProtection", GhastExplosionProtectionListener::new);
+        registerListener("witherExplosionProtection", WitherExplosionProtectionListener::new);
 
-		// 获取配置文件bedExplosionCancel配置的世界列表
-		List<String> bedExplosionCancel = configManager.getConfig().node("bedExplosionCancel")
-				.getList(String.class);
-		if (bedExplosionCancel != null && !bedExplosionCancel.isEmpty()) {
-			// 注册BedExplosion监听器
-			BedExplosionCancelListener listener = new BedExplosionCancelListener(bedExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+        registerListener("enderDragonBlockDestructionProtection", EnderDragonBlockDestructionProtectionListener::new);
+        registerListener("enderManBlockPickupProtection", EnderManBlockPickupProtectionListener::new);
+        registerListener("phantomDamagePrevention", PhantomDamagePreventionListener::new);
+    }
 
-		// 获取配置文件respawnAnchorExplosionCancel配置的世界列表
-		List<String> respawnAnchorExplosionCancel = configManager.getConfig().node("respawnAnchorExplosionCancel")
-				.getList(String.class);
-		if (respawnAnchorExplosionCancel != null && !respawnAnchorExplosionCancel.isEmpty()) {
-			// 注册EndCrystal监听器
-			RespawnAnchorExplosionCancelListener listener = new RespawnAnchorExplosionCancelListener(respawnAnchorExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+    public void reloadFeatures() throws ConfigurateException, SerializationException {
+        synchronized (listeners) {
+            try {
+                configManager.reloadConfig();
+            } catch (ConfigurateException e) {
+                getLogger().log(Level.SEVERE, "无法重新加载配置文件，请检查 config.yml 是否存在语法错误。", e);
+                throw e;
+            }
 
-		// 获取配置文件tntExplosionCancel配置的世界列表
-		List<String> tntExplosionCancel = configManager.getConfig().node("tntExplosionCancel")
-				.getList(String.class);
-		if (tntExplosionCancel != null && !tntExplosionCancel.isEmpty()) {
-			// 注册TNT监听器
-			TNTExplosionCancelListener listener = new TNTExplosionCancelListener(tntExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+            configureMetrics();
+            unregisterListeners();
 
-	// TODO:取消破坏方块保留伤害类
+            try {
+                loadFeatures();
+            } catch (SerializationException e) {
+                getLogger().log(Level.SEVERE, "无法重新加载插件功能，请检查配置格式。", e);
+                throw e;
+            }
+        }
+        getLogger().info("配置已重新加载。");
+    }
 
-		// 获取配置文件bedExplosionProtection配置的世界列表
-		List<String> bedExplosionProtection = configManager.getConfig().node("bedExplosionProtection")
-				.getList(String.class);
-		if (bedExplosionProtection != null && !bedExplosionProtection.isEmpty()) {
-			// 注册BedExplosion监听器
-			BedExplosionProtectionListener listener = new BedExplosionProtectionListener(bedExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+    private void registerListener(String configNode, Function<List<String>, ? extends Listener> factory)
+            throws SerializationException {
+        List<String> worlds = configManager.getConfig().node(configNode).getList(String.class, List.of());
+        if (worlds.isEmpty()) {
+            getLogger().log(Level.FINE, () -> "跳过注册 " + configNode + "，因为未配置任何世界。");
+            return;
+        }
+        Listener listener = factory.apply(worlds);
+        getServer().getPluginManager().registerEvents(listener, this);
+        listeners.add(listener);
+    }
 
-		// 获取配置文件respawnAnchorExplosionPrevention配置的世界列表
-		List<String> respawnAnchorExplosionPrevention = configManager.getConfig().node("respawnAnchorExplosionPrevention")
-				.getList(String.class);
-		if (respawnAnchorExplosionPrevention != null && !respawnAnchorExplosionPrevention.isEmpty()) {
-			// 注册EndCrystal监听器
-			RespawnAnchorExplosionPreventionListener listener = new RespawnAnchorExplosionPreventionListener(respawnAnchorExplosionPrevention);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+    private void unregisterListeners() {
+        listeners.forEach(HandlerList::unregisterAll);
+        listeners.clear();
+    }
 
-		// 获取配置文件tntExplosionProtection配置的世界列表
-		List<String> tntExplosionProtection = configManager.getConfig().node("tntExplosionProtection")
-				.getList(String.class);
-		if (tntExplosionProtection != null && !tntExplosionProtection.isEmpty()) {
-			// 注册TNT监听器
-			TNTExplosionProtectionListener listener = new TNTExplosionProtectionListener(tntExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
 
-	// TODO:其他类
-
-		// 获取配置文件中cropTrampleProtection配置的世界列表
-		List<String> cropTrampleProtection = configManager.getConfig().node("cropTrampleProtection")
-				.getList(String.class);
-		if (cropTrampleProtection != null && !cropTrampleProtection.isEmpty()) {
-			// 注册EntityChangeBlock监听器
-			CropTrampleProtectionListener listener = new CropTrampleProtectionListener(cropTrampleProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件中dragonEggTeleportationPrevention配置的世界列表
-		List<String> dragonEggTeleportationPrevention = configManager.getConfig()
-				.node("dragonEggTeleportationPrevention").getList(String.class);
-		if (dragonEggTeleportationPrevention != null && !dragonEggTeleportationPrevention.isEmpty()) {
-			// 注册DragonEgg监听器
-			DragonEggTeleportationPreventionListener listener = new DragonEggTeleportationPreventionListener(
-					dragonEggTeleportationPrevention);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-//TODO:实体类
-	// TODO:直接取消爆炸类
-
-		// 获取配置文件中creeperExplosionCancel配置的世界列表
-		List<String> creeperExplosionCancel = configManager.getConfig().node("creeperExplosionCancel")
-				.getList(String.class);
-		if (creeperExplosionCancel != null && !creeperExplosionCancel.isEmpty()) {
-			// 注册Creeper监听器
-			CreeperExplosionCancelListener listener = new CreeperExplosionCancelListener(
-					creeperExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件endCrystalExplosionCancel配置的世界列表
-		List<String> endCrystalExplosionCancel = configManager.getConfig().node("endCrystalExplosionCancel")
-				.getList(String.class);
-		if (endCrystalExplosionCancel != null && !endCrystalExplosionCancel.isEmpty()) {
-			// 注册EndCrystal监听器
-			EndCrystalExplosionCancelListener listener = new EndCrystalExplosionCancelListener(endCrystalExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件ghastExplosionCancel配置的世界列表
-		List<String> ghastExplosionCancel = configManager.getConfig().node("ghastExplosionCancel")
-				.getList(String.class);
-		if (ghastExplosionCancel != null && !ghastExplosionCancel.isEmpty()) {
-			// 注册TNT监听器
-			GhastExplosionCancelListener listener = new GhastExplosionCancelListener(ghastExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件witherExplosionCancel配置的世界列表
-		List<String> witherExplosionCancel = configManager.getConfig().node("witherExplosionCancel")
-				.getList(String.class);
-		if (witherExplosionCancel != null && !witherExplosionCancel.isEmpty()) {
-			// 注册TNT监听器
-			WitherExplosionCancelListener listener = new WitherExplosionCancelListener(witherExplosionCancel);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-	// TODO:取消破坏方块保留伤害类
-
-		// 获取配置文件中creeperExplosionProtection配置的世界列表
-		List<String> creeperExplosionProtection = configManager.getConfig().node("creeperExplosionProtection")
-				.getList(String.class);
-		if (creeperExplosionProtection != null && !creeperExplosionProtection.isEmpty()) {
-			// 注册Creeper监听器
-			CreeperExplosionProtectionListener listener = new CreeperExplosionProtectionListener(
-					creeperExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件endCrystalExplosionPrevention配置的世界列表
-		List<String> endCrystalExplosionPrevention = configManager.getConfig().node("endCrystalExplosionPrevention")
-				.getList(String.class);
-		if (endCrystalExplosionPrevention != null && !endCrystalExplosionPrevention.isEmpty()) {
-			// 注册EndCrystal监听器
-			EndCrystalExplosionPreventionListener listener = new EndCrystalExplosionPreventionListener(endCrystalExplosionPrevention);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件ghastExplosionProtection配置的世界列表
-		List<String> ghastExplosionProtection = configManager.getConfig().node("ghastExplosionProtection")
-				.getList(String.class);
-		if (ghastExplosionProtection != null && !ghastExplosionProtection.isEmpty()) {
-			// 注册TNT监听器
-			GhastExplosionProtectionListener listener = new GhastExplosionProtectionListener(ghastExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件witherExplosionProtection配置的世界列表
-		List<String> witherExplosionProtection = configManager.getConfig().node("witherExplosionProtection")
-				.getList(String.class);
-		if (witherExplosionProtection != null && !witherExplosionProtection.isEmpty()) {
-			// 注册Wither监听器
-			WitherExplosionProtectionListener listener = new WitherExplosionProtectionListener(witherExplosionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-	// TODO:其他类
-
-		// 获取配置文件中enderDragonBlockDestructionProtection配置的世界列表
-		List<String> enderDragonBlockDestructionProtection = configManager.getConfig()
-				.node("enderDragonBlockDestructionProtection").getList(String.class);
-		if (enderDragonBlockDestructionProtection != null && !enderDragonBlockDestructionProtection.isEmpty()) {
-			// 注册EnderDragon监听器
-			EnderDragonBlockDestructionProtectionListener listener = new EnderDragonBlockDestructionProtectionListener(
-					enderDragonBlockDestructionProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件中enderManBlockPickupProtection配置的世界列表
-		List<String> enderManBlockPickupProtection = configManager.getConfig().node("enderManBlockPickupProtection")
-				.getList(String.class);
-		if (enderManBlockPickupProtection != null && !enderManBlockPickupProtection.isEmpty()) {
-			// 注册EnderMan监听器
-			EnderManBlockPickupProtectionListener listener = new EnderManBlockPickupProtectionListener(
-					enderManBlockPickupProtection);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-		// 获取配置文件中phantomDamagePrevention配置的世界列表
-		List<String> phantomDamagePrevention = configManager.getConfig().node("phantomDamagePrevention")
-				.getList(String.class);
-		if (phantomDamagePrevention != null && !phantomDamagePrevention.isEmpty()) {
-			// 注册EnderMan监听器
-			PhantomDamagePreventionListener listener = new PhantomDamagePreventionListener(
-					phantomDamagePrevention);
-			getServer().getPluginManager().registerEvents(listener, this);
-			// 添加到已注册列表,方便后续取消
-			listeners.add(listener);
-		}
-
-	}
-
-
-	private void loadCommand() {
-
-		// 注册重载命令
-		this.liteCommands = LiteCommandsBukkit.builder("WorldSafe").commands(new WorldSafeCommand(this)).build();
-
-	}
-
-
-	public void reloadFeatures() {
-		try {
-			loadFeatures();
-		} catch (IOException e) {
-			getLogger().severe("重载配置失败!");
-			e.printStackTrace();
-		}
-	}
-
-
-
+    private void configureMetrics() {
+        boolean enableMetrics = configManager.getConfig().node("enabled-bstats").getBoolean(true);
+        if (enableMetrics) {
+            if (metrics == null) {
+                metrics = new Metrics(this, 22831);
+            }
+        } else if (metrics != null) {
+            getLogger().warning("已禁用 bStats，但需要重启服务器才能完全停止数据上报。");
+            metrics = null;
+        }
+    }
 }
