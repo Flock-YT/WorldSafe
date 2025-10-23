@@ -1,6 +1,7 @@
 package me.lele.worldSafe.listener.entities.other;
 
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,16 +24,24 @@ public class EnderManBlockPickupProtectionListener implements Listener {
 		// 检查是否是末影人
 		if (event.getEntityType() == EntityType.ENDERMAN) {
 			// 获取事件触发的世界
-			World world = event.getBlock().getWorld();
+                        Block block = event.getBlock();
+                        World world = getWorld(block);
+                        if (!isWorldEnabled(world)) {
+                                return;
+                        }
+                        // 阻止事件
+                        event.setCancelled(true);
 
-			// 判断是否属于生效的世界
-			if (worlds.contains(world.getName())) {
-				// 阻止事件
-				event.setCancelled(true);
-			}
+                }
 
-		}
+        }
 
-	}
+        private World getWorld(Block block) {
+                return block != null ? block.getWorld() : null;
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 
 }
