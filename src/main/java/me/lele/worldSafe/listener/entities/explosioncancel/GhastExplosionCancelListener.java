@@ -1,22 +1,20 @@
 package me.lele.worldSafe.listener.entities.explosioncancel;
 
-import org.bukkit.World;
+import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
 
-public class GhastExplosionCancelListener implements Listener {
-	private final List<String> worlds;
+public class GhastExplosionCancelListener extends WorldScopedFeature {
 
-	public GhastExplosionCancelListener(List<String> worlds) {
-		this.worlds = worlds;
-	}
+        public GhastExplosionCancelListener(List<String> worlds) {
+                super(worlds);
+        }
 
 	@EventHandler
 	void onFileballExplode(EntityExplodeEvent e) {
@@ -24,8 +22,7 @@ public class GhastExplosionCancelListener implements Listener {
 		if (e.getEntityType() != EntityType.FIREBALL)
 			return;
                 Fireball ent = (Fireball) e.getEntity();
-                World world = getWorld(ent);
-                if (!isWorldEnabled(world))
+                if (!isWorldEnabled(getWorld(ent)))
                         return;
                 // 检测是否为恶魂发出的火球
                 if (!(ent.getShooter() instanceof Ghast))
@@ -40,8 +37,7 @@ public class GhastExplosionCancelListener implements Listener {
 		if (e.getDamager().getType() != EntityType.FIREBALL)
 			return;
                 Fireball ent = (Fireball) e.getDamager();
-                World world = getWorld(ent);
-                if (!isWorldEnabled(world))
+                if (!isWorldEnabled(getWorld(ent)))
                         return;
                 // 检测是否为恶魂发出的火球
                 if (!(ent.getShooter() instanceof Ghast))
@@ -50,11 +46,4 @@ public class GhastExplosionCancelListener implements Listener {
                 e.setCancelled(true);
         }
 
-        private World getWorld(Fireball fireball) {
-                return fireball != null ? fireball.getWorld() : null;
-        }
-
-        private boolean isWorldEnabled(World world) {
-                return world != null && worlds.contains(world.getName());
-        }
 }

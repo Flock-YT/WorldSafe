@@ -1,21 +1,19 @@
 package me.lele.worldSafe.listener.entities.explosionprevention;
 
-import java.util.List;
-
-import org.bukkit.World;
+import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-public class GhastExplosionProtectionListener implements Listener {
-	private final List<String> worlds;
+import java.util.List;
 
-	public GhastExplosionProtectionListener(List<String> worlds) {
-		this.worlds = worlds;
-	}
+public class GhastExplosionProtectionListener extends WorldScopedFeature {
+
+        public GhastExplosionProtectionListener(List<String> worlds) {
+                super(worlds);
+        }
 
 	@EventHandler
 	void onFileballExplode(EntityExplodeEvent e) {
@@ -23,21 +21,12 @@ public class GhastExplosionProtectionListener implements Listener {
 		if (e.getEntityType() != EntityType.FIREBALL)
 			return;
                 Fireball ent = (Fireball) e.getEntity();
-                World world = getWorld(ent);
-                if (!isWorldEnabled(world))
+                if (!isWorldEnabled(getWorld(ent)))
                         return;
                 // 检测是否为恶魂发出的火球
                 if (!(ent.getShooter() instanceof Ghast))
                         return;
                 // 清空受影响的方块
                 e.blockList().clear();
-        }
-
-        private World getWorld(Fireball fireball) {
-                return fireball != null ? fireball.getWorld() : null;
-        }
-
-        private boolean isWorldEnabled(World world) {
-                return world != null && worlds.contains(world.getName());
         }
 }
