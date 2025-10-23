@@ -7,13 +7,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class BedExplosionCancelListener extends AbstractWorldLimitedListener {
 
-        public BedExplosionCancelListener(Collection<String> worlds) {
+        public BedExplosionCancelListener(List<String> worlds) {
                 super(worlds);
         }
 

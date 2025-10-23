@@ -7,13 +7,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class GhastExplosionCancelListener extends AbstractWorldLimitedListener {
 
-        public GhastExplosionCancelListener(Collection<String> worlds) {
+        public GhastExplosionCancelListener(List<String> worlds) {
                 super(worlds);
         }
 

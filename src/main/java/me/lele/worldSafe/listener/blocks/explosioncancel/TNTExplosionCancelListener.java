@@ -5,13 +5,13 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class TNTExplosionCancelListener extends AbstractWorldLimitedListener {
 
-        public TNTExplosionCancelListener(Collection<String> worlds) {
+        public TNTExplosionCancelListener(List<String> worlds) {
                 super(worlds);
         }
 

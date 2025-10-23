@@ -1,6 +1,6 @@
 package me.lele.worldSafe.listener.entities.explosioncancel;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -11,7 +11,7 @@ import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class WitherExplosionCancelListener extends AbstractWorldLimitedListener {
 
-        public WitherExplosionCancelListener(Collection<String> worlds) {
+        public WitherExplosionCancelListener(List<String> worlds) {
                 super(worlds);
         }
 

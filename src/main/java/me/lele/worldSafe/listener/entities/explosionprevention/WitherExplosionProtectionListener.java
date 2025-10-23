@@ -1,6 +1,6 @@
 package me.lele.worldSafe.listener.entities.explosionprevention;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -12,7 +12,7 @@ import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class WitherExplosionProtectionListener extends AbstractWorldLimitedListener {
 
-        public WitherExplosionProtectionListener(Collection<String> worlds) {
+        public WitherExplosionProtectionListener(List<String> worlds) {
                 super(worlds);
         }
 

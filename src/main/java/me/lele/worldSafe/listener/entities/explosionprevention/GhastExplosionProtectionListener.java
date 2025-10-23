@@ -1,6 +1,6 @@
 package me.lele.worldSafe.listener.entities.explosionprevention;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
@@ -12,7 +12,7 @@ import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class GhastExplosionProtectionListener extends AbstractWorldLimitedListener {
 
-        public GhastExplosionProtectionListener(Collection<String> worlds) {
+        public GhastExplosionProtectionListener(List<String> worlds) {
                 super(worlds);
         }
 

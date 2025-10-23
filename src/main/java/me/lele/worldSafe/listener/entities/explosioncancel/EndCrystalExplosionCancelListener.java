@@ -4,13 +4,13 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class EndCrystalExplosionCancelListener extends AbstractWorldLimitedListener {
 
-    public EndCrystalExplosionCancelListener(Collection<String> worlds) {
+    public EndCrystalExplosionCancelListener(List<String> worlds) {
         super(worlds);
     }
 

@@ -4,13 +4,13 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockExplodeEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class RespawnAnchorExplosionCancelListener extends AbstractWorldLimitedListener {
 
-    public RespawnAnchorExplosionCancelListener(Collection<String> worlds) {
+    public RespawnAnchorExplosionCancelListener(List<String> worlds) {
         super(worlds);
     }
 

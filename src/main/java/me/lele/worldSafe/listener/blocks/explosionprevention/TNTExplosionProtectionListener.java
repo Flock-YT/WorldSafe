@@ -1,6 +1,6 @@
 package me.lele.worldSafe.listener.blocks.explosionprevention;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -11,7 +11,7 @@ import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class TNTExplosionProtectionListener extends AbstractWorldLimitedListener {
 
-        public TNTExplosionProtectionListener(Collection<String> worlds) {
+        public TNTExplosionProtectionListener(List<String> worlds) {
                 super(worlds);
         }
 

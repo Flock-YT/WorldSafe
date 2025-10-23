@@ -4,13 +4,13 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class PhantomDamagePreventionListener extends AbstractWorldLimitedListener {
 
-    public PhantomDamagePreventionListener(Collection<String> worlds) {
+    public PhantomDamagePreventionListener(List<String> worlds) {
         super(worlds);
     }
 

@@ -1,6 +1,6 @@
 package me.lele.worldSafe.listener.blocks.other;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -11,7 +11,7 @@ import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class CropTrampleProtectionListener extends AbstractWorldLimitedListener {
 
-        public CropTrampleProtectionListener(Collection<String> worlds) {
+        public CropTrampleProtectionListener(List<String> worlds) {
                 super(worlds);
         }
 

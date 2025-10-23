@@ -4,13 +4,13 @@ import org.bukkit.block.data.type.Bed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockExplodeEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class BedExplosionProtectionListener extends AbstractWorldLimitedListener {
 
-    public BedExplosionProtectionListener(Collection<String> worlds) {
+    public BedExplosionProtectionListener(List<String> worlds) {
         super(worlds);
     }
 

@@ -1,6 +1,6 @@
 package me.lele.worldSafe.listener.entities.other;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -12,7 +12,7 @@ import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class EnderDragonBlockDestructionProtectionListener extends AbstractWorldLimitedListener {
 
-        public EnderDragonBlockDestructionProtectionListener(Collection<String> worlds) {
+        public EnderDragonBlockDestructionProtectionListener(List<String> worlds) {
                 super(worlds);
         }
 

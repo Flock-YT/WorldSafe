@@ -4,13 +4,13 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-import java.util.Collection;
+import java.util.List;
 
 import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
 public class EnderManBlockPickupProtectionListener extends AbstractWorldLimitedListener {
 
-        public EnderManBlockPickupProtectionListener(Collection<String> worlds) {
+        public EnderManBlockPickupProtectionListener(List<String> worlds) {
                 super(worlds);
         }
 
