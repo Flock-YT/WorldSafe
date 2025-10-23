@@ -2,19 +2,16 @@ package me.lele.worldSafe.listener.entities.other;
 
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
-import java.util.List;
+import java.util.Collection;
 
-public class PhantomDamagePreventionListener implements Listener {
+import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
-    // 定义生效的世界
-    private final List<String> worlds;
+public class PhantomDamagePreventionListener extends AbstractWorldLimitedListener {
 
-    // 把配置文件中的生效世界赋值到worlds
-    public PhantomDamagePreventionListener(List<String> worlds) {
-        this.worlds = worlds;
+    public PhantomDamagePreventionListener(Collection<String> worlds) {
+        super(worlds);
     }
 
     @EventHandler
@@ -23,7 +20,7 @@ public class PhantomDamagePreventionListener implements Listener {
         if (e.getDamager().getType() != EntityType.PHANTOM)
             return;
         // 检测此世界是否启用
-        if (!worlds.contains(e.getDamager().getWorld().getName()))
+        if (!isWorldEnabled(e.getDamager()))
             return;
         //消除幻翼伤害
         e.setCancelled(true);

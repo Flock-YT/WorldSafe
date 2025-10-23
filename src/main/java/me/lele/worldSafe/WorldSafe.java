@@ -32,6 +32,7 @@ import org.spongepowered.configurate.serialize.SerializationException;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -135,9 +136,9 @@ public final class WorldSafe extends JavaPlugin {
                 }
         }
 
-        private void registerListener(String configNode, Function<List<String>, ? extends Listener> factory)
+        private void registerListener(String configNode, Function<Collection<String>, ? extends Listener> factory)
                         throws SerializationException {
-                List<String> worlds = configManager.getConfig().node(configNode).getList(String.class);
+                Collection<String> worlds = configManager.getConfig().node(configNode).getList(String.class);
                 if (worlds == null || worlds.isEmpty()) {
                         return;
                 }

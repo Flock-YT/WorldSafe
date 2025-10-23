@@ -2,17 +2,16 @@ package me.lele.worldSafe.listener.blocks.explosionprevention;
 
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockExplodeEvent;
 
-import java.util.List;
+import java.util.Collection;
 
-public class BedExplosionProtectionListener implements Listener {
+import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
-    private final List<String> worlds;
+public class BedExplosionProtectionListener extends AbstractWorldLimitedListener {
 
-    public BedExplosionProtectionListener(List<String> worlds) {
-        this.worlds = worlds;
+    public BedExplosionProtectionListener(Collection<String> worlds) {
+        super(worlds);
     }
 
     @EventHandler
@@ -21,7 +20,7 @@ public class BedExplosionProtectionListener implements Listener {
         // 检测是否为 床 爆炸
         if (e.getExplodedBlockState().getBlockData() instanceof Bed){
             // 判断是否启用这个世界
-            if (!worlds.contains(e.getExplodedBlockState().getLocation().getWorld().getName()))
+            if (!isWorldEnabled(e.getExplodedBlockState().getLocation()))
                 return;
             // 清空爆炸影响的方块
             e.blockList().clear();
