@@ -2,17 +2,16 @@ package me.lele.worldSafe.listener.blocks.explosioncancel;
 
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockExplodeEvent;
 
-import java.util.List;
+import java.util.Collection;
 
-public class RespawnAnchorExplosionCancelListener implements Listener {
+import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
-    private final List<String> worlds;
+public class RespawnAnchorExplosionCancelListener extends AbstractWorldLimitedListener {
 
-    public RespawnAnchorExplosionCancelListener(List<String> worlds) {
-        this.worlds = worlds;
+    public RespawnAnchorExplosionCancelListener(Collection<String> worlds) {
+        super(worlds);
     }
 
     @EventHandler
@@ -21,7 +20,7 @@ public class RespawnAnchorExplosionCancelListener implements Listener {
         // 检测是否为 重生锚 爆炸
         if (e.getExplodedBlockState().getBlockData().getMaterial() == Material.RESPAWN_ANCHOR) {
             // 判断是否启用这个世界
-            if (!worlds.contains(e.getExplodedBlockState().getLocation().getWorld().getName()))
+            if (!isWorldEnabled(e.getExplodedBlockState().getLocation()))
                 return;
             // 清空爆炸影响的方块
             e.setCancelled(true);

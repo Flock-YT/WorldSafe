@@ -1,37 +1,30 @@
 package me.lele.worldSafe.listener.entities.other;
 
-import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
-import java.util.List;
+import java.util.Collection;
 
-public class EnderManBlockPickupProtectionListener implements Listener {
+import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
-	// 定义生效的世界
-	private final List<String> worlds;
+public class EnderManBlockPickupProtectionListener extends AbstractWorldLimitedListener {
 
-	// 把配置文件中的生效世界赋值到worlds
-	public EnderManBlockPickupProtectionListener(List<String> worlds) {
-		this.worlds = worlds;
-	}
+        public EnderManBlockPickupProtectionListener(Collection<String> worlds) {
+                super(worlds);
+        }
 
-	@EventHandler
-	public void onEnderManBlockPickup(EntityChangeBlockEvent event) {
-		// 检查是否是末影人
-		if (event.getEntityType() == EntityType.ENDERMAN) {
-			// 获取事件触发的世界
-			World world = event.getBlock().getWorld();
+        @EventHandler
+        public void onEnderManBlockPickup(EntityChangeBlockEvent event) {
+                // 检查是否是末影人
+                if (event.getEntityType() == EntityType.ENDERMAN) {
+                        // 判断是否属于生效的世界
+                        if (isWorldEnabled(event.getBlock().getWorld())) {
+                                // 阻止事件
+                                event.setCancelled(true);
+                        }
 
-			// 判断是否属于生效的世界
-			if (worlds.contains(world.getName())) {
-				// 阻止事件
-				event.setCancelled(true);
-			}
-
-		}
+                }
 
 	}
 

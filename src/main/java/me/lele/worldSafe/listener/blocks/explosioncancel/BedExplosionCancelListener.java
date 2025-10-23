@@ -4,19 +4,18 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.List;
+import java.util.Collection;
 
-public class BedExplosionCancelListener implements Listener {
+import me.lele.worldSafe.listener.AbstractWorldLimitedListener;
 
-	private final List<String> worlds;
+public class BedExplosionCancelListener extends AbstractWorldLimitedListener {
 
-	public BedExplosionCancelListener(List<String> worlds) {
-		this.worlds = worlds;
-	}
+        public BedExplosionCancelListener(Collection<String> worlds) {
+                super(worlds);
+        }
 
 	@EventHandler
 	void onPlayerInteractEvent(PlayerInteractEvent e) {
@@ -30,15 +29,15 @@ public class BedExplosionCancelListener implements Listener {
 		// 判断是否在主世界触发
 		if (w.getEnvironment() == Environment.NORMAL)
 			return;
-		// 检查玩家点击的是否为床
-		if (!(e.getClickedBlock().getBlockData() instanceof Bed))
-			return;
-		// 判断是否启用这个世界
-		if (!worlds.contains(w.getName()))
-			return;
-		// 取消事件，防止爆炸
-		e.setCancelled(true);
+                // 检查玩家点击的是否为床
+                if (!(e.getClickedBlock().getBlockData() instanceof Bed))
+                        return;
+                // 判断是否启用这个世界
+                if (!isWorldEnabled(w))
+                        return;
+                // 取消事件，防止爆炸
+                e.setCancelled(true);
 
-	}
+        }
 
 }
