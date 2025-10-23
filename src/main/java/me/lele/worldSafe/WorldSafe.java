@@ -34,13 +34,37 @@ import org.spongepowered.configurate.serialize.SerializationException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+
+import static java.util.Map.entry;
 
 public final class WorldSafe extends JavaPlugin {
 
         private final List<Listener> listeners = new ArrayList<>();
-	public static ConfigManager configManager;
-	private LiteCommands<CommandSender> liteCommands;
+        public static ConfigManager configManager;
+        private LiteCommands<CommandSender> liteCommands;
+
+        private static final Map<String, Function<List<String>, ? extends Listener>> FEATURES = Map.ofEntries(
+                        entry("bedExplosionCancel", BedExplosionCancelListener::new),
+                        entry("respawnAnchorExplosionCancel", RespawnAnchorExplosionCancelListener::new),
+                        entry("tntExplosionCancel", TNTExplosionCancelListener::new),
+                        entry("bedExplosionProtection", BedExplosionProtectionListener::new),
+                        entry("respawnAnchorExplosionPrevention", RespawnAnchorExplosionPreventionListener::new),
+                        entry("tntExplosionProtection", TNTExplosionProtectionListener::new),
+                        entry("cropTrampleProtection", CropTrampleProtectionListener::new),
+                        entry("dragonEggTeleportationPrevention", DragonEggTeleportationPreventionListener::new),
+                        entry("creeperExplosionCancel", CreeperExplosionCancelListener::new),
+                        entry("endCrystalExplosionCancel", EndCrystalExplosionCancelListener::new),
+                        entry("ghastExplosionCancel", GhastExplosionCancelListener::new),
+                        entry("witherExplosionCancel", WitherExplosionCancelListener::new),
+                        entry("creeperExplosionProtection", CreeperExplosionProtectionListener::new),
+                        entry("endCrystalExplosionPrevention", EndCrystalExplosionPreventionListener::new),
+                        entry("ghastExplosionProtection", GhastExplosionProtectionListener::new),
+                        entry("witherExplosionProtection", WitherExplosionProtectionListener::new),
+                        entry("enderDragonBlockDestructionProtection", EnderDragonBlockDestructionProtectionListener::new),
+                        entry("enderManBlockPickupProtection", EnderManBlockPickupProtectionListener::new),
+                        entry("phantomDamagePrevention", PhantomDamagePreventionListener::new));
 
 	@Override
 	public void onEnable() {
@@ -99,34 +123,11 @@ public final class WorldSafe extends JavaPlugin {
                         return;
                 }
 
-                // 方块相关功能
-                registerListener("bedExplosionCancel", BedExplosionCancelListener::new);
-                registerListener("respawnAnchorExplosionCancel", RespawnAnchorExplosionCancelListener::new);
-                registerListener("tntExplosionCancel", TNTExplosionCancelListener::new);
+                for (Map.Entry<String, Function<List<String>, ? extends Listener>> feature : FEATURES.entrySet()) {
+                        registerListener(feature.getKey(), feature.getValue());
+                }
 
-                registerListener("bedExplosionProtection", BedExplosionProtectionListener::new);
-                registerListener("respawnAnchorExplosionPrevention", RespawnAnchorExplosionPreventionListener::new);
-                registerListener("tntExplosionProtection", TNTExplosionProtectionListener::new);
-
-                registerListener("cropTrampleProtection", CropTrampleProtectionListener::new);
-                registerListener("dragonEggTeleportationPrevention", DragonEggTeleportationPreventionListener::new);
-
-                // 实体相关功能
-                registerListener("creeperExplosionCancel", CreeperExplosionCancelListener::new);
-                registerListener("endCrystalExplosionCancel", EndCrystalExplosionCancelListener::new);
-                registerListener("ghastExplosionCancel", GhastExplosionCancelListener::new);
-                registerListener("witherExplosionCancel", WitherExplosionCancelListener::new);
-
-                registerListener("creeperExplosionProtection", CreeperExplosionProtectionListener::new);
-                registerListener("endCrystalExplosionPrevention", EndCrystalExplosionPreventionListener::new);
-                registerListener("ghastExplosionProtection", GhastExplosionProtectionListener::new);
-                registerListener("witherExplosionProtection", WitherExplosionProtectionListener::new);
-
-                registerListener("enderDragonBlockDestructionProtection", EnderDragonBlockDestructionProtectionListener::new);
-                registerListener("enderManBlockPickupProtection", EnderManBlockPickupProtectionListener::new);
-                registerListener("phantomDamagePrevention", PhantomDamagePreventionListener::new);
-
-	}
+        }
 
 
 	private void loadCommand() {
