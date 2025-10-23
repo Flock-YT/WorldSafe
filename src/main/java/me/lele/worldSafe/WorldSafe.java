@@ -48,18 +48,26 @@ public final class WorldSafe extends JavaPlugin {
 		// 确保配置文件存在，如果不存在则创建一个默认的
 		saveDefaultConfig();
 
-		// 初始化 ConfigManager
-		File configFile = new File(getDataFolder(), "config.yml");
-		configManager = new ConfigManager(configFile);
+                // 初始化 ConfigManager
+                File configFile = new File(getDataFolder(), "config.yml");
+                configManager = new ConfigManager(configFile);
 
-		// 加载功能
-		try {
-			loadFeatures();
-		} catch (SerializationException e) {
-			getLogger().severe("无法加载插件,请联系开发者QQ:3288732918");
-			e.printStackTrace();
-			getServer().getPluginManager().disablePlugin(this); // 禁用插件
-		}
+                if (configManager.getConfig() == null) {
+                        getLogger().severe("配置加载失败，插件将被禁用。");
+                        getServer().getPluginManager().disablePlugin(this);
+                        return;
+                }
+
+                // 加载功能
+                try {
+                        loadFeatures();
+                } catch (SerializationException e) {
+                        String pathInfo = e.path() != null ? e.path().toString() : "未知节点";
+                        getLogger().severe("配置节点 " + pathInfo + " 解析失败: " + e.getMessage());
+                        getLogger().severe("无法加载插件,请联系开发者QQ:3288732918");
+                        getServer().getPluginManager().disablePlugin(this); // 禁用插件
+                        return;
+                }
 
 		// 加载指令
 		loadCommand();
@@ -133,8 +141,8 @@ public final class WorldSafe extends JavaPlugin {
                 try {
                         loadFeatures();
                 } catch (SerializationException e) {
-                        getLogger().severe("重载配置失败!");
-                        e.printStackTrace();
+                        String pathInfo = e.path() != null ? e.path().toString() : "未知节点";
+                        getLogger().severe("重载配置失败，节点 " + pathInfo + " 解析失败: " + e.getMessage());
                 }
         }
 
