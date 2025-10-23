@@ -10,7 +10,6 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
 import static me.lele.worldSafe.WorldSafe.configManager;
-import static me.lele.worldSafe.WorldSafe.listeners;
 
 @Command(name = "worldsafe")
 @Permission("worldsafe.admin")
@@ -39,11 +38,11 @@ public class WorldSafeCommand {
         //套上线程同步锁,保证重载期间服务器停止处理,避免有生物在重载的几毫秒时间里破坏方块
         synchronized (this) {
             //重载监听器
-            for (Listener listener : listeners) {
+            for (Listener listener : plugin.getListeners()) {
                 HandlerList.unregisterAll(listener);
             }
             // 清空监听器列表
-            listeners.clear();
+            plugin.getListeners().clear();
             //重新注册监听器
             plugin.reloadFeatures();
         }
