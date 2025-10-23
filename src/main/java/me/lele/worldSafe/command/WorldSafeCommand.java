@@ -6,8 +6,6 @@ import dev.rollczi.litecommands.annotations.execute.Execute;
 import dev.rollczi.litecommands.annotations.permission.Permission;
 import me.lele.worldSafe.WorldSafe;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 
 import static me.lele.worldSafe.WorldSafe.configManager;
 
@@ -39,17 +37,7 @@ public class WorldSafeCommand {
             sender.sendMessage("配置重载失败，请检查控制台日志。");
             return;
         }
-        //套上线程同步锁,保证重载期间服务器停止处理,避免有生物在重载的几毫秒时间里破坏方块
-        synchronized (this) {
-            //重载监听器
-            for (Listener listener : plugin.getListeners()) {
-                HandlerList.unregisterAll(listener);
-            }
-            // 清空监听器列表
-            plugin.getListeners().clear();
-            //重新注册监听器
-            plugin.reloadFeatures();
-        }
+        plugin.resetFeatures();
 
         sender.sendMessage("配置已重载！");
     }

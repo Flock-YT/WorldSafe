@@ -33,6 +33,7 @@ import org.spongepowered.configurate.serialize.SerializationException;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -138,15 +139,6 @@ public final class WorldSafe extends JavaPlugin {
 	}
 
 
-        public void reloadFeatures() {
-                try {
-                        loadFeatures();
-                } catch (SerializationException e) {
-                        String pathInfo = e.path() != null ? e.path().toString() : "未知节点";
-                        getLogger().severe("重载配置失败，节点 " + pathInfo + " 解析失败: " + e.getMessage());
-                }
-        }
-
         private void registerListener(String configNode, Function<List<String>, ? extends Listener> factory)
                         throws SerializationException {
                 List<String> worlds = configManager.getConfig().node(configNode).getList(String.class);
@@ -158,8 +150,19 @@ public final class WorldSafe extends JavaPlugin {
                 listeners.add(listener);
         }
 
+        public void resetFeatures() {
+                HandlerList.unregisterAll(this);
+                listeners.clear();
+                try {
+                        loadFeatures();
+                } catch (SerializationException e) {
+                        String pathInfo = e.path() != null ? e.path().toString() : "未知节点";
+                        getLogger().severe("重载配置失败，节点 " + pathInfo + " 解析失败: " + e.getMessage());
+                }
+        }
+
         public List<Listener> getListeners() {
-                return listeners;
+                return Collections.unmodifiableList(listeners);
         }
 
 
