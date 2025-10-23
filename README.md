@@ -12,6 +12,7 @@
 
 - **Lightweight**: Minimal performance impact, only loads necessary listeners, and minimizes irrelevant checks.
 - **Easy Configuration**: User-friendly and simple configuration.
+- **Extensible**: Add a new listener and register it in the `WorldSafe.FEATURES` map to make it configurable without touching the loading logic again.
 
 ## 📖 Usage
 
