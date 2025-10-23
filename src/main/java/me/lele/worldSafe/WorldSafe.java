@@ -26,6 +26,7 @@ import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionLi
 import me.lele.worldSafe.listener.entities.other.PhantomDamagePreventionListener;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.spongepowered.configurate.serialize.SerializationException;
@@ -37,7 +38,7 @@ import java.util.function.Function;
 
 public final class WorldSafe extends JavaPlugin {
 
-	public static List<Listener> listeners = new ArrayList<>();
+        private final List<Listener> listeners = new ArrayList<>();
 	public static ConfigManager configManager;
 	private LiteCommands<CommandSender> liteCommands;
 
@@ -74,11 +75,13 @@ public final class WorldSafe extends JavaPlugin {
 
 	}
 
-	@Override
-	public void onDisable() {
-		getLogger().info("插件已卸载!");
-		// Plugin shutdown logic
-	}
+        @Override
+        public void onDisable() {
+                getLogger().info("插件已卸载!");
+                // Plugin shutdown logic
+                HandlerList.unregisterAll(this);
+                listeners.clear();
+        }
 
 	public void loadFeatures() throws SerializationException {
 		// 获取配置文件中的总开关
@@ -144,6 +147,10 @@ public final class WorldSafe extends JavaPlugin {
                 Listener listener = factory.apply(worlds);
                 getServer().getPluginManager().registerEvents(listener, this);
                 listeners.add(listener);
+        }
+
+        public List<Listener> getListeners() {
+                return listeners;
         }
 
 
