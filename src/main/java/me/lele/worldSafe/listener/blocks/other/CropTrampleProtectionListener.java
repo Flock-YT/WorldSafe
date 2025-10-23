@@ -3,6 +3,7 @@ package me.lele.worldSafe.listener.blocks.other;
 import java.util.List;
 
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -24,10 +25,18 @@ public class CropTrampleProtectionListener implements Listener {
 		// 检测是否为踩踏
 		if (e.getTo() != Material.DIRT && e.getTo() != Material.GRASS_BLOCK)
 			return;
-		// 检测世界是否启用
-		if (!worlds.contains(b.getLocation().getWorld().getName()))
-			return;
-		// 取消事件
-		e.setCancelled(true);
-	}
+                World world = getWorld(b);
+                if (!isWorldEnabled(world))
+                        return;
+                // 取消事件
+                e.setCancelled(true);
+        }
+
+        private World getWorld(Block block) {
+                return block != null ? block.getWorld() : null;
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 }

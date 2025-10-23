@@ -2,6 +2,7 @@ package me.lele.worldSafe.listener.entities.explosionprevention;
 
 import java.util.List;
 
+import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
@@ -21,14 +22,22 @@ public class GhastExplosionProtectionListener implements Listener {
 		// 检测实体是否为火球
 		if (e.getEntityType() != EntityType.FIREBALL)
 			return;
-		Fireball ent = (Fireball) e.getEntity();
-		// 检测此世界是否启用
-		if (!worlds.contains(ent.getWorld().getName()))
-			return;
-		// 检测是否为恶魂发出的火球
-		if (!(ent.getShooter() instanceof Ghast))
-			return;
-		// 清空受影响的方块
-		e.blockList().clear();
-	}
+                Fireball ent = (Fireball) e.getEntity();
+                World world = getWorld(ent);
+                if (!isWorldEnabled(world))
+                        return;
+                // 检测是否为恶魂发出的火球
+                if (!(ent.getShooter() instanceof Ghast))
+                        return;
+                // 清空受影响的方块
+                e.blockList().clear();
+        }
+
+        private World getWorld(Fireball fireball) {
+                return fireball != null ? fireball.getWorld() : null;
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 }

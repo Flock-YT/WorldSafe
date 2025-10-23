@@ -3,6 +3,8 @@ package me.lele.worldSafe.listener.entities.other;
 import java.util.List;
 
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -21,17 +23,33 @@ public class EnderDragonBlockDestructionProtectionListener implements Listener {
 		// 判断是否为末影龙
 		if (e.getEntityType() != EntityType.ENDER_DRAGON)
 			return;
-		Entity ed = e.getEntity();
-		// 判断方块和末影龙是否在同一世界
-		if (!e.getBlock().getWorld().equals(ed.getWorld()))
-			return;
-		// 判断是否启用该世界
-		if (!worlds.contains(ed.getWorld().getName()))
-			return;
-		// 判断是否破坏方块
-		if (e.getTo() != Material.AIR)
-			return;
-		// 取消事件
-		e.setCancelled(true);
-	}
+                Entity ed = e.getEntity();
+                World dragonWorld = getWorld(ed);
+                if (!isWorldEnabled(dragonWorld))
+                        return;
+                World blockWorld = getWorld(e.getBlock());
+                if (!isSameWorld(dragonWorld, blockWorld))
+                        return;
+                // 判断是否破坏方块
+                if (e.getTo() != Material.AIR)
+                        return;
+                // 取消事件
+                e.setCancelled(true);
+        }
+
+        private World getWorld(Entity entity) {
+                return entity != null ? entity.getWorld() : null;
+        }
+
+        private World getWorld(Block block) {
+                return block != null ? block.getWorld() : null;
+        }
+
+        private boolean isSameWorld(World first, World second) {
+                return first != null && first.equals(second);
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 }

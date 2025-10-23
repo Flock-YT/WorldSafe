@@ -1,5 +1,6 @@
 package me.lele.worldSafe.listener.entities.explosioncancel;
 
+import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
@@ -22,30 +23,38 @@ public class GhastExplosionCancelListener implements Listener {
 		// 检测实体是否为火球
 		if (e.getEntityType() != EntityType.FIREBALL)
 			return;
-		Fireball ent = (Fireball) e.getEntity();
-		// 检测此世界是否启用
-		if (!worlds.contains(ent.getWorld().getName()))
-			return;
-		// 检测是否为恶魂发出的火球
-		if (!(ent.getShooter() instanceof Ghast))
-			return;
-		// 清空受影响的方块
-		e.setCancelled(true);
-	}
+                Fireball ent = (Fireball) e.getEntity();
+                World world = getWorld(ent);
+                if (!isWorldEnabled(world))
+                        return;
+                // 检测是否为恶魂发出的火球
+                if (!(ent.getShooter() instanceof Ghast))
+                        return;
+                // 清空受影响的方块
+                e.setCancelled(true);
+        }
 
 	@EventHandler
 	void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
 		// 检测造成伤害的实体是否为火球
 		if (e.getDamager().getType() != EntityType.FIREBALL)
 			return;
-		Fireball ent = (Fireball) e.getDamager();
-		// 检测此世界是否启用
-		if (!worlds.contains(ent.getWorld().getName()))
-			return;
-		// 检测是否为恶魂发出的火球
-		if (!(ent.getShooter() instanceof Ghast))
-			return;
-		//消除火球伤害
-		e.setCancelled(true);
-	}
+                Fireball ent = (Fireball) e.getDamager();
+                World world = getWorld(ent);
+                if (!isWorldEnabled(world))
+                        return;
+                // 检测是否为恶魂发出的火球
+                if (!(ent.getShooter() instanceof Ghast))
+                        return;
+                //消除火球伤害
+                e.setCancelled(true);
+        }
+
+        private World getWorld(Fireball fireball) {
+                return fireball != null ? fireball.getWorld() : null;
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 }

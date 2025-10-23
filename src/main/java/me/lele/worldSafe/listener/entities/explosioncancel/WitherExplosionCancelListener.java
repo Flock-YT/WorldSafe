@@ -2,6 +2,7 @@ package me.lele.worldSafe.listener.entities.explosioncancel;
 
 import java.util.List;
 
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -20,11 +21,19 @@ public class WitherExplosionCancelListener implements Listener {
 		// 检测是否为凋零/凋零头颅
 		if (e.getEntityType() != EntityType.WITHER && e.getEntityType() != EntityType.WITHER_SKULL)
 			return;
-		Entity ent = e.getEntity();
-		// 检测是否启用这个世界
-		if (!worlds.contains(ent.getWorld().getName()))
-			return;
-		// 取消事件 阻止爆炸
-		e.setCancelled(true);
-	}
+                Entity ent = e.getEntity();
+                World world = getWorld(ent);
+                if (!isWorldEnabled(world))
+                        return;
+                // 取消事件 阻止爆炸
+                e.setCancelled(true);
+        }
+
+        private World getWorld(Entity entity) {
+                return entity != null ? entity.getWorld() : null;
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 }

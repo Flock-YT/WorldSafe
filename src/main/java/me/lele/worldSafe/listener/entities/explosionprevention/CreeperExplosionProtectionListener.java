@@ -1,5 +1,6 @@
 package me.lele.worldSafe.listener.entities.explosionprevention;
 
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -19,17 +20,24 @@ public class CreeperExplosionProtectionListener implements Listener {
 	}
 
 	@EventHandler
-	public void onCreeperExplode(EntityExplodeEvent event) {
-		// 检查是否是Creeper的爆炸
-		if (event.getEntityType() == EntityType.CREEPER) {
-			// 获取事件触发的世界
-			World world = event.getLocation().getWorld();
-			// 判断是否属于生效的世界
-			if (worlds.contains(world.getName())) {
-				// 阻止事件
-				event.blockList().clear();
-			}
-		}
-	}
+        public void onCreeperExplode(EntityExplodeEvent event) {
+                // 检查是否是Creeper的爆炸
+                if (event.getEntityType() == EntityType.CREEPER) {
+                        World world = getWorld(event.getLocation());
+                        if (!isWorldEnabled(world)) {
+                                return;
+                        }
+                        // 阻止事件
+                        event.blockList().clear();
+                }
+        }
+
+        private World getWorld(Location location) {
+                return location != null ? location.getWorld() : null;
+        }
+
+        private boolean isWorldEnabled(World world) {
+                return world != null && worlds.contains(world.getName());
+        }
 
 }
