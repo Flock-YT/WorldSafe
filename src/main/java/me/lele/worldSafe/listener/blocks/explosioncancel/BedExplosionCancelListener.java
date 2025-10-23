@@ -1,23 +1,21 @@
 package me.lele.worldSafe.listener.blocks.explosioncancel;
 
+import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Bed;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.util.List;
 
-public class BedExplosionCancelListener implements Listener {
+public class BedExplosionCancelListener extends WorldScopedFeature {
 
-	private final List<String> worlds;
-
-	public BedExplosionCancelListener(List<String> worlds) {
-		this.worlds = worlds;
-	}
+        public BedExplosionCancelListener(List<String> worlds) {
+                super(worlds);
+        }
 
 	@EventHandler
 	void onPlayerInteractEvent(PlayerInteractEvent e) {
@@ -42,14 +40,6 @@ public class BedExplosionCancelListener implements Listener {
                 // 取消事件，防止爆炸
                 e.setCancelled(true);
 
-        }
-
-        private World getWorld(Block block) {
-                return block != null ? block.getWorld() : null;
-        }
-
-        private boolean isWorldEnabled(World world) {
-                return world != null && worlds.contains(world.getName());
         }
 
 }
