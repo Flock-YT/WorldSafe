@@ -35,7 +35,11 @@ public class WorldSafeCommand {
     @Execute(name = "reload")
     void reloadCommand(@Context CommandSender sender) {
         //重载配置
-        configManager.reloadConfig();
+        if (!configManager.reloadConfig()) {
+            plugin.getLogger().severe("重载配置失败，已保留原有配置。");
+            sender.sendMessage("配置重载失败，请检查控制台日志。");
+            return;
+        }
         //套上线程同步锁,保证重载期间服务器停止处理,避免有生物在重载的几毫秒时间里破坏方块
         synchronized (this) {
             //重载监听器

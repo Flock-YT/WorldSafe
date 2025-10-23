@@ -1,10 +1,12 @@
 package me.lele.worldSafe.config;
 
+import org.spongepowered.configurate.ConfigurateException;
 import org.spongepowered.configurate.ConfigurationNode;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ConfigManager {
 
@@ -18,18 +20,20 @@ public class ConfigManager {
         loadConfig();
     }
 
-    public void loadConfig() {
+    public boolean loadConfig() {
         try {
             config = loader.load();
             // 在此处可以添加您需要初始化或读取的配置值
-        } catch (IOException e) {
-            e.printStackTrace();
-            // 处理加载失败的情况
+            return true;
+        } catch (ConfigurateException e) {
+            Logger.getLogger(ConfigManager.class.getName()).log(Level.SEVERE, "无法加载配置文件", e);
+            config = null;
+            return false;
         }
     }
 
-    public void reloadConfig() {
-        loadConfig();
+    public boolean reloadConfig() {
+        return loadConfig();
         // 在此处可以添加您需要重新初始化或更新的配置值
     }
 
