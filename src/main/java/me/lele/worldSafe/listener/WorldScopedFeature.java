@@ -23,7 +23,7 @@ public abstract class WorldScopedFeature implements Listener {
                         this.worlds = Set.of();
                         return;
                 }
-                this.worlds = Collections.unmodifiableSet(worlds.stream()
+                this.worlds = Collections.unmodifiableSet((Set<? extends String>) worlds.stream()
                         .filter(Objects::nonNull)
                         .map(String::trim)
                         .filter(name -> !name.isEmpty())

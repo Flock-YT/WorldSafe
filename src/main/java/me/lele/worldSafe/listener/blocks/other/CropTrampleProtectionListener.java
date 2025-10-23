@@ -2,6 +2,7 @@ package me.lele.worldSafe.listener.blocks.other;
 
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
