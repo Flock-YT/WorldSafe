@@ -58,6 +58,7 @@
 
 - ✅ **cropTrampleProtection** - 禁止田被踩坏
 - ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
+- ✅ **fireSpreadPrevention** - 禁止火焰向周围方块蔓延
 
 ## 🧬 实体类
 
