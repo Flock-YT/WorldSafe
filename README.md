@@ -57,6 +57,7 @@ Reload the plugin configuration
 
 - ✅ **cropTrampleProtection** - Prevent crops from being trampled
 - ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
+- ✅ **fireSpreadPrevention** - Prevent fire from spreading between blocks
 
 ## 🧬 Entity Classes
 

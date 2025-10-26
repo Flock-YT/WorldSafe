@@ -12,6 +12,7 @@ import me.lele.worldSafe.listener.blocks.explosionprevention.RespawnAnchorExplos
 import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtectionListener;
 import me.lele.worldSafe.listener.blocks.other.CropTrampleProtectionListener;
 import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPreventionListener;
+import me.lele.worldSafe.listener.blocks.other.FireSpreadPreventionListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.CreeperExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.EndCrystalExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.GhastExplosionCancelListener;
@@ -55,6 +56,7 @@ public final class WorldSafe extends JavaPlugin {
                         entry("tntExplosionProtection", TNTExplosionProtectionListener::new),
                         entry("cropTrampleProtection", CropTrampleProtectionListener::new),
                         entry("dragonEggTeleportationPrevention", DragonEggTeleportationPreventionListener::new),
+                        entry("fireSpreadPrevention", FireSpreadPreventionListener::new),
                         entry("creeperExplosionCancel", CreeperExplosionCancelListener::new),
                         entry("endCrystalExplosionCancel", EndCrystalExplosionCancelListener::new),
                         entry("ghastExplosionCancel", GhastExplosionCancelListener::new),
