@@ -24,7 +24,3 @@ tntExplosionProtection:
   - world
   - world_nether
   - world_the_end
-
-# Fire Spread Prevention / 防止火焰蔓延
-fireSpreadPrevention:
-  - world

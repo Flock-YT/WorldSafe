@@ -14,7 +14,7 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-        @EventHandler(ignoreCancelled = true)
+        @EventHandler
         void onFireSpread(BlockSpreadEvent event) {
                 if (!isFire(event.getNewState().getType())) {
                         return;
@@ -25,7 +25,7 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
                 event.setCancelled(true);
         }
 
-        @EventHandler(ignoreCancelled = true)
+        @EventHandler
         void onBlockIgnite(BlockIgniteEvent event) {
                 if (!isWorldEnabled(getWorld(event.getBlock()))) {
                         return;
