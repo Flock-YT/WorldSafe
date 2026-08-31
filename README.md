@@ -1,3 +1,5 @@
+
+
 **English** | [中文](README_CN.md)
 
 # 🌍 WorldSafe
@@ -18,7 +20,7 @@
 
 1. Download the plugin and place it in the `plugins` folder.
 2. Restart the server to load the plugin.
-3. Make necessary settings in the configuration file.
+3. Make necessary settings in the `plugins/WorldSafe/config.yml` configuration file.
 
 ## 🛠️ Roadmap
 
