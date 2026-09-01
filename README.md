@@ -41,56 +41,41 @@ Reload the plugin configuration
 
 # Implemented Features
 
-## 🧱 Block Classes
+Features are grouped by the minimum Minecraft version they require. A server can use all features listed for its version and every earlier version.
+
+<details open>
+<summary><strong>Minecraft 1.19+</strong></summary>
 
 ### Direct Explosion Cancellation
-*(If you configure items in this class, there's no need to configure items in the "Cancel block destruction but keep damage" class below)*
+*(If you configure an explosion cancellation option, you do not also need its block-protection counterpart.)*
 
 - ✅ **bedExplosionCancel** - Prevent bed explosions “(This configuration should not include the overworld)”
 - ✅ **respawnAnchorExplosionCancel** - Prevent respawn anchor explosions
 - ✅ **tntExplosionCancel** - Prevent TNT explosions
-- ✅ **sulfurCubeExplosionCancel** - Prevent sulfur cube TNT-fed explosions
-
-### Cancel Block Destruction but Keep Damage
-
-- ✅ **bedExplosionProtection** - Prevent bed explosions from destroying blocks
-- ✅ **respawnAnchorExplosionPrevention** - Prevent respawn anchor explosions from destroying blocks
-- ✅ **tntExplosionProtection** - Prevent TNT explosions from destroying blocks
-- ✅ **sulfurCubeExplosionProtection** - Prevent sulfur cube explosions from destroying blocks
-
-### Other Classes
-
-- ✅ **cropTrampleProtection** - Prevent crops from being trampled
-- ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
-- ✅ **fireSpreadPrevention** - Prevent fire from spreading between blocks
-- ✅ **fireIgnitionPrevention** - Prevent fireballs, lightning, explosions, end crystals, and burning arrows from igniting blocks
-- ✅ **decoratedPotProjectileProtection** - Prevent projectiles from breaking decorated pots
-- ✅ **weavingCobwebFormationPrevention** - Prevent weaving from forming cobwebs
-
-## 🧬 Entity Classes
-
-### Direct Explosion Cancellation
-*(If you configure items in this class, there's no need to configure items in the "Cancel block destruction but keep explosion damage" class below)*
-
 - ✅ **creeperExplosionCancel** - Prevent creeper explosions
 - ✅ **endCrystalExplosionCancel** - Prevent end crystal explosions
 - ✅ **ghastExplosionCancel** - Prevent ghast fireball explosions
 - ✅ **witherExplosionCancel** - Prevent wither explosions
 
-### Cancel Block Destruction but Keep Explosion Damage
+### Prevent Block Destruction but Keep Damage
 
+- ✅ **bedExplosionProtection** - Prevent bed explosions from destroying blocks
+- ✅ **respawnAnchorExplosionPrevention** - Prevent respawn anchor explosions from destroying blocks
+- ✅ **tntExplosionProtection** - Prevent TNT explosions from destroying blocks
 - ✅ **creeperExplosionProtection** - Prevent creeper explosions from destroying blocks
 - ✅ **endCrystalExplosionPrevention** - Prevent end crystal explosions from destroying blocks
 - ✅ **ghastExplosionProtection** - Prevent ghast fireball explosions from destroying blocks
 - ✅ **witherExplosionProtection** - Prevent wither explosions from destroying blocks
 
-### Other Classes
+### Other Map Protections
 
+- ✅ **cropTrampleProtection** - Prevent crops from being trampled
+- ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
+- ✅ **fireSpreadPrevention** - Prevent fire from spreading between blocks
+- ✅ **fireIgnitionPrevention** - Prevent fireballs, lightning, explosions, end crystals, and burning arrows from igniting blocks
 - ✅ **enderDragonBlockDestructionProtection** - Prevent ender dragon from destroying blocks
 - ✅ **enderManBlockPickupProtection** - Prevent endermen from picking up blocks
 - ✅ **phantomDamagePrevention** - Prevent phantoms from causing damage
-- ✅ **windChargeBlockDestructionProtection** - Protect decorated pots, chorus flowers, and pointed dripstone from wind charges while retaining impact damage
-- ✅ **breezeWindChargeImpactCancel** - Fully cancel breeze wind-charge impacts without affecting player wind charges
 - ✅ **ravagerBlockDestructionProtection** - Prevent ravagers from destroying blocks
 - ✅ **silverfishBlockChangeProtection** - Prevent silverfish from entering or breaking infested blocks
 - ✅ **rabbitCropEatingProtection** - Prevent rabbits from eating crops
@@ -100,6 +85,37 @@ Reload the plugin configuration
 - ✅ **mobDoorBreakProtection** - Prevent mobs from breaking doors
 - ✅ **snowGolemSnowTrailPrevention** - Prevent snow golems from forming snow trails
 - ✅ **witherRoseFormationPrevention** - Prevent wither rose formation
+
+</details>
+
+<details>
+<summary><strong>Minecraft 1.20.3+</strong></summary>
+
+- ✅ **decoratedPotProjectileProtection** - Prevent projectiles from breaking decorated pots
+
+</details>
+
+<details>
+<summary><strong>Minecraft 1.21+</strong></summary>
+
+- ✅ **windChargeBlockDestructionProtection** - Protect decorated pots, chorus flowers, and pointed dripstone from wind charges while retaining impact damage
+- ✅ **breezeWindChargeImpactCancel** - Fully cancel breeze wind-charge impacts without affecting player wind charges
+- ✅ **weavingCobwebFormationPrevention** - Prevent weaving from forming cobwebs
+
+</details>
+
+<details>
+<summary><strong>Minecraft 26.2+</strong></summary>
+
+### Direct Explosion Cancellation
+
+- ✅ **sulfurCubeExplosionCancel** - Prevent sulfur cube TNT-fed explosions
+
+### Prevent Block Destruction but Keep Damage
+
+- ✅ **sulfurCubeExplosionProtection** - Prevent sulfur cube explosions from destroying blocks
+
+</details>
 
 ---
 

@@ -40,56 +40,41 @@
 
 # 目前实现的功能
 
-## 🧱 方块类
+功能按照所需的最低 Minecraft 版本分类。服务器可以使用自身版本及之前所有版本分组中的功能。
 
-### 直接取消爆炸类
-*(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留伤害的类”就可以不用配置了)*
+<details open>
+<summary><strong>Minecraft 1.19+</strong></summary>
+
+### 直接取消爆炸
+*(如果配置了某种爆炸的完整取消项，就不需要再配置对应的方块保护项。)*
 
 - ✅ **bedExplosionCancel** - 禁止床爆炸（此配置请勿包含主世界）
 - ✅ **respawnAnchorExplosionCancel** - 禁止重生锚爆炸
 - ✅ **tntExplosionCancel** - 禁止TNT爆炸
-- ✅ **sulfurCubeExplosionCancel** - 禁止硫磺立方体吞入TNT后的爆炸
-
-### 取消破坏方块但保留伤害类
-
-- ✅ **bedExplosionProtection** - 禁止床爆炸破坏方块
-- ✅ **respawnAnchorExplosionPrevention** - 禁止重生锚爆炸破坏方块
-- ✅ **tntExplosionProtection** - 禁止TNT爆炸破坏方块
-- ✅ **sulfurCubeExplosionProtection** - 禁止硫磺立方体爆炸破坏方块
-
-### 其他类
-
-- ✅ **cropTrampleProtection** - 禁止田被踩坏
-- ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
-- ✅ **fireSpreadPrevention** - 禁止火焰向周围方块蔓延
-- ✅ **fireIgnitionPrevention** - 禁止火球、闪电、爆炸、末地水晶和燃烧箭点燃方块
-- ✅ **decoratedPotProjectileProtection** - 禁止投射物击碎装饰陶罐
-- ✅ **weavingCobwebFormationPrevention** - 禁止盘丝效果生成蜘蛛网
-
-## 🧬 实体类
-
-### 直接取消爆炸类
-*(如果你配置了这个类里的东西，下方对应的“取消破坏方块但保留爆炸伤害的类”就可以不用配置了)*
-
 - ✅ **creeperExplosionCancel** - 禁止苦力怕爆炸
 - ✅ **endCrystalExplosionCancel** - 禁止末地水晶爆炸
 - ✅ **ghastExplosionCancel** - 禁止恶魂火球爆炸
 - ✅ **witherExplosionCancel** - 禁止凋零爆炸
 
-### 取消破坏方块但保留爆炸伤害类
+### 禁止破坏方块但保留伤害
 
+- ✅ **bedExplosionProtection** - 禁止床爆炸破坏方块
+- ✅ **respawnAnchorExplosionPrevention** - 禁止重生锚爆炸破坏方块
+- ✅ **tntExplosionProtection** - 禁止TNT爆炸破坏方块
 - ✅ **creeperExplosionProtection** - 禁止苦力怕爆炸破坏方块
 - ✅ **endCrystalExplosionPrevention** - 禁止末地水晶爆炸破坏方块
 - ✅ **ghastExplosionProtection** - 禁止恶魂火球爆炸破坏方块
 - ✅ **witherExplosionProtection** - 禁止凋零爆炸破坏方块
 
-### 其他类
+### 其他地图防护
 
+- ✅ **cropTrampleProtection** - 禁止田被踩坏
+- ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
+- ✅ **fireSpreadPrevention** - 禁止火焰向周围方块蔓延
+- ✅ **fireIgnitionPrevention** - 禁止火球、闪电、爆炸、末地水晶和燃烧箭点燃方块
 - ✅ **enderDragonBlockDestructionProtection** - 禁止末影龙破坏方块
 - ✅ **enderManBlockPickupProtection** - 禁止末影人搬运方块
 - ✅ **phantomDamagePrevention** - 禁止幻翼造成伤害
-- ✅ **windChargeBlockDestructionProtection** - 禁止风弹破坏装饰陶罐、紫颂花和滴水石，同时保留冲击伤害
-- ✅ **breezeWindChargeImpactCancel** - 完整取消旋风人的风弹冲击，不影响玩家风弹
 - ✅ **ravagerBlockDestructionProtection** - 禁止劫掠兽破坏方块
 - ✅ **silverfishBlockChangeProtection** - 禁止蠹虫钻入或拆除虫蚀方块
 - ✅ **rabbitCropEatingProtection** - 禁止兔子啃食作物
@@ -99,6 +84,37 @@
 - ✅ **mobDoorBreakProtection** - 禁止生物破门
 - ✅ **snowGolemSnowTrailPrevention** - 禁止雪傀儡生成雪迹
 - ✅ **witherRoseFormationPrevention** - 禁止生成凋零玫瑰
+
+</details>
+
+<details>
+<summary><strong>Minecraft 1.20.3+</strong></summary>
+
+- ✅ **decoratedPotProjectileProtection** - 禁止投射物击碎装饰陶罐
+
+</details>
+
+<details>
+<summary><strong>Minecraft 1.21+</strong></summary>
+
+- ✅ **windChargeBlockDestructionProtection** - 禁止风弹破坏装饰陶罐、紫颂花和滴水石，同时保留冲击伤害
+- ✅ **breezeWindChargeImpactCancel** - 完整取消旋风人的风弹冲击，不影响玩家风弹
+- ✅ **weavingCobwebFormationPrevention** - 禁止盘丝效果生成蜘蛛网
+
+</details>
+
+<details>
+<summary><strong>Minecraft 26.2+</strong></summary>
+
+### 直接取消爆炸
+
+- ✅ **sulfurCubeExplosionCancel** - 禁止硫磺立方体吞入TNT后的爆炸
+
+### 禁止破坏方块但保留伤害
+
+- ✅ **sulfurCubeExplosionProtection** - 禁止硫磺立方体爆炸破坏方块
+
+</details>
 
 ---
 
