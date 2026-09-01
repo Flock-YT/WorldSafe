@@ -10,9 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public abstract class WorldScopedFeature implements Listener {
 
@@ -20,15 +18,16 @@ public abstract class WorldScopedFeature implements Listener {
 
         protected WorldScopedFeature(Collection<String> worlds) {
                 if (worlds == null || worlds.isEmpty()) {
-                        this.worlds = Set.of();
+                        this.worlds = Collections.emptySet();
                         return;
                 }
-                this.worlds = Collections.unmodifiableSet((Set<? extends String>) worlds.stream()
-                        .filter(Objects::nonNull)
-                        .map(String::trim)
-                        .filter(name -> !name.isEmpty())
-                        .map(name -> name.toLowerCase(Locale.ROOT))
-                        .collect(Collectors.toCollection(LinkedHashSet::new)));
+                Set<String> normalized = new LinkedHashSet<String>();
+                for (String world : worlds) {
+                        if (world != null && !world.trim().isEmpty()) {
+                                normalized.add(world.trim().toLowerCase(Locale.ROOT));
+                        }
+                }
+                this.worlds = Collections.unmodifiableSet(normalized);
         }
 
         protected World getWorld(Location location) {

@@ -1,4 +1,13 @@
 name: WorldSafe
 version: '${project.version}'
 main: me.lele.worldSafe.WorldSafe
-api-version: '1.19'
+api-version: '1.13'
+commands:
+  worldsafe:
+    description: Manage WorldSafe
+    usage: /worldsafe <help|reload>
+    permission: worldsafe.admin
+permissions:
+  worldsafe.admin:
+    description: Allows WorldSafe administration commands
+    default: op

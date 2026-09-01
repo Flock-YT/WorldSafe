@@ -1,7 +1,7 @@
 package me.lele.worldSafe.listener.blocks.other;
 
 import me.lele.worldSafe.listener.WorldScopedFeature;
-import org.bukkit.Material;
+import me.lele.worldSafe.compat.MaterialMatcher;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
@@ -15,13 +15,13 @@ public class CropTrampleProtectionListener extends WorldScopedFeature {
         }
 
 	@EventHandler
-	void onBlockChangeByEntity(EntityChangeBlockEvent e) {
+	public void onBlockChangeByEntity(EntityChangeBlockEvent e) {
 		Block b = e.getBlock();
 		// 判断是否为耕地
-		if (b.getType() != Material.FARMLAND)
+		if (!MaterialMatcher.matches(b, "SOIL", "FARMLAND"))
 			return;
                 // 检测是否为踩踏
-                if (e.getTo() != Material.DIRT && e.getTo() != Material.GRASS_BLOCK)
+                if (!MaterialMatcher.matches(e.getTo(), "DIRT", "GRASS", "GRASS_BLOCK"))
                         return;
                 if (!isWorldEnabled(getWorld(b)))
                         return;

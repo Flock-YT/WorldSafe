@@ -1,123 +1,118 @@
-
 [English](README.md) | **中文**
 
-# 🌍 WorldSafe
+# WorldSafe
 
-**WorldSafe** 是一个轻量级的Minecraft Bukkit插件，旨在防止部分实体及物品破坏地图。
+WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏机制破坏已配置的世界。
 
-## 📋 安装要求
+## 兼容范围
 
-- **Java 17 或更高版本**
-- **Minecraft Java 版 1.19 或更高版本**
+- 单个 JAR 正式支持 **Minecraft 1.8.8 至 26.2**。
+- 插件使用 **Java 8 字节码**。运行服务端时，请使用该服务端版本自身要求的 Java 版本。
+- 支持保持 Bukkit 公共 API 二进制兼容的 CraftBukkit、Spigot、Paper 及其衍生分支。
+- 不支持 Minecraft 1.8.0-1.8.7。
 
-## ✨ 特性
+WorldSafe 使用 Spigot 1.8.8 API 编译。新版功能通过材质/实体名称和启动时缓存的公共 API 反射实现，不使用 CraftBukkit、NMS 或服务端内部包。
 
-- **轻量级**: 对性能影响最小,只加载需要的监听器,最大可能减少无关判断。
-- **简易配置**: 使用方便，配置简单。
-- **易于扩展**: 新增监听器后只需在 `WorldSafe.FEATURES` 映射中注册，就可以直接在配置中使用，无需再修改加载逻辑。
+如果配置的功能在当前版本不可用，只会跳过该功能，并在本次加载时输出一次明确警告，例如：
 
-## 📖 使用方法
+```text
+Skipping feature 'respawnAnchorExplosionCancel': requires Minecraft 1.16+; detected 1.12.2
+```
 
-1. 下载插件并将其放置在 `plugins` 文件夹中。
-2. 重启服务器以加载插件。
-3. 在配置文件中进行必要的设置。
+其他受支持的保护会继续运行。配置重载时若 YAML 无效，会保留原配置和原监听器。
 
-## 🛠️ 计划
+## 安装
 
-目前插件正在进行陆续更新中，请关注后续更新，你可以在issue中提出你的需求！
+1. 将 `WorldSafe-<version>.jar` 放入服务端的 `plugins` 目录。
+2. 重启服务端。
+3. 在 `plugins/WorldSafe/config.yml` 中配置需要生效的世界列表。
 
-## 🔐 权限
+## 命令与权限
 
-目前仅有一个权限：`worldsafe.admin`
+- `/worldsafe help` - 查看命令帮助。
+- `/worldsafe reload` - 原子重载配置。
+- `worldsafe.admin` - 允许使用 WorldSafe 管理命令，默认仅 OP 拥有。
 
-## ➡️ 指令
+## 功能版本表
 
-### `/worldsafe help`
-查看插件帮助
+只要分组的最低版本不高于你的服务端版本，即可使用该组功能。
 
-### `/worldsafe reload`
-重载插件配置
+### Minecraft 1.8.8+
 
-# 目前实现的功能
+直接取消爆炸：
 
-请先确认你的服务器版本，然后从上往下查看版本分组。只要分组中的版本号不高于你的服务器版本，里面的功能就可以使用。例如：你的服务器是 Minecraft 1.21，那么 **1.19+**、**1.20.3+** 和 **1.21+** 分组中的功能都可以使用，但不能使用 **26.2+** 分组中的功能。
+- `bedExplosionCancel`
+- `tntExplosionCancel`
+- `creeperExplosionCancel`
+- `endCrystalExplosionCancel`
+- `ghastExplosionCancel`
+- `witherExplosionCancel`
 
-<details open>
-<summary><strong>Minecraft 1.19+</strong></summary>
+保留爆炸伤害但阻止方块破坏：
 
-### 直接取消爆炸
-*(如果配置了某种爆炸的完整取消项，就不需要再配置对应的方块保护项。)*
+- `bedExplosionProtection`
+- `tntExplosionProtection`
+- `creeperExplosionProtection`
+- `endCrystalExplosionPrevention`
+- `ghastExplosionProtection`
+- `witherExplosionProtection`
 
-- ✅ **bedExplosionCancel** - 禁止床爆炸（此配置请勿包含主世界）
-- ✅ **respawnAnchorExplosionCancel** - 禁止重生锚爆炸
-- ✅ **tntExplosionCancel** - 禁止TNT爆炸
-- ✅ **creeperExplosionCancel** - 禁止苦力怕爆炸
-- ✅ **endCrystalExplosionCancel** - 禁止末地水晶爆炸
-- ✅ **ghastExplosionCancel** - 禁止恶魂火球爆炸
-- ✅ **witherExplosionCancel** - 禁止凋零爆炸
+其他保护：
 
-### 禁止破坏方块但保留伤害
+- `cropTrampleProtection`
+- `dragonEggTeleportationPrevention`
+- `fireSpreadPrevention`
+- `fireIgnitionPrevention`
+- `enderDragonBlockDestructionProtection`
+- `enderManBlockPickupProtection`
+- `silverfishBlockChangeProtection`
+- `rabbitCropEatingProtection`
+- `sheepGrassEatingProtection`
+- `villagerCropModificationProtection`
+- `mobDoorBreakProtection`
+- `snowGolemSnowTrailPrevention`
 
-- ✅ **bedExplosionProtection** - 禁止床爆炸破坏方块
-- ✅ **respawnAnchorExplosionPrevention** - 禁止重生锚爆炸破坏方块
-- ✅ **tntExplosionProtection** - 禁止TNT爆炸破坏方块
-- ✅ **creeperExplosionProtection** - 禁止苦力怕爆炸破坏方块
-- ✅ **endCrystalExplosionPrevention** - 禁止末地水晶爆炸破坏方块
-- ✅ **ghastExplosionProtection** - 禁止恶魂火球爆炸破坏方块
-- ✅ **witherExplosionProtection** - 禁止凋零爆炸破坏方块
+### Minecraft 1.13+
 
-### 其他地图防护
+- `phantomDamagePrevention`
 
-- ✅ **cropTrampleProtection** - 禁止田被踩坏
-- ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
-- ✅ **fireSpreadPrevention** - 禁止火焰向周围方块蔓延
-- ✅ **fireIgnitionPrevention** - 禁止火球、闪电、爆炸、末地水晶和燃烧箭点燃方块
-- ✅ **enderDragonBlockDestructionProtection** - 禁止末影龙破坏方块
-- ✅ **enderManBlockPickupProtection** - 禁止末影人搬运方块
-- ✅ **phantomDamagePrevention** - 禁止幻翼造成伤害
-- ✅ **ravagerBlockDestructionProtection** - 禁止劫掠兽破坏方块
-- ✅ **silverfishBlockChangeProtection** - 禁止蠹虫钻入或拆除虫蚀方块
-- ✅ **rabbitCropEatingProtection** - 禁止兔子啃食作物
-- ✅ **sheepGrassEatingProtection** - 禁止绵羊吃草
-- ✅ **villagerCropModificationProtection** - 禁止村民收割或种植作物
-- ✅ **foxBerryHarvestProtection** - 禁止狐狸采摘浆果
-- ✅ **mobDoorBreakProtection** - 禁止生物破门
-- ✅ **snowGolemSnowTrailPrevention** - 禁止雪傀儡生成雪迹
-- ✅ **witherRoseFormationPrevention** - 禁止生成凋零玫瑰
+### Minecraft 1.14+
 
-</details>
+- `ravagerBlockDestructionProtection`
+- `foxBerryHarvestProtection`
+- `witherRoseFormationPrevention`
 
-<details>
-<summary><strong>Minecraft 1.20.3+</strong></summary>
+### Minecraft 1.16+
 
-- ✅ **decoratedPotProjectileProtection** - 禁止投射物击碎装饰陶罐
+- `respawnAnchorExplosionCancel`
+- `respawnAnchorExplosionPrevention`
 
-</details>
+### Minecraft 1.20.3+
 
-<details>
-<summary><strong>Minecraft 1.21+</strong></summary>
+- `decoratedPotProjectileProtection`
 
-- ✅ **windChargeBlockDestructionProtection** - 禁止风弹破坏装饰陶罐、紫颂花和滴水石，同时保留冲击伤害
-- ✅ **breezeWindChargeImpactCancel** - 完整取消旋风人的风弹冲击，不影响玩家风弹
-- ✅ **weavingCobwebFormationPrevention** - 禁止盘丝效果生成蜘蛛网
+### Minecraft 1.21+
 
-</details>
+- `windChargeBlockDestructionProtection`
+- `breezeWindChargeImpactCancel`
+- `weavingCobwebFormationPrevention`
 
-<details>
-<summary><strong>Minecraft 26.2+</strong></summary>
+### Minecraft 26.2+
 
-### 直接取消爆炸
+- `sulfurCubeExplosionCancel`
+- `sulfurCubeExplosionProtection`
 
-- ✅ **sulfurCubeExplosionCancel** - 禁止硫磺立方体吞入TNT后的爆炸
+## 构建
 
-### 禁止破坏方块但保留伤害
+开发构建使用 JDK 17 或更高版本，产物仍为 Java 8 字节码：
 
-- ✅ **sulfurCubeExplosionProtection** - 禁止硫磺立方体爆炸破坏方块
+```bash
+mvn clean verify
+./scripts/verify-release-jar.sh
+```
 
-</details>
-
----
+发布校验会检查内嵌版本、签名元数据、误打包的 Bukkit API，以及所有类是否保持 class major 52。
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 
-**版权声明**: 本插件由 [Eric.乐乐 & 追求at](#) 开发，遵循 [MIT 许可证](#)。
+WorldSafe 遵循 MIT 许可证。

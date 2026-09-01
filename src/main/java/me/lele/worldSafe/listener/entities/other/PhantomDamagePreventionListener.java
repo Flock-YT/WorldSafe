@@ -1,8 +1,8 @@
 package me.lele.worldSafe.listener.entities.other;
 
+import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
@@ -28,7 +28,7 @@ public class PhantomDamagePreventionListener extends WorldScopedFeature {
     }
 
     private boolean isPhantom(Entity entity) {
-        return entity != null && entity.getType() == EntityType.PHANTOM;
+        return EntityTypeMatcher.matches(entity, "PHANTOM");
     }
 
 }

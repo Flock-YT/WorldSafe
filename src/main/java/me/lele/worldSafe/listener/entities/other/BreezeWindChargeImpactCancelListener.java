@@ -1,6 +1,7 @@
 package me.lele.worldSafe.listener.entities.other;
 
 import me.lele.worldSafe.compat.EntityTypeMatcher;
+import me.lele.worldSafe.compat.ServerCapabilities;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -11,21 +12,28 @@ import java.util.List;
 
 public class BreezeWindChargeImpactCancelListener extends WorldScopedFeature {
 
+    private final ServerCapabilities capabilities;
+
     public BreezeWindChargeImpactCancelListener(List<String> worlds) {
+        this(worlds, ServerCapabilities.detect());
+    }
+
+    public BreezeWindChargeImpactCancelListener(List<String> worlds, ServerCapabilities capabilities) {
         super(worlds);
+        this.capabilities = capabilities;
     }
 
     @EventHandler
     public void onBreezeWindChargeExplosion(EntityExplodeEvent event) {
         if (isBreezeWindCharge(event.getEntity()) && isWorldEnabled(event.getLocation())) {
-            event.setCancelled(true);
+            capabilities.cancelIfPossible(event);
         }
     }
 
     @EventHandler
     public void onBreezeWindChargeHit(ProjectileHitEvent event) {
         if (isBreezeWindCharge(event.getEntity()) && isWorldEnabled(getWorld(event.getEntity()))) {
-            event.setCancelled(true);
+            capabilities.cancelIfPossible(event);
         }
     }
 

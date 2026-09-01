@@ -1,17 +1,17 @@
 package me.lele.worldSafe.command;
 
-import dev.rollczi.litecommands.annotations.command.Command;
-import dev.rollczi.litecommands.annotations.context.Context;
-import dev.rollczi.litecommands.annotations.execute.Execute;
-import dev.rollczi.litecommands.annotations.permission.Permission;
 import me.lele.worldSafe.WorldSafe;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 
-import static me.lele.worldSafe.WorldSafe.configManager;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 
-@Command(name = "worldsafe")
-@Permission("worldsafe.admin")
-public class WorldSafeCommand {
+public final class WorldSafeCommand implements CommandExecutor, TabCompleter {
 
     private final WorldSafe plugin;
 
@@ -19,27 +19,38 @@ public class WorldSafeCommand {
         this.plugin = plugin;
     }
 
-    @Execute
-    public void onMainCommand(@Context CommandSender sender) {
-        sender.sendMessage("/worldsafe reload - 重载命令");
-    }
-
-    @Execute(name = "help")
-    public void helpCommand(@Context CommandSender sender) {
-        sender.sendMessage("/worldSafe reload - 重载命令");
-    }
-
-    @Execute(name = "reload")
-    void reloadCommand(@Context CommandSender sender) {
-        //重载配置
-        if (!configManager.reloadConfig()) {
-            plugin.getLogger().severe("重载配置失败，已保留原有配置。");
-            sender.sendMessage("配置重载失败，请检查控制台日志。");
-            return;
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("worldsafe.admin")) {
+            sender.sendMessage("You do not have permission to use this command.");
+            return true;
         }
-        plugin.resetFeatures();
 
-        sender.sendMessage("配置已重载！");
+        if (args.length == 1 && "reload".equalsIgnoreCase(args[0])) {
+            if (plugin.reloadWorldSafe()) {
+                sender.sendMessage("WorldSafe configuration reloaded.");
+            } else {
+                sender.sendMessage("WorldSafe reload failed. The previous configuration is still active.");
+            }
+            return true;
+        }
+
+        sender.sendMessage("/worldsafe reload - Reload the configuration");
+        return true;
     }
 
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length != 1 || !sender.hasPermission("worldsafe.admin")) {
+            return Collections.emptyList();
+        }
+        String prefix = args[0].toLowerCase(Locale.ROOT);
+        if ("reload".startsWith(prefix)) {
+            return Arrays.asList("reload");
+        }
+        if ("help".startsWith(prefix)) {
+            return Arrays.asList("help");
+        }
+        return Collections.emptyList();
+    }
 }

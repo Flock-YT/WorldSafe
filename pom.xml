@@ -6,14 +6,14 @@
 
     <groupId>me.lele</groupId>
     <artifactId>WorldSafe</artifactId>
-    <version>1.0.6</version>
+    <version>1.1.0-beta.1</version>
     <packaging>jar</packaging>
 
     <name>WorldSafe</name>
 
     <properties>
-        <java.version>17</java.version>
-        <spigot.version>1.19.4-R0.1-SNAPSHOT</spigot.version>
+        <java.version>8</java.version>
+        <spigot.version>1.8.8-R0.1-SNAPSHOT</spigot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -117,11 +117,6 @@
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
 
-        <repository>
-            <id>panda-repository</id>
-            <url>https://repo.panda-lang.org/releases</url>
-        </repository>
-
     </repositories>
 
     <dependencies>
@@ -131,23 +126,12 @@
             <artifactId>spigot-api</artifactId>
             <version>${spigot.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.spongepowered</groupId>
-            <artifactId>configurate-core</artifactId>
-            <version>4.1.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.spongepowered</groupId>
-            <artifactId>configurate-yaml</artifactId>
-            <version>4.1.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.rollczi</groupId>
-            <artifactId>litecommands-bukkit</artifactId>
-            <version>3.9.7</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.md-5</groupId>
+                    <artifactId>bungeecord-chat</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.bstats/bstats-bukkit -->

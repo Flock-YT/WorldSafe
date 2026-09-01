@@ -2,11 +2,11 @@ package me.lele.worldSafe.listener.blocks.explosionprevention;
 
 import me.lele.worldSafe.compat.BlockExplosionSourceResolver;
 import me.lele.worldSafe.compat.MaterialMatcher;
+import me.lele.worldSafe.compat.ServerCapabilities;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.type.RespawnAnchor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
@@ -17,10 +17,17 @@ import java.util.List;
 
 public class RespawnAnchorExplosionPreventionListener extends WorldScopedFeature {
 
-    private final BlockExplosionSourceResolver sourceResolver = new BlockExplosionSourceResolver();
+    private final ServerCapabilities capabilities;
+    private final BlockExplosionSourceResolver sourceResolver;
 
     public RespawnAnchorExplosionPreventionListener(List<String> worlds) {
+        this(worlds, ServerCapabilities.detect());
+    }
+
+    public RespawnAnchorExplosionPreventionListener(List<String> worlds, ServerCapabilities capabilities) {
         super(worlds);
+        this.capabilities = capabilities;
+        this.sourceResolver = new BlockExplosionSourceResolver(capabilities);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -35,9 +42,9 @@ public class RespawnAnchorExplosionPreventionListener extends WorldScopedFeature
         if (block.getWorld().getEnvironment() == World.Environment.NETHER) {
             return;
         }
-        if (block.getBlockData() instanceof RespawnAnchor anchor
-                && anchor.getCharges() > 0
-                && (event.getMaterial() != Material.GLOWSTONE || anchor.getCharges() >= anchor.getMaximumCharges())) {
+        int charges = capabilities.getRespawnAnchorCharges(block);
+        int maximumCharges = capabilities.getRespawnAnchorMaximumCharges(block);
+        if (charges > 0 && (event.getMaterial() != Material.GLOWSTONE || charges >= maximumCharges)) {
             sourceResolver.remember(block);
         }
     }

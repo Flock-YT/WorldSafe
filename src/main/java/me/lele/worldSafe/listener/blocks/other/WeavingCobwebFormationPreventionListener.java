@@ -16,14 +16,16 @@ public class WeavingCobwebFormationPreventionListener extends WorldScopedFeature
 
     @EventHandler
     public void onCobwebForm(EntityBlockFormEvent event) {
-        if (MaterialMatcher.matches(event.getNewState(), "COBWEB") && isWorldEnabled(getWorld(event.getBlock()))) {
+        if (MaterialMatcher.matches(event.getNewState(), "WEB", "COBWEB")
+                && isWorldEnabled(getWorld(event.getBlock()))) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler
     public void onCobwebChange(EntityChangeBlockEvent event) {
-        if (MaterialMatcher.matches(event.getTo(), "COBWEB") && isWorldEnabled(getWorld(event.getBlock()))) {
+        if (MaterialMatcher.matches(event.getTo(), "WEB", "COBWEB")
+                && isWorldEnabled(getWorld(event.getBlock()))) {
             event.setCancelled(true);
         }
     }

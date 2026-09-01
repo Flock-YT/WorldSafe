@@ -61,4 +61,32 @@ if [[ "$plugin_version" != "$expected_version" ]]; then
     exit 1
 fi
 
-echo "Verified $jar_path (version $expected_version, no signature metadata)."
+if printf '%s\n' "$jar_entries" | grep -Eq '^org/bukkit/'; then
+    echo "Bukkit API classes must not be bundled in $jar_path." >&2
+    exit 1
+fi
+
+if printf '%s\n' "$jar_entries" | grep -Eq '^(org/spongepowered/configurate|dev/rollczi/litecommands)/'; then
+    echo "Removed compatibility-sensitive dependencies were bundled in $jar_path." >&2
+    exit 1
+fi
+
+(
+    cd "$temporary_directory"
+    jar xf "$absolute_jar_path"
+)
+
+while IFS= read -r -d '' class_file; do
+    major_version="$(javap -verbose "$class_file" 2>/dev/null | sed -nE 's/^[[:space:]]*major version:[[:space:]]*([0-9]+).*$/\1/p' | head -n 1)"
+    if [[ -z "$major_version" ]]; then
+        echo "Unable to inspect class version: $class_file" >&2
+        exit 1
+    fi
+    if (( major_version > 52 )); then
+        relative_class="${class_file#"$temporary_directory"/}"
+        echo "Class $relative_class has major version $major_version; maximum allowed is 52 (Java 8)." >&2
+        exit 1
+    fi
+done < <(find "$temporary_directory" -type f -name '*.class' -print0)
+
+echo "Verified $jar_path (version $expected_version, Java 8 bytecode, no bundled Bukkit API or signatures)."

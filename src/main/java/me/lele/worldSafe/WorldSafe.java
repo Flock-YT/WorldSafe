@@ -1,9 +1,11 @@
 package me.lele.worldSafe;
 
-import dev.rollczi.litecommands.LiteCommands;
-import dev.rollczi.litecommands.bukkit.LiteCommandsBukkit;
 import me.lele.worldSafe.command.WorldSafeCommand;
+import me.lele.worldSafe.compat.MinecraftVersion;
+import me.lele.worldSafe.compat.ServerCapabilities;
 import me.lele.worldSafe.config.ConfigManager;
+import me.lele.worldSafe.config.WorldSafeConfig;
+import me.lele.worldSafe.feature.FeatureDefinition;
 import me.lele.worldSafe.listener.blocks.explosioncancel.BedExplosionCancelListener;
 import me.lele.worldSafe.listener.blocks.explosioncancel.RespawnAnchorExplosionCancelListener;
 import me.lele.worldSafe.listener.blocks.explosioncancel.TNTExplosionCancelListener;
@@ -31,169 +33,293 @@ import me.lele.worldSafe.listener.entities.interaction.MobDoorBreakProtectionLis
 import me.lele.worldSafe.listener.entities.other.BreezeWindChargeImpactCancelListener;
 import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionListener;
-
 import me.lele.worldSafe.listener.entities.other.PhantomDamagePreventionListener;
 import me.lele.worldSafe.listener.entities.other.SnowGolemSnowTrailPreventionListener;
 import me.lele.worldSafe.listener.entities.other.WindChargeBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.WitherRoseFormationPreventionListener;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.spongepowered.configurate.serialize.SerializationException;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
-import static java.util.Map.entry;
 
 public final class WorldSafe extends JavaPlugin {
 
-        private final List<Listener> listeners = new ArrayList<>();
-        public static ConfigManager configManager;
-        private LiteCommands<CommandSender> liteCommands;
+    private static final ServerCapabilities.Capability[] NO_CAPABILITIES =
+            new ServerCapabilities.Capability[0];
+    private static final String[] NO_NAMES = new String[0];
 
-        private static final Map<String, Function<List<String>, ? extends Listener>> FEATURES = Map.ofEntries(
-                        entry("bedExplosionCancel", BedExplosionCancelListener::new),
-                        entry("respawnAnchorExplosionCancel", RespawnAnchorExplosionCancelListener::new),
-                        entry("tntExplosionCancel", TNTExplosionCancelListener::new),
-                        entry("sulfurCubeExplosionCancel", SulfurCubeExplosionCancelListener::new),
-                        entry("bedExplosionProtection", BedExplosionProtectionListener::new),
-                        entry("respawnAnchorExplosionPrevention", RespawnAnchorExplosionPreventionListener::new),
-                        entry("tntExplosionProtection", TNTExplosionProtectionListener::new),
-                        entry("sulfurCubeExplosionProtection", SulfurCubeExplosionProtectionListener::new),
-                        entry("cropTrampleProtection", CropTrampleProtectionListener::new),
-                        entry("dragonEggTeleportationPrevention", DragonEggTeleportationPreventionListener::new),
-                        entry("fireSpreadPrevention", FireSpreadPreventionListener::new),
-                        entry("fireIgnitionPrevention", FireIgnitionPreventionListener::new),
-                        entry("decoratedPotProjectileProtection", DecoratedPotProjectileProtectionListener::new),
-                        entry("weavingCobwebFormationPrevention", WeavingCobwebFormationPreventionListener::new),
-                        entry("creeperExplosionCancel", CreeperExplosionCancelListener::new),
-                        entry("endCrystalExplosionCancel", EndCrystalExplosionCancelListener::new),
-                        entry("ghastExplosionCancel", GhastExplosionCancelListener::new),
-                        entry("witherExplosionCancel", WitherExplosionCancelListener::new),
-                        entry("creeperExplosionProtection", CreeperExplosionProtectionListener::new),
-                        entry("endCrystalExplosionPrevention", EndCrystalExplosionPreventionListener::new),
-                        entry("ghastExplosionProtection", GhastExplosionProtectionListener::new),
-                        entry("witherExplosionProtection", WitherExplosionProtectionListener::new),
-                        entry("enderDragonBlockDestructionProtection", EnderDragonBlockDestructionProtectionListener::new),
-                        entry("enderManBlockPickupProtection", EnderManBlockPickupProtectionListener::new),
-                        entry("phantomDamagePrevention", PhantomDamagePreventionListener::new),
-                        entry("windChargeBlockDestructionProtection", WindChargeBlockDestructionProtectionListener::new),
-                        entry("breezeWindChargeImpactCancel", BreezeWindChargeImpactCancelListener::new),
-                        entry("ravagerBlockDestructionProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "RAVAGER")),
-                        entry("silverfishBlockChangeProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "SILVERFISH")),
-                        entry("rabbitCropEatingProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "RABBIT")),
-                        entry("sheepGrassEatingProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "SHEEP")),
-                        entry("villagerCropModificationProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "VILLAGER")),
-                        entry("foxBerryHarvestProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "FOX")),
-                        entry("mobDoorBreakProtection", MobDoorBreakProtectionListener::new),
-                        entry("snowGolemSnowTrailPrevention", SnowGolemSnowTrailPreventionListener::new),
-                        entry("witherRoseFormationPrevention", WitherRoseFormationPreventionListener::new));
+    public static final List<FeatureDefinition> FEATURES = Collections.unmodifiableList(Arrays.asList(
+            feature("bedExplosionCancel", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    new String[] {"BED_BLOCK", "LEGACY_BED", "RED_BED"}, NO_NAMES,
+                    (worlds, capabilities) -> new BedExplosionCancelListener(worlds, capabilities)),
+            feature("tntExplosionCancel", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"PRIMED_TNT", "TNT"},
+                    (worlds, capabilities) -> new TNTExplosionCancelListener(worlds)),
+            feature("bedExplosionProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    new String[] {"BED_BLOCK", "LEGACY_BED", "RED_BED"}, NO_NAMES,
+                    (worlds, capabilities) -> new BedExplosionProtectionListener(worlds, capabilities)),
+            feature("tntExplosionProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"PRIMED_TNT", "TNT"},
+                    (worlds, capabilities) -> new TNTExplosionProtectionListener(worlds)),
+            feature("creeperExplosionCancel", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"CREEPER"}, (worlds, capabilities) -> new CreeperExplosionCancelListener(worlds)),
+            feature("endCrystalExplosionCancel", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"ENDER_CRYSTAL", "END_CRYSTAL"},
+                    (worlds, capabilities) -> new EndCrystalExplosionCancelListener(worlds)),
+            feature("ghastExplosionCancel", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"GHAST"}, (worlds, capabilities) -> new GhastExplosionCancelListener(worlds)),
+            feature("witherExplosionCancel", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"WITHER"}, (worlds, capabilities) -> new WitherExplosionCancelListener(worlds)),
+            feature("creeperExplosionProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"CREEPER"},
+                    (worlds, capabilities) -> new CreeperExplosionProtectionListener(worlds)),
+            feature("endCrystalExplosionPrevention", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"ENDER_CRYSTAL", "END_CRYSTAL"},
+                    (worlds, capabilities) -> new EndCrystalExplosionPreventionListener(worlds)),
+            feature("ghastExplosionProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"GHAST"}, (worlds, capabilities) -> new GhastExplosionProtectionListener(worlds)),
+            feature("witherExplosionProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES, NO_NAMES,
+                    new String[] {"WITHER"}, (worlds, capabilities) -> new WitherExplosionProtectionListener(worlds)),
+            simple("cropTrampleProtection", MinecraftVersion.V1_8_8,
+                    (worlds, capabilities) -> new CropTrampleProtectionListener(worlds)),
+            simple("dragonEggTeleportationPrevention", MinecraftVersion.V1_8_8,
+                    (worlds, capabilities) -> new DragonEggTeleportationPreventionListener(worlds)),
+            simple("fireSpreadPrevention", MinecraftVersion.V1_8_8,
+                    (worlds, capabilities) -> new FireSpreadPreventionListener(worlds)),
+            simple("fireIgnitionPrevention", MinecraftVersion.V1_8_8,
+                    (worlds, capabilities) -> new FireIgnitionPreventionListener(worlds)),
+            feature("enderDragonBlockDestructionProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"ENDER_DRAGON"},
+                    (worlds, capabilities) -> new EnderDragonBlockDestructionProtectionListener(worlds)),
+            feature("enderManBlockPickupProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"ENDERMAN"},
+                    (worlds, capabilities) -> new EnderManBlockPickupProtectionListener(worlds)),
+            feature("silverfishBlockChangeProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"SILVERFISH"},
+                    entityBlockChangeFactory("SILVERFISH")),
+            feature("rabbitCropEatingProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"RABBIT"}, entityBlockChangeFactory("RABBIT")),
+            feature("sheepGrassEatingProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"SHEEP"}, entityBlockChangeFactory("SHEEP")),
+            feature("villagerCropModificationProtection", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"VILLAGER"}, entityBlockChangeFactory("VILLAGER")),
+            simple("mobDoorBreakProtection", MinecraftVersion.V1_8_8,
+                    (worlds, capabilities) -> new MobDoorBreakProtectionListener(worlds)),
+            feature("snowGolemSnowTrailPrevention", MinecraftVersion.V1_8_8, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"SNOWMAN", "SNOW_GOLEM"},
+                    (worlds, capabilities) -> new SnowGolemSnowTrailPreventionListener(worlds)),
+            feature("phantomDamagePrevention", MinecraftVersion.V1_13, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"PHANTOM"},
+                    (worlds, capabilities) -> new PhantomDamagePreventionListener(worlds)),
+            feature("ravagerBlockDestructionProtection", MinecraftVersion.V1_14, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"RAVAGER"}, entityBlockChangeFactory("RAVAGER")),
+            feature("foxBerryHarvestProtection", MinecraftVersion.V1_14, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"FOX"}, entityBlockChangeFactory("FOX")),
+            feature("witherRoseFormationPrevention", MinecraftVersion.V1_14, NO_CAPABILITIES,
+                    new String[] {"WITHER_ROSE"}, NO_NAMES,
+                    (worlds, capabilities) -> new WitherRoseFormationPreventionListener(worlds)),
+            feature("respawnAnchorExplosionCancel", MinecraftVersion.V1_16,
+                    new ServerCapabilities.Capability[] {ServerCapabilities.Capability.RESPAWN_ANCHOR_CHARGES},
+                    new String[] {"RESPAWN_ANCHOR"}, NO_NAMES,
+                    (worlds, capabilities) -> new RespawnAnchorExplosionCancelListener(worlds, capabilities)),
+            feature("respawnAnchorExplosionPrevention", MinecraftVersion.V1_16,
+                    new ServerCapabilities.Capability[] {ServerCapabilities.Capability.RESPAWN_ANCHOR_CHARGES},
+                    new String[] {"RESPAWN_ANCHOR"}, NO_NAMES,
+                    (worlds, capabilities) -> new RespawnAnchorExplosionPreventionListener(worlds, capabilities)),
+            feature("decoratedPotProjectileProtection", MinecraftVersion.V1_20_3,
+                    new ServerCapabilities.Capability[] {ServerCapabilities.Capability.PROJECTILE_HIT_BLOCK},
+                    new String[] {"DECORATED_POT"}, NO_NAMES,
+                    (worlds, capabilities) -> new DecoratedPotProjectileProtectionListener(worlds, capabilities)),
+            feature("windChargeBlockDestructionProtection", MinecraftVersion.V1_21, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"WIND_CHARGE", "BREEZE_WIND_CHARGE"},
+                    (worlds, capabilities) -> new WindChargeBlockDestructionProtectionListener(worlds)),
+            feature("breezeWindChargeImpactCancel", MinecraftVersion.V1_21, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"BREEZE_WIND_CHARGE"},
+                    (worlds, capabilities) -> new BreezeWindChargeImpactCancelListener(worlds, capabilities)),
+            feature("weavingCobwebFormationPrevention", MinecraftVersion.V1_21, NO_CAPABILITIES,
+                    new String[] {"WEB", "COBWEB"}, NO_NAMES,
+                    (worlds, capabilities) -> new WeavingCobwebFormationPreventionListener(worlds)),
+            feature("sulfurCubeExplosionCancel", MinecraftVersion.V26_2, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"SULFUR_CUBE", "SULPHUR_CUBE"},
+                    (worlds, capabilities) -> new SulfurCubeExplosionCancelListener(worlds)),
+            feature("sulfurCubeExplosionProtection", MinecraftVersion.V26_2, NO_CAPABILITIES,
+                    NO_NAMES, new String[] {"SULFUR_CUBE", "SULPHUR_CUBE"},
+                    (worlds, capabilities) -> new SulfurCubeExplosionProtectionListener(worlds))
+    ));
 
-	@Override
-	public void onEnable() {
+    private final List<Listener> listeners = new ArrayList<Listener>();
+    private ConfigManager configManager;
+    private ServerCapabilities capabilities;
+    private MinecraftVersion minecraftVersion;
 
-		// 确保配置文件存在，如果不存在则创建一个默认的
-		saveDefaultConfig();
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
 
-                // 初始化 ConfigManager
-                File configFile = new File(getDataFolder(), "config.yml");
-                configManager = new ConfigManager(configFile);
+        try {
+            minecraftVersion = MinecraftVersion.parse(getServer().getBukkitVersion());
+        } catch (IllegalArgumentException exception) {
+            getLogger().severe(exception.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        capabilities = ServerCapabilities.detect();
+        configManager = new ConfigManager(new File(getDataFolder(), "config.yml"), getLogger());
 
-                if (configManager.getConfig() == null) {
-                        getLogger().severe("配置加载失败，插件将被禁用。");
-                        getServer().getPluginManager().disablePlugin(this);
-                        return;
-                }
-
-                // 加载功能
-                try {
-                        loadFeatures();
-                } catch (SerializationException e) {
-                        String pathInfo = e.path() != null ? e.path().toString() : "未知节点";
-                        getLogger().severe("配置节点 " + pathInfo + " 解析失败: " + e.getMessage());
-                        getLogger().severe("无法加载插件,请联系开发者QQ:3288732918");
-                        getServer().getPluginManager().disablePlugin(this); // 禁用插件
-                        return;
-                }
-
-		// 加载指令
-		loadCommand();
-
-		// 加载bStats
-		if (configManager.getConfig().node("enabled-bstats").getBoolean(true)) {
-			Metrics metrics = new Metrics(this, 22831);
-		}
-
-		// Plugin startup logic
-
-		getLogger().info("插件加载完毕!");
-
-	}
-
-        @Override
-        public void onDisable() {
-                getLogger().info("插件已卸载!");
-                // Plugin shutdown logic
-                HandlerList.unregisterAll(this);
-                listeners.clear();
+        WorldSafeConfig initialConfig = configManager.loadInitial(featureKeys());
+        if (initialConfig == null || !replaceListeners(initialConfig, false)) {
+            getLogger().severe("WorldSafe could not load a valid configuration and will be disabled.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
         }
 
-	public void loadFeatures() throws SerializationException {
-		// 获取配置文件中的总开关
-		boolean enabled = configManager.getConfig().node("enabled").getBoolean();
-                if (!enabled) {
-                        getLogger().info("插件已禁用，未加载任何功能。");
-                        return;
-                }
+        PluginCommand command = getCommand("worldsafe");
+        if (command == null) {
+            getLogger().severe("Command 'worldsafe' is missing from plugin.yml.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        WorldSafeCommand commandHandler = new WorldSafeCommand(this);
+        command.setExecutor(commandHandler);
+        command.setTabCompleter(commandHandler);
 
-                for (Map.Entry<String, Function<List<String>, ? extends Listener>> feature : FEATURES.entrySet()) {
-                        registerListener(feature.getKey(), feature.getValue());
-                }
-
+        if (initialConfig.isBStatsEnabled()) {
+            try {
+                new Metrics(this, 22831);
+            } catch (RuntimeException exception) {
+                getLogger().warning("bStats could not be started: " + exception.getMessage());
+            } catch (LinkageError error) {
+                getLogger().warning("bStats is unavailable on this server: " + error.getClass().getSimpleName());
+            }
         }
 
+        getLogger().info("WorldSafe enabled for Minecraft " + minecraftVersion + ".");
+    }
 
-	private void loadCommand() {
+    @Override
+    public void onDisable() {
+        HandlerList.unregisterAll(this);
+        listeners.clear();
+    }
 
-		// 注册重载命令
-		this.liteCommands = LiteCommandsBukkit.builder("WorldSafe").commands(new WorldSafeCommand(this)).build();
+    public boolean reloadWorldSafe() {
+        WorldSafeConfig candidate = configManager.loadCandidate(featureKeys());
+        if (candidate == null) {
+            getLogger().severe("Reload failed; the previous configuration and listeners remain active.");
+            return false;
+        }
+        return replaceListeners(candidate, true);
+    }
 
-	}
+    private boolean replaceListeners(WorldSafeConfig candidate, boolean commit) {
+        List<Listener> replacements = createListeners(candidate);
+        if (replacements == null) {
+            return false;
+        }
 
+        List<Listener> previous = new ArrayList<Listener>(listeners);
+        for (Listener listener : previous) {
+            HandlerList.unregisterAll(listener);
+        }
 
-        private void registerListener(String configNode, Function<List<String>, ? extends Listener> factory)
-                        throws SerializationException {
-                List<String> worlds = configManager.getConfig().node(configNode).getList(String.class);
-                if (worlds == null || worlds.isEmpty()) {
-                        return;
-                }
-                Listener listener = factory.apply(worlds);
+        List<Listener> registered = new ArrayList<Listener>();
+        try {
+            for (Listener listener : replacements) {
                 getServer().getPluginManager().registerEvents(listener, this);
-                listeners.add(listener);
+                registered.add(listener);
+            }
+        } catch (RuntimeException exception) {
+            rollbackListeners(previous, registered, exception);
+            return false;
+        } catch (LinkageError error) {
+            rollbackListeners(previous, registered, error);
+            return false;
         }
 
-        public void resetFeatures() {
-                HandlerList.unregisterAll(this);
-                listeners.clear();
-                try {
-                        loadFeatures();
-                } catch (SerializationException e) {
-                        String pathInfo = e.path() != null ? e.path().toString() : "未知节点";
-                        getLogger().severe("重载配置失败，节点 " + pathInfo + " 解析失败: " + e.getMessage());
-                }
+        listeners.clear();
+        listeners.addAll(replacements);
+        if (commit) {
+            configManager.commit(candidate);
+        }
+        return true;
+    }
+
+    private List<Listener> createListeners(WorldSafeConfig config) {
+        List<Listener> created = new ArrayList<Listener>();
+        if (!config.isEnabled()) {
+            getLogger().info("WorldSafe is disabled in config.yml; no protection listeners were loaded.");
+            return created;
         }
 
-        public List<Listener> getListeners() {
-                return Collections.unmodifiableList(listeners);
+        for (FeatureDefinition feature : FEATURES) {
+            List<String> worlds = config.getWorlds(feature.getConfigKey());
+            if (worlds.isEmpty()) {
+                continue;
+            }
+            String unsupportedReason = feature.getUnsupportedReason(minecraftVersion, capabilities);
+            if (unsupportedReason != null) {
+                getLogger().warning("Skipping feature '" + feature.getConfigKey() + "': " + unsupportedReason);
+                continue;
+            }
+            try {
+                created.add(feature.createListener(worlds, capabilities));
+            } catch (RuntimeException exception) {
+                getLogger().severe("Failed to create feature '" + feature.getConfigKey() + "': "
+                        + exception.getMessage());
+                return null;
+            } catch (LinkageError error) {
+                getLogger().severe("Failed to link feature '" + feature.getConfigKey() + "': "
+                        + error.getClass().getSimpleName());
+                return null;
+            }
         }
+        return created;
+    }
 
+    private void rollbackListeners(List<Listener> previous, List<Listener> registered, Throwable failure) {
+        for (Listener listener : registered) {
+            HandlerList.unregisterAll(listener);
+        }
+        listeners.clear();
+        for (Listener listener : previous) {
+            getServer().getPluginManager().registerEvents(listener, this);
+            listeners.add(listener);
+        }
+        getLogger().severe("Listener replacement failed; previous listeners were restored: " + failure.getMessage());
+    }
 
+    private static List<String> featureKeys() {
+        List<String> keys = new ArrayList<String>();
+        for (FeatureDefinition feature : FEATURES) {
+            keys.add(feature.getConfigKey());
+        }
+        return keys;
+    }
 
+    public List<Listener> getListeners() {
+        return Collections.unmodifiableList(listeners);
+    }
+
+    private static FeatureDefinition simple(String key, MinecraftVersion minimumVersion,
+            FeatureDefinition.ListenerFactory factory) {
+        return feature(key, minimumVersion, NO_CAPABILITIES, NO_NAMES, NO_NAMES, factory);
+    }
+
+    private static FeatureDefinition feature(String key, MinecraftVersion minimumVersion,
+            ServerCapabilities.Capability[] requiredCapabilities, String[] requiredMaterials,
+            String[] requiredEntities, FeatureDefinition.ListenerFactory factory) {
+        return new FeatureDefinition(key, minimumVersion, requiredCapabilities, requiredMaterials,
+                requiredEntities, factory);
+    }
+
+    private static FeatureDefinition.ListenerFactory entityBlockChangeFactory(final String entityType) {
+        return (worlds, capabilities) -> new EntityBlockChangeProtectionListener(worlds, entityType);
+    }
 }

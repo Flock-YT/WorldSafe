@@ -6,9 +6,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.block.BlockExplodeEvent;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,17 +14,27 @@ import java.util.function.LongSupplier;
 
 public final class BlockExplosionSourceResolver {
 
-    private static final long DEFAULT_TTL_NANOS = Duration.ofSeconds(2).toNanos();
+    private static final long DEFAULT_TTL_NANOS = 2_000_000_000L;
 
     private final Map<BlockKey, TrackedSource> recentSources = new HashMap<>();
     private final LongSupplier nanoTime;
     private final long ttlNanos;
+    private final ServerCapabilities capabilities;
 
     public BlockExplosionSourceResolver() {
-        this(System::nanoTime, DEFAULT_TTL_NANOS);
+        this(ServerCapabilities.detect());
+    }
+
+    public BlockExplosionSourceResolver(ServerCapabilities capabilities) {
+        this(capabilities, System::nanoTime, DEFAULT_TTL_NANOS);
     }
 
     BlockExplosionSourceResolver(LongSupplier nanoTime, long ttlNanos) {
+        this(ServerCapabilities.detect(), nanoTime, ttlNanos);
+    }
+
+    BlockExplosionSourceResolver(ServerCapabilities capabilities, LongSupplier nanoTime, long ttlNanos) {
+        this.capabilities = Objects.requireNonNull(capabilities, "capabilities");
         this.nanoTime = Objects.requireNonNull(nanoTime, "nanoTime");
         this.ttlNanos = ttlNanos;
     }
@@ -45,7 +52,7 @@ public final class BlockExplosionSourceResolver {
             return false;
         }
 
-        BlockState explodedState = getExplodedBlockState(event);
+        BlockState explodedState = capabilities.getExplodedBlockState(event);
         if (explodedState != null && MaterialMatcher.matches(explodedState, materialAliases)) {
             return true;
         }
@@ -58,37 +65,75 @@ public final class BlockExplosionSourceResolver {
 
         purgeExpired();
         TrackedSource tracked = eventBlock == null ? null : recentSources.remove(BlockKey.from(eventBlock));
-        return tracked != null && MaterialMatcher.matchesName(tracked.materialName(), materialAliases);
-    }
-
-    private BlockState getExplodedBlockState(BlockExplodeEvent event) {
-        try {
-            Method method = event.getClass().getMethod("getExplodedBlockState");
-            Object state = method.invoke(event);
-            return state instanceof BlockState ? (BlockState) state : null;
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
-            return null;
-        }
+        return tracked != null && MaterialMatcher.matchesName(tracked.getMaterialName(), materialAliases);
     }
 
     private void purgeExpired() {
         long now = nanoTime.getAsLong();
         Iterator<TrackedSource> iterator = recentSources.values().iterator();
         while (iterator.hasNext()) {
-            if (now - iterator.next().createdAtNanos() > ttlNanos) {
+            if (now - iterator.next().getCreatedAtNanos() > ttlNanos) {
                 iterator.remove();
             }
         }
     }
 
-    private record TrackedSource(String materialName, long createdAtNanos) {
+    private static final class TrackedSource {
+        private final String materialName;
+        private final long createdAtNanos;
+
+        private TrackedSource(String materialName, long createdAtNanos) {
+            this.materialName = materialName;
+            this.createdAtNanos = createdAtNanos;
+        }
+
+        private String getMaterialName() {
+            return materialName;
+        }
+
+        private long getCreatedAtNanos() {
+            return createdAtNanos;
+        }
     }
 
-    private record BlockKey(String worldName, int x, int y, int z) {
+    private static final class BlockKey {
+        private final String worldName;
+        private final int x;
+        private final int y;
+        private final int z;
+
+        private BlockKey(String worldName, int x, int y, int z) {
+            this.worldName = worldName;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
         private static BlockKey from(Block block) {
             World world = block.getWorld();
             String worldName = world == null ? "" : world.getName();
             return new BlockKey(worldName, block.getX(), block.getY(), block.getZ());
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof BlockKey)) {
+                return false;
+            }
+            BlockKey key = (BlockKey) other;
+            return x == key.x && y == key.y && z == key.z && worldName.equals(key.worldName);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = worldName.hashCode();
+            result = 31 * result + x;
+            result = 31 * result + y;
+            result = 31 * result + z;
+            return result;
         }
     }
 }

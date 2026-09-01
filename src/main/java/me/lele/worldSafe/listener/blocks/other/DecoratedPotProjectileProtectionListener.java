@@ -1,6 +1,7 @@
 package me.lele.worldSafe.listener.blocks.other;
 
 import me.lele.worldSafe.compat.MaterialMatcher;
+import me.lele.worldSafe.compat.ServerCapabilities;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Projectile;
@@ -12,15 +13,22 @@ import java.util.List;
 
 public class DecoratedPotProjectileProtectionListener extends WorldScopedFeature {
 
+    private final ServerCapabilities capabilities;
+
     public DecoratedPotProjectileProtectionListener(List<String> worlds) {
+        this(worlds, ServerCapabilities.detect());
+    }
+
+    public DecoratedPotProjectileProtectionListener(List<String> worlds, ServerCapabilities capabilities) {
         super(worlds);
+        this.capabilities = capabilities;
     }
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
-        Block hitBlock = event.getHitBlock();
+        Block hitBlock = capabilities.getProjectileHitBlock(event);
         if (isDecoratedPot(hitBlock) && isWorldEnabled(getWorld(hitBlock))) {
-            event.setCancelled(true);
+            capabilities.cancelIfPossible(event);
         }
     }
 

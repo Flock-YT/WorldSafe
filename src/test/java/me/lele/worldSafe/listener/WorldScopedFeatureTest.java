@@ -3,6 +3,7 @@ package me.lele.worldSafe.listener;
 import org.bukkit.World;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -14,7 +15,7 @@ class WorldScopedFeatureTest {
 
     @Test
     void normalizesConfiguredWorldNames() {
-        TestFeature feature = new TestFeature(List.of(" World ", "WORLD_NETHER"));
+        TestFeature feature = new TestFeature(Arrays.asList(" World ", "WORLD_NETHER", "", null));
         assertTrue(feature.enabled(world("world")));
         assertTrue(feature.enabled(world("world_nether")));
         assertFalse(feature.enabled(world("other")));

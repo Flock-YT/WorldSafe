@@ -1,0 +1,67 @@
+name: Bukkit API Compatibility Matrix
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Spigot ${{ matrix.api }} / JDK ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 1.8.8-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.9.4-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.10.2-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.11.2-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.12.2-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.13.2-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.14.4-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.15.2-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.16.5-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.17.1-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.18.2-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.19.4-R0.1-SNAPSHOT
+            java: '17'
+          - api: 1.20.6-R0.1-SNAPSHOT
+            java: '21'
+          - api: 1.21.11-R0.1-SNAPSHOT
+            java: '21'
+          - api: 26.1.2-R0.1-SNAPSHOT
+            java: '25'
+          - api: 26.2-R0.1-SNAPSHOT
+            java: '25'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      - name: Compile against Spigot API ${{ matrix.api }}
+        run: >-
+          mvn -B --no-transfer-progress clean package
+          -Dspigot.version=${{ matrix.api }}
+          -Dmaven.test.skip=true

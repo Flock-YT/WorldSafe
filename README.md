@@ -1,124 +1,118 @@
-
-
 **English** | [中文](README_CN.md)
 
-# 🌍 WorldSafe
+# WorldSafe
 
-**WorldSafe** is a lightweight Minecraft Bukkit plugin designed to prevent certain entities and items from damaging the map.
+WorldSafe is a lightweight Bukkit plugin that prevents selected entities and game mechanics from damaging configured worlds.
 
-## 📋 Installation Requirements
+## Compatibility
 
-- **Java 17 or newer**
-- **Minecraft Java Edition 1.19 or newer**
+- One JAR supports **Minecraft 1.8.8 through 26.2**.
+- The plugin is compiled as **Java 8 bytecode**. Run the server with the Java version required by that server release.
+- Supported servers are CraftBukkit, Spigot, Paper, and forks that preserve Bukkit public API compatibility.
+- Minecraft 1.8.0-1.8.7 are not supported.
 
-## ✨ Features
+WorldSafe compiles against the Spigot 1.8.8 API. Newer functionality is detected by material/entity names and cached public-API reflection. It does not use CraftBukkit, NMS, or server-internal packages.
 
-- **Lightweight**: Minimal performance impact, only loads necessary listeners, and minimizes irrelevant checks.
-- **Easy Configuration**: User-friendly and simple configuration.
-- **Extensible**: Add a new listener and register it in the `WorldSafe.FEATURES` map to make it configurable without touching the loading logic again.
+If a configured feature is unavailable, only that feature is skipped. The console receives one clear warning for that load, for example:
 
-## 📖 Usage
+```text
+Skipping feature 'respawnAnchorExplosionCancel': requires Minecraft 1.16+; detected 1.12.2
+```
 
-1. Download the plugin and place it in the `plugins` folder.
-2. Restart the server to load the plugin.
-3. Make necessary settings in the `plugins/WorldSafe/config.yml` configuration file.
+All other supported protections continue to run. A malformed configuration reload keeps the previous configuration and listeners active.
 
-## 🛠️ Roadmap
+## Installation
 
-The plugin is continuously being updated. Please stay tuned for future updates. You can submit your requests in the issue section!
+1. Put `WorldSafe-<version>.jar` in the server's `plugins` directory.
+2. Restart the server.
+3. Configure world lists in `plugins/WorldSafe/config.yml`.
 
-## 🔐 Permissions
+## Commands And Permission
 
-Currently, there is only one permission: `worldsafe.admin`
+- `/worldsafe help` - Show command help.
+- `/worldsafe reload` - Atomically reload the configuration.
+- `worldsafe.admin` - Allows use of WorldSafe administration commands. Defaults to operators.
 
-## ➡️ Commands
+## Feature Availability
 
-### `/worldsafe help`
-View plugin help
+Use every group whose minimum version is not newer than your server.
 
-### `/worldsafe reload`
-Reload the plugin configuration
+### Minecraft 1.8.8+
 
-# Implemented Features
+Direct explosion cancellation:
 
-Find your server version, then read the version groups from top to bottom. You can use every group whose version is not newer than your server. For example, a Minecraft 1.21 server can use the features under **1.19+**, **1.20.3+**, and **1.21+**, but it cannot use features under **26.2+**.
+- `bedExplosionCancel`
+- `tntExplosionCancel`
+- `creeperExplosionCancel`
+- `endCrystalExplosionCancel`
+- `ghastExplosionCancel`
+- `witherExplosionCancel`
 
-<details open>
-<summary><strong>Minecraft 1.19+</strong></summary>
+Prevent block destruction while retaining explosion damage:
 
-### Direct Explosion Cancellation
-*(If you configure an explosion cancellation option, you do not also need its block-protection counterpart.)*
+- `bedExplosionProtection`
+- `tntExplosionProtection`
+- `creeperExplosionProtection`
+- `endCrystalExplosionPrevention`
+- `ghastExplosionProtection`
+- `witherExplosionProtection`
 
-- ✅ **bedExplosionCancel** - Prevent bed explosions “(This configuration should not include the overworld)”
-- ✅ **respawnAnchorExplosionCancel** - Prevent respawn anchor explosions
-- ✅ **tntExplosionCancel** - Prevent TNT explosions
-- ✅ **creeperExplosionCancel** - Prevent creeper explosions
-- ✅ **endCrystalExplosionCancel** - Prevent end crystal explosions
-- ✅ **ghastExplosionCancel** - Prevent ghast fireball explosions
-- ✅ **witherExplosionCancel** - Prevent wither explosions
+Other protections:
 
-### Prevent Block Destruction but Keep Damage
+- `cropTrampleProtection`
+- `dragonEggTeleportationPrevention`
+- `fireSpreadPrevention`
+- `fireIgnitionPrevention`
+- `enderDragonBlockDestructionProtection`
+- `enderManBlockPickupProtection`
+- `silverfishBlockChangeProtection`
+- `rabbitCropEatingProtection`
+- `sheepGrassEatingProtection`
+- `villagerCropModificationProtection`
+- `mobDoorBreakProtection`
+- `snowGolemSnowTrailPrevention`
 
-- ✅ **bedExplosionProtection** - Prevent bed explosions from destroying blocks
-- ✅ **respawnAnchorExplosionPrevention** - Prevent respawn anchor explosions from destroying blocks
-- ✅ **tntExplosionProtection** - Prevent TNT explosions from destroying blocks
-- ✅ **creeperExplosionProtection** - Prevent creeper explosions from destroying blocks
-- ✅ **endCrystalExplosionPrevention** - Prevent end crystal explosions from destroying blocks
-- ✅ **ghastExplosionProtection** - Prevent ghast fireball explosions from destroying blocks
-- ✅ **witherExplosionProtection** - Prevent wither explosions from destroying blocks
+### Minecraft 1.13+
 
-### Other Map Protections
+- `phantomDamagePrevention`
 
-- ✅ **cropTrampleProtection** - Prevent crops from being trampled
-- ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
-- ✅ **fireSpreadPrevention** - Prevent fire from spreading between blocks
-- ✅ **fireIgnitionPrevention** - Prevent fireballs, lightning, explosions, end crystals, and burning arrows from igniting blocks
-- ✅ **enderDragonBlockDestructionProtection** - Prevent ender dragon from destroying blocks
-- ✅ **enderManBlockPickupProtection** - Prevent endermen from picking up blocks
-- ✅ **phantomDamagePrevention** - Prevent phantoms from causing damage
-- ✅ **ravagerBlockDestructionProtection** - Prevent ravagers from destroying blocks
-- ✅ **silverfishBlockChangeProtection** - Prevent silverfish from entering or breaking infested blocks
-- ✅ **rabbitCropEatingProtection** - Prevent rabbits from eating crops
-- ✅ **sheepGrassEatingProtection** - Prevent sheep from eating grass
-- ✅ **villagerCropModificationProtection** - Prevent villagers from harvesting or planting crops
-- ✅ **foxBerryHarvestProtection** - Prevent foxes from harvesting berries
-- ✅ **mobDoorBreakProtection** - Prevent mobs from breaking doors
-- ✅ **snowGolemSnowTrailPrevention** - Prevent snow golems from forming snow trails
-- ✅ **witherRoseFormationPrevention** - Prevent wither rose formation
+### Minecraft 1.14+
 
-</details>
+- `ravagerBlockDestructionProtection`
+- `foxBerryHarvestProtection`
+- `witherRoseFormationPrevention`
 
-<details>
-<summary><strong>Minecraft 1.20.3+</strong></summary>
+### Minecraft 1.16+
 
-- ✅ **decoratedPotProjectileProtection** - Prevent projectiles from breaking decorated pots
+- `respawnAnchorExplosionCancel`
+- `respawnAnchorExplosionPrevention`
 
-</details>
+### Minecraft 1.20.3+
 
-<details>
-<summary><strong>Minecraft 1.21+</strong></summary>
+- `decoratedPotProjectileProtection`
 
-- ✅ **windChargeBlockDestructionProtection** - Protect decorated pots, chorus flowers, and pointed dripstone from wind charges while retaining impact damage
-- ✅ **breezeWindChargeImpactCancel** - Fully cancel breeze wind-charge impacts without affecting player wind charges
-- ✅ **weavingCobwebFormationPrevention** - Prevent weaving from forming cobwebs
+### Minecraft 1.21+
 
-</details>
+- `windChargeBlockDestructionProtection`
+- `breezeWindChargeImpactCancel`
+- `weavingCobwebFormationPrevention`
 
-<details>
-<summary><strong>Minecraft 26.2+</strong></summary>
+### Minecraft 26.2+
 
-### Direct Explosion Cancellation
+- `sulfurCubeExplosionCancel`
+- `sulfurCubeExplosionProtection`
 
-- ✅ **sulfurCubeExplosionCancel** - Prevent sulfur cube TNT-fed explosions
+## Building
 
-### Prevent Block Destruction but Keep Damage
+Use JDK 17 or newer for development while producing Java 8 bytecode:
 
-- ✅ **sulfurCubeExplosionProtection** - Prevent sulfur cube explosions from destroying blocks
+```bash
+mvn clean verify
+./scripts/verify-release-jar.sh
+```
 
-</details>
-
----
+The release verifier checks the embedded version, signatures, bundled API classes, and class major version 52.
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 
-**Copyright Notice**: This plugin is developed by [Eric.乐乐 & 追求at](#), and follows the [MIT License](#).
+WorldSafe is licensed under the MIT License.

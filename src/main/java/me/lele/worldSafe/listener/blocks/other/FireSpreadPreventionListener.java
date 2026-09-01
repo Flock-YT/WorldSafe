@@ -1,5 +1,6 @@
 package me.lele.worldSafe.listener.blocks.other;
 
+import me.lele.worldSafe.compat.MaterialMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
@@ -47,6 +48,6 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
         }
 
         private boolean isFire(Material material) {
-                return material == Material.FIRE || material == Material.SOUL_FIRE;
+                return MaterialMatcher.matches(material, "FIRE", "SOUL_FIRE");
         }
 }
