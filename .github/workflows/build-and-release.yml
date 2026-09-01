@@ -5,10 +5,90 @@ on:
     branches:
       - master
     paths:
-      - '.github/workflows/**'
+      - pom.xml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worldsafe-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.version.outputs.should_release }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      artifact: ${{ steps.version.outputs.artifact }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Detect Maven version change
+        id: version
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+
+          read_version() {
+            mvn -q -Dstyle.color=never -f "$1" help:evaluate \
+              -Dexpression=project.version \
+              -DforceStdout 2>/dev/null | tr -d '\r'
+          }
+
+          current_version="$(read_version pom.xml)"
+          if [[ ! "$current_version" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]]; then
+            echo "Invalid Maven project.version: $current_version" >&2
+            exit 1
+          fi
+
+          should_release=false
+          previous_version='<manual>'
+
+          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+            if [[ "$GITHUB_REF" != 'refs/heads/master' ]]; then
+              echo "Manual releases must run from the master branch." >&2
+              exit 1
+            fi
+            should_release=true
+          elif [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            previous_version='<none>'
+            should_release=true
+          else
+            git show "${BEFORE_SHA}:pom.xml" > "$RUNNER_TEMP/pom-before.xml"
+            previous_version="$(read_version "$RUNNER_TEMP/pom-before.xml")"
+            if [[ "$previous_version" != "$current_version" ]]; then
+              should_release=true
+            fi
+          fi
+
+          echo "Previous version: $previous_version"
+          echo "Current version: $current_version"
+          echo "Release required: $should_release"
+
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
+          echo "version=$current_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$current_version" >> "$GITHUB_OUTPUT"
+          echo "artifact=WorldSafe-$current_version.jar" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -18,61 +98,62 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
+          distribution: temurin
           java-version: '21'
-
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven
+          cache: maven
 
       - name: Build with Maven
-        run: mvn -B clean package
+        run: mvn -B --no-transfer-progress clean verify
+
+      - name: Verify release JAR
+        run: ./scripts/verify-release-jar.sh "target/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"
+
+      - name: Upload release JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-jar
+          path: target/${{ needs.detect-version.outputs.artifact }}
+          if-no-files-found: error
 
   release:
-    needs: build
+    needs:
+      - detect-version
+      - build
+    if: needs.detect-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
-          java-version: '21'
+          fetch-depth: 0
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4
+      - name: Download release JAR
+        uses: actions/download-artifact@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven
+          name: release-jar
+          path: dist
 
-      - name: Build with Maven
-        run: mvn -B clean package
+      - name: Fail if tag already exists
+        env:
+          TAG: ${{ needs.detect-version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; refusing to overwrite an existing release." >&2
+            exit 1
+          fi
 
       - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v1.0.5
-          release_name: Release v1.0.5
-          draft: false
-          prerelease: false
-
-      - name: Upload Artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/WorldSafe-1.0.5.jar
-          asset_name: WorldSafe-1.0.5.jar
-          asset_content_type: application/java-archive
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.detect-version.outputs.tag }}
+          ARTIFACT: ${{ needs.detect-version.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" "dist/$ARTIFACT" \
+            --target "$GITHUB_SHA" \
+            --title "WorldSafe $TAG" \
+            --generate-notes
