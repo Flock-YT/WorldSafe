@@ -25,72 +25,104 @@ Features added in newer Minecraft versions are automatically ignored on older se
 
 ## Feature Availability
 
-Use every group whose minimum version is not newer than your server.
+Find your server version, then read the version groups from top to bottom. You can use every group whose version is not newer than your server.
 
-### Minecraft 1.8.8+
+<details open>
+<summary><strong>Minecraft 1.8.8+</strong></summary>
 
-Direct explosion cancellation:
+### Direct Explosion Cancellation
+*(If you configure an explosion cancellation option, you do not also need its block-protection counterpart.)*
 
-- `bedExplosionCancel`
-- `tntExplosionCancel`
-- `creeperExplosionCancel`
-- `endCrystalExplosionCancel`
-- `ghastExplosionCancel`
-- `witherExplosionCancel`
+- **`bedExplosionCancel`** - Prevent bed explosions. Do not add overworld worlds to this option.
+- **`tntExplosionCancel`** - Fully prevent TNT and TNT minecart explosions.
+- **`creeperExplosionCancel`** - Fully prevent creeper explosions.
+- **`endCrystalExplosionCancel`** - Fully prevent end crystal explosions.
+- **`ghastExplosionCancel`** - Prevent ghast fireball explosions and damage.
+- **`witherExplosionCancel`** - Fully prevent wither and wither skull explosions.
 
-Prevent block destruction while retaining explosion damage:
+### Prevent Block Destruction but Keep Damage
 
-- `bedExplosionProtection`
-- `tntExplosionProtection`
-- `creeperExplosionProtection`
-- `endCrystalExplosionPrevention`
-- `ghastExplosionProtection`
-- `witherExplosionProtection`
+- **`bedExplosionProtection`** - Prevent bed explosions from destroying blocks while keeping explosion damage.
+- **`tntExplosionProtection`** - Prevent TNT and TNT minecart explosions from destroying blocks.
+- **`creeperExplosionProtection`** - Prevent creeper explosions from destroying blocks.
+- **`endCrystalExplosionPrevention`** - Prevent end crystal explosions from destroying blocks.
+- **`ghastExplosionProtection`** - Prevent ghast fireballs from destroying blocks while keeping damage.
+- **`witherExplosionProtection`** - Prevent withers and wither skulls from destroying blocks.
 
-Other protections:
+### Other Map Protections
 
-- `cropTrampleProtection`
-- `dragonEggTeleportationPrevention`
-- `fireSpreadPrevention`
-- `fireIgnitionPrevention`
-- `enderDragonBlockDestructionProtection`
-- `enderManBlockPickupProtection`
-- `silverfishBlockChangeProtection`
-- `rabbitCropEatingProtection`
-- `sheepGrassEatingProtection`
-- `villagerCropModificationProtection`
-- `mobDoorBreakProtection`
-- `snowGolemSnowTrailPrevention`
+- **`cropTrampleProtection`** - Prevent farmland from being trampled into dirt.
+- **`dragonEggTeleportationPrevention`** - Prevent dragon eggs from teleporting when touched.
+- **`fireSpreadPrevention`** - Prevent fire from spreading and burning nearby blocks.
+- **`fireIgnitionPrevention`** - Prevent fireballs, lightning, explosions, end crystals, and burning arrows from igniting blocks.
+- **`enderDragonBlockDestructionProtection`** - Prevent the Ender Dragon from destroying blocks.
+- **`enderManBlockPickupProtection`** - Prevent endermen from picking up or moving blocks.
+- **`silverfishBlockChangeProtection`** - Prevent silverfish from entering or breaking infested blocks.
+- **`rabbitCropEatingProtection`** - Prevent rabbits from eating crops.
+- **`sheepGrassEatingProtection`** - Prevent sheep from eating grass.
+- **`villagerCropModificationProtection`** - Prevent villagers from harvesting or planting crops.
+- **`mobDoorBreakProtection`** - Prevent mobs from breaking doors.
+- **`snowGolemSnowTrailPrevention`** - Prevent snow golems from leaving snow trails.
 
-### Minecraft 1.13+
+</details>
 
-- `phantomDamagePrevention`
+<details>
+<summary><strong>Minecraft 1.13+</strong></summary>
 
-### Minecraft 1.14+
+- **`phantomDamagePrevention`** - Prevent phantoms from damaging players or other entities.
 
-- `ravagerBlockDestructionProtection`
-- `foxBerryHarvestProtection`
-- `witherRoseFormationPrevention`
+</details>
 
-### Minecraft 1.16+
+<details>
+<summary><strong>Minecraft 1.14+</strong></summary>
 
-- `respawnAnchorExplosionCancel`
-- `respawnAnchorExplosionPrevention`
+- **`ravagerBlockDestructionProtection`** - Prevent ravagers from destroying blocks.
+- **`foxBerryHarvestProtection`** - Prevent foxes from harvesting sweet berries.
+- **`witherRoseFormationPrevention`** - Prevent wither roses from forming.
 
-### Minecraft 1.20.3+
+</details>
 
-- `decoratedPotProjectileProtection`
+<details>
+<summary><strong>Minecraft 1.16+</strong></summary>
 
-### Minecraft 1.21+
+### Direct Explosion Cancellation
 
-- `windChargeBlockDestructionProtection`
-- `breezeWindChargeImpactCancel`
-- `weavingCobwebFormationPrevention`
+- **`respawnAnchorExplosionCancel`** - Prevent charged respawn anchors from exploding outside the Nether.
 
-### Minecraft 26.2+
+### Prevent Block Destruction but Keep Damage
 
-- `sulfurCubeExplosionCancel`
-- `sulfurCubeExplosionProtection`
+- **`respawnAnchorExplosionPrevention`** - Prevent respawn anchor explosions from destroying blocks while keeping explosion damage.
+
+</details>
+
+<details>
+<summary><strong>Minecraft 1.20.3+</strong></summary>
+
+- **`decoratedPotProjectileProtection`** - Prevent projectiles from breaking decorated pots.
+
+</details>
+
+<details>
+<summary><strong>Minecraft 1.21+</strong></summary>
+
+- **`windChargeBlockDestructionProtection`** - Prevent wind charges from breaking decorated pots, chorus flowers, and pointed dripstone while keeping impact damage.
+- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind-charge impacts without affecting wind charges fired by players.
+- **`weavingCobwebFormationPrevention`** - Prevent the weaving effect from creating cobwebs.
+
+</details>
+
+<details>
+<summary><strong>Minecraft 26.2+</strong></summary>
+
+### Direct Explosion Cancellation
+
+- **`sulfurCubeExplosionCancel`** - Fully prevent sulfur cube explosions caused by consumed TNT.
+
+### Prevent Block Destruction but Keep Damage
+
+- **`sulfurCubeExplosionProtection`** - Prevent sulfur cube explosions from destroying blocks while keeping explosion damage.
+
+</details>
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 
