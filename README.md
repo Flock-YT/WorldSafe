@@ -41,7 +41,7 @@ Reload the plugin configuration
 
 # Implemented Features
 
-Features are grouped by the minimum Minecraft version they require. A server can use all features listed for its version and every earlier version.
+Find your server version, then read the version groups from top to bottom. You can use every group whose version is not newer than your server. For example, a Minecraft 1.21 server can use the features under **1.19+**, **1.20.3+**, and **1.21+**, but it cannot use features under **26.2+**.
 
 <details open>
 <summary><strong>Minecraft 1.19+</strong></summary>
