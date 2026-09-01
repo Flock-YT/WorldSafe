@@ -1,7 +1,7 @@
 package me.lele.worldSafe.listener.blocks.explosioncancel;
 
+import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
@@ -15,8 +15,7 @@ public class TNTExplosionCancelListener extends WorldScopedFeature {
 
 	@EventHandler
 	void onTNTExplode(EntityExplodeEvent e) {
-                // 检测是否为TNT类实体
-                if (e.getEntityType() != EntityType.TNT && e.getEntityType() != EntityType.TNT_MINECART)
+                if (!EntityTypeMatcher.matches(e.getEntity(), "PRIMED_TNT", "TNT", "MINECART_TNT", "TNT_MINECART"))
                         return;
                 if (!isWorldEnabled(getWorld(e.getEntity())))
                         return;

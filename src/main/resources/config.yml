@@ -24,3 +24,23 @@ tntExplosionProtection:
   - world
   - world_nether
   - world_the_end
+
+# New protections are disabled by default. Add world names to enable them.
+# 新增防护默认不启用，如需启用请在对应配置项下添加世界名称。
+
+sulfurCubeExplosionCancel: []
+sulfurCubeExplosionProtection: []
+windChargeBlockDestructionProtection: []
+breezeWindChargeImpactCancel: []
+decoratedPotProjectileProtection: []
+weavingCobwebFormationPrevention: []
+ravagerBlockDestructionProtection: []
+silverfishBlockChangeProtection: []
+rabbitCropEatingProtection: []
+sheepGrassEatingProtection: []
+villagerCropModificationProtection: []
+foxBerryHarvestProtection: []
+mobDoorBreakProtection: []
+snowGolemSnowTrailPrevention: []
+witherRoseFormationPrevention: []
+fireIgnitionPrevention: []

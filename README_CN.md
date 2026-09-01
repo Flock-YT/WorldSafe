@@ -7,7 +7,8 @@
 
 ## 📋 安装要求
 
-- **Java 21**: 本插件需要 Java 21 运行时环境。
+- **Java 17 或更高版本**
+- **Minecraft Java 版 1.19 或更高版本**
 
 ## ✨ 特性
 
@@ -47,18 +48,23 @@
 - ✅ **bedExplosionCancel** - 禁止床爆炸（此配置请勿包含主世界）
 - ✅ **respawnAnchorExplosionCancel** - 禁止重生锚爆炸
 - ✅ **tntExplosionCancel** - 禁止TNT爆炸
+- ✅ **sulfurCubeExplosionCancel** - 禁止硫磺立方体吞入TNT后的爆炸
 
 ### 取消破坏方块但保留伤害类
 
 - ✅ **bedExplosionProtection** - 禁止床爆炸破坏方块
 - ✅ **respawnAnchorExplosionPrevention** - 禁止重生锚爆炸破坏方块
 - ✅ **tntExplosionProtection** - 禁止TNT爆炸破坏方块
+- ✅ **sulfurCubeExplosionProtection** - 禁止硫磺立方体爆炸破坏方块
 
 ### 其他类
 
 - ✅ **cropTrampleProtection** - 禁止田被踩坏
 - ✅ **dragonEggTeleportationPrevention** - 禁止龙蛋瞬移
 - ✅ **fireSpreadPrevention** - 禁止火焰向周围方块蔓延
+- ✅ **fireIgnitionPrevention** - 禁止火球、闪电、爆炸、末地水晶和燃烧箭点燃方块
+- ✅ **decoratedPotProjectileProtection** - 禁止投射物击碎装饰陶罐
+- ✅ **weavingCobwebFormationPrevention** - 禁止盘丝效果生成蜘蛛网
 
 ## 🧬 实体类
 
@@ -82,6 +88,17 @@
 - ✅ **enderDragonBlockDestructionProtection** - 禁止末影龙破坏方块
 - ✅ **enderManBlockPickupProtection** - 禁止末影人搬运方块
 - ✅ **phantomDamagePrevention** - 禁止幻翼造成伤害
+- ✅ **windChargeBlockDestructionProtection** - 禁止风弹破坏装饰陶罐、紫颂花和滴水石，同时保留冲击伤害
+- ✅ **breezeWindChargeImpactCancel** - 完整取消旋风人的风弹冲击，不影响玩家风弹
+- ✅ **ravagerBlockDestructionProtection** - 禁止劫掠兽破坏方块
+- ✅ **silverfishBlockChangeProtection** - 禁止蠹虫钻入或拆除虫蚀方块
+- ✅ **rabbitCropEatingProtection** - 禁止兔子啃食作物
+- ✅ **sheepGrassEatingProtection** - 禁止绵羊吃草
+- ✅ **villagerCropModificationProtection** - 禁止村民收割或种植作物
+- ✅ **foxBerryHarvestProtection** - 禁止狐狸采摘浆果
+- ✅ **mobDoorBreakProtection** - 禁止生物破门
+- ✅ **snowGolemSnowTrailPrevention** - 禁止雪傀儡生成雪迹
+- ✅ **witherRoseFormationPrevention** - 禁止生成凋零玫瑰
 
 ---
 

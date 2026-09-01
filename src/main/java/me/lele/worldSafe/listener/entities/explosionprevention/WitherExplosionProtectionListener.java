@@ -6,6 +6,7 @@ import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
 
@@ -30,5 +31,16 @@ public class WitherExplosionProtectionListener extends WorldScopedFeature {
                         return;
                 // 取消事件
                 e.setCancelled(true);
+        }
+
+        @EventHandler
+        public void onWitherExplosion(EntityExplodeEvent event) {
+                if (event.getEntityType() != EntityType.WITHER && event.getEntityType() != EntityType.WITHER_SKULL) {
+                        return;
+                }
+                if (!isWorldEnabled(event.getLocation())) {
+                        return;
+                }
+                event.blockList().clear();
         }
 }

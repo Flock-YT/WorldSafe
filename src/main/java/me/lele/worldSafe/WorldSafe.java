@@ -11,20 +11,31 @@ import me.lele.worldSafe.listener.blocks.explosionprevention.BedExplosionProtect
 import me.lele.worldSafe.listener.blocks.explosionprevention.RespawnAnchorExplosionPreventionListener;
 import me.lele.worldSafe.listener.blocks.explosionprevention.TNTExplosionProtectionListener;
 import me.lele.worldSafe.listener.blocks.other.CropTrampleProtectionListener;
+import me.lele.worldSafe.listener.blocks.other.DecoratedPotProjectileProtectionListener;
 import me.lele.worldSafe.listener.blocks.other.DragonEggTeleportationPreventionListener;
+import me.lele.worldSafe.listener.blocks.other.FireIgnitionPreventionListener;
 import me.lele.worldSafe.listener.blocks.other.FireSpreadPreventionListener;
+import me.lele.worldSafe.listener.blocks.other.WeavingCobwebFormationPreventionListener;
+import me.lele.worldSafe.listener.entities.blockchange.EntityBlockChangeProtectionListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.CreeperExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.EndCrystalExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.GhastExplosionCancelListener;
+import me.lele.worldSafe.listener.entities.explosioncancel.SulfurCubeExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.WitherExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.EndCrystalExplosionPreventionListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtectionListener;
+import me.lele.worldSafe.listener.entities.explosionprevention.SulfurCubeExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.WitherExplosionProtectionListener;
+import me.lele.worldSafe.listener.entities.interaction.MobDoorBreakProtectionListener;
+import me.lele.worldSafe.listener.entities.other.BreezeWindChargeImpactCancelListener;
 import me.lele.worldSafe.listener.entities.other.EnderDragonBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.EnderManBlockPickupProtectionListener;
 
 import me.lele.worldSafe.listener.entities.other.PhantomDamagePreventionListener;
+import me.lele.worldSafe.listener.entities.other.SnowGolemSnowTrailPreventionListener;
+import me.lele.worldSafe.listener.entities.other.WindChargeBlockDestructionProtectionListener;
+import me.lele.worldSafe.listener.entities.other.WitherRoseFormationPreventionListener;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.HandlerList;
@@ -51,12 +62,17 @@ public final class WorldSafe extends JavaPlugin {
                         entry("bedExplosionCancel", BedExplosionCancelListener::new),
                         entry("respawnAnchorExplosionCancel", RespawnAnchorExplosionCancelListener::new),
                         entry("tntExplosionCancel", TNTExplosionCancelListener::new),
+                        entry("sulfurCubeExplosionCancel", SulfurCubeExplosionCancelListener::new),
                         entry("bedExplosionProtection", BedExplosionProtectionListener::new),
                         entry("respawnAnchorExplosionPrevention", RespawnAnchorExplosionPreventionListener::new),
                         entry("tntExplosionProtection", TNTExplosionProtectionListener::new),
+                        entry("sulfurCubeExplosionProtection", SulfurCubeExplosionProtectionListener::new),
                         entry("cropTrampleProtection", CropTrampleProtectionListener::new),
                         entry("dragonEggTeleportationPrevention", DragonEggTeleportationPreventionListener::new),
                         entry("fireSpreadPrevention", FireSpreadPreventionListener::new),
+                        entry("fireIgnitionPrevention", FireIgnitionPreventionListener::new),
+                        entry("decoratedPotProjectileProtection", DecoratedPotProjectileProtectionListener::new),
+                        entry("weavingCobwebFormationPrevention", WeavingCobwebFormationPreventionListener::new),
                         entry("creeperExplosionCancel", CreeperExplosionCancelListener::new),
                         entry("endCrystalExplosionCancel", EndCrystalExplosionCancelListener::new),
                         entry("ghastExplosionCancel", GhastExplosionCancelListener::new),
@@ -67,7 +83,18 @@ public final class WorldSafe extends JavaPlugin {
                         entry("witherExplosionProtection", WitherExplosionProtectionListener::new),
                         entry("enderDragonBlockDestructionProtection", EnderDragonBlockDestructionProtectionListener::new),
                         entry("enderManBlockPickupProtection", EnderManBlockPickupProtectionListener::new),
-                        entry("phantomDamagePrevention", PhantomDamagePreventionListener::new));
+                        entry("phantomDamagePrevention", PhantomDamagePreventionListener::new),
+                        entry("windChargeBlockDestructionProtection", WindChargeBlockDestructionProtectionListener::new),
+                        entry("breezeWindChargeImpactCancel", BreezeWindChargeImpactCancelListener::new),
+                        entry("ravagerBlockDestructionProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "RAVAGER")),
+                        entry("silverfishBlockChangeProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "SILVERFISH")),
+                        entry("rabbitCropEatingProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "RABBIT")),
+                        entry("sheepGrassEatingProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "SHEEP")),
+                        entry("villagerCropModificationProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "VILLAGER")),
+                        entry("foxBerryHarvestProtection", worlds -> new EntityBlockChangeProtectionListener(worlds, "FOX")),
+                        entry("mobDoorBreakProtection", MobDoorBreakProtectionListener::new),
+                        entry("snowGolemSnowTrailPrevention", SnowGolemSnowTrailPreventionListener::new),
+                        entry("witherRoseFormationPrevention", WitherRoseFormationPreventionListener::new));
 
 	@Override
 	public void onEnable() {

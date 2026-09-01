@@ -1,8 +1,8 @@
 package me.lele.worldSafe.listener.entities.explosioncancel;
 
+import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
@@ -27,7 +27,7 @@ public class EndCrystalExplosionCancelListener extends WorldScopedFeature {
     }
 
     private boolean isEndCrystal(Entity entity) {
-        return entity != null && entity.getType() == EntityType.END_CRYSTAL;
+        return EntityTypeMatcher.matches(entity, "ENDER_CRYSTAL", "END_CRYSTAL");
     }
 
 }

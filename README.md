@@ -8,7 +8,8 @@
 
 ## 📋 Installation Requirements
 
-- **Java 21**: This plugin requires Java 21 runtime environment.
+- **Java 17 or newer**
+- **Minecraft Java Edition 1.19 or newer**
 
 ## ✨ Features
 
@@ -48,18 +49,23 @@ Reload the plugin configuration
 - ✅ **bedExplosionCancel** - Prevent bed explosions “(This configuration should not include the overworld)”
 - ✅ **respawnAnchorExplosionCancel** - Prevent respawn anchor explosions
 - ✅ **tntExplosionCancel** - Prevent TNT explosions
+- ✅ **sulfurCubeExplosionCancel** - Prevent sulfur cube TNT-fed explosions
 
 ### Cancel Block Destruction but Keep Damage
 
 - ✅ **bedExplosionProtection** - Prevent bed explosions from destroying blocks
 - ✅ **respawnAnchorExplosionPrevention** - Prevent respawn anchor explosions from destroying blocks
 - ✅ **tntExplosionProtection** - Prevent TNT explosions from destroying blocks
+- ✅ **sulfurCubeExplosionProtection** - Prevent sulfur cube explosions from destroying blocks
 
 ### Other Classes
 
 - ✅ **cropTrampleProtection** - Prevent crops from being trampled
 - ✅ **dragonEggTeleportationPrevention** - Prevent dragon egg teleportation
 - ✅ **fireSpreadPrevention** - Prevent fire from spreading between blocks
+- ✅ **fireIgnitionPrevention** - Prevent fireballs, lightning, explosions, end crystals, and burning arrows from igniting blocks
+- ✅ **decoratedPotProjectileProtection** - Prevent projectiles from breaking decorated pots
+- ✅ **weavingCobwebFormationPrevention** - Prevent weaving from forming cobwebs
 
 ## 🧬 Entity Classes
 
@@ -83,6 +89,17 @@ Reload the plugin configuration
 - ✅ **enderDragonBlockDestructionProtection** - Prevent ender dragon from destroying blocks
 - ✅ **enderManBlockPickupProtection** - Prevent endermen from picking up blocks
 - ✅ **phantomDamagePrevention** - Prevent phantoms from causing damage
+- ✅ **windChargeBlockDestructionProtection** - Protect decorated pots, chorus flowers, and pointed dripstone from wind charges while retaining impact damage
+- ✅ **breezeWindChargeImpactCancel** - Fully cancel breeze wind-charge impacts without affecting player wind charges
+- ✅ **ravagerBlockDestructionProtection** - Prevent ravagers from destroying blocks
+- ✅ **silverfishBlockChangeProtection** - Prevent silverfish from entering or breaking infested blocks
+- ✅ **rabbitCropEatingProtection** - Prevent rabbits from eating crops
+- ✅ **sheepGrassEatingProtection** - Prevent sheep from eating grass
+- ✅ **villagerCropModificationProtection** - Prevent villagers from harvesting or planting crops
+- ✅ **foxBerryHarvestProtection** - Prevent foxes from harvesting berries
+- ✅ **mobDoorBreakProtection** - Prevent mobs from breaking doors
+- ✅ **snowGolemSnowTrailPrevention** - Prevent snow golems from forming snow trails
+- ✅ **witherRoseFormationPrevention** - Prevent wither rose formation
 
 ---
 

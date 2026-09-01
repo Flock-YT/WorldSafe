@@ -1,4 +1,4 @@
 name: WorldSafe
 version: '${project.version}'
 main: me.lele.worldSafe.WorldSafe
-api-version: '1.21'
+api-version: '1.19'
