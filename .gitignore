@@ -1,5 +1,9 @@
 # User-specific stuff
 .idea/
+.vscode/
+
+# Local repository instructions
+/AGENTS.md
 
 *.iml
 *.ipr
@@ -113,6 +117,5 @@ buildNumber.properties
 run/
 .classpath
 .project
-.settings/org.eclipse.core.resources.prefs
-.settings/org.eclipse.jdt.core.prefs
-.settings/org.eclipse.m2e.core.prefs
+.settings/
+.factorypath
