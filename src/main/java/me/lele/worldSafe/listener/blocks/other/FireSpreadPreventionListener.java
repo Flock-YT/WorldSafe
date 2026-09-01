@@ -3,6 +3,7 @@ package me.lele.worldSafe.listener.blocks.other;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 
@@ -35,6 +36,14 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
                 if (cause == BlockIgniteEvent.IgniteCause.SPREAD || cause == BlockIgniteEvent.IgniteCause.LAVA) {
                         event.setCancelled(true);
                 }
+        }
+
+        @EventHandler
+        void onBlockBurn(BlockBurnEvent event) {
+                if (!isWorldEnabled(getWorld(event.getBlock()))) {
+                        return;
+                }
+                event.setCancelled(true);
         }
 
         private boolean isFire(Material material) {
