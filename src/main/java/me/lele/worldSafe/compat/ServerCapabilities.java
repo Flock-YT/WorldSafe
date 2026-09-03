@@ -15,7 +15,9 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public final class ServerCapabilities {
 
@@ -35,11 +37,13 @@ public final class ServerCapabilities {
     private final Method anchorMaximumChargesMethod;
     private final Method projectileHitBlockMethod;
     private final boolean paperServer;
+    private final BiConsumer<Capability, Throwable> invocationFailureLogger;
+    private final EnumSet<Capability> warnedInvocationFailures = EnumSet.noneOf(Capability.class);
 
     private ServerCapabilities(EnumSet<Capability> capabilities, Set<String> materialNames,
             Set<String> entityTypeNames, Method explodedBlockStateMethod, Method blockDataMethod,
             Method anchorChargesMethod, Method anchorMaximumChargesMethod, Method projectileHitBlockMethod,
-            boolean paperServer) {
+            boolean paperServer, BiConsumer<Capability, Throwable> invocationFailureLogger) {
         this.capabilities = capabilities.clone();
         this.materialNames = Collections.unmodifiableSet(new LinkedHashSet<String>(materialNames));
         this.entityTypeNames = Collections.unmodifiableSet(new LinkedHashSet<String>(entityTypeNames));
@@ -49,9 +53,15 @@ public final class ServerCapabilities {
         this.anchorMaximumChargesMethod = anchorMaximumChargesMethod;
         this.projectileHitBlockMethod = projectileHitBlockMethod;
         this.paperServer = paperServer;
+        this.invocationFailureLogger = Objects.requireNonNull(invocationFailureLogger,
+                "invocationFailureLogger");
     }
 
     public static ServerCapabilities detect() {
+        return detect((capability, failure) -> { });
+    }
+
+    public static ServerCapabilities detect(BiConsumer<Capability, Throwable> invocationFailureLogger) {
         Method explodedState = findMethod(BlockExplodeEvent.class, "getExplodedBlockState");
         Method getBlockData = findMethod(Block.class, "getBlockData");
         Method getCharges = null;
@@ -89,7 +99,8 @@ public final class ServerCapabilities {
             entities.add(normalize(type.name()));
         }
         return new ServerCapabilities(detected, materials, entities, explodedState, getBlockData,
-                getCharges, getMaximumCharges, getHitBlock, classExists("io.papermc.paper.ServerBuildInfo"));
+                getCharges, getMaximumCharges, getHitBlock, classExists("io.papermc.paper.ServerBuildInfo"),
+                invocationFailureLogger);
     }
 
     public static ServerCapabilities forTesting(Set<Capability> capabilities, Set<String> materialNames,
@@ -97,16 +108,24 @@ public final class ServerCapabilities {
         EnumSet<Capability> copy = capabilities.isEmpty()
                 ? EnumSet.noneOf(Capability.class) : EnumSet.copyOf(capabilities);
         return new ServerCapabilities(copy, normalizeAll(materialNames), normalizeAll(entityTypeNames),
-                null, null, null, null, null, false);
+                null, null, null, null, null, false, (capability, failure) -> { });
     }
 
     static ServerCapabilities forTestingWithMethods(Set<Capability> capabilities, Method explodedBlockStateMethod,
             Method blockDataMethod, Method anchorChargesMethod, Method anchorMaximumChargesMethod,
             Method projectileHitBlockMethod) {
+        return forTestingWithMethods(capabilities, explodedBlockStateMethod, blockDataMethod,
+                anchorChargesMethod, anchorMaximumChargesMethod, projectileHitBlockMethod,
+                (capability, failure) -> { });
+    }
+
+    static ServerCapabilities forTestingWithMethods(Set<Capability> capabilities, Method explodedBlockStateMethod,
+            Method blockDataMethod, Method anchorChargesMethod, Method anchorMaximumChargesMethod,
+            Method projectileHitBlockMethod, BiConsumer<Capability, Throwable> invocationFailureLogger) {
         return new ServerCapabilities(capabilities.isEmpty() ? EnumSet.noneOf(Capability.class)
                 : EnumSet.copyOf(capabilities), Collections.<String>emptySet(), Collections.<String>emptySet(),
                 explodedBlockStateMethod, blockDataMethod, anchorChargesMethod, anchorMaximumChargesMethod,
-                projectileHitBlockMethod, false);
+                projectileHitBlockMethod, false, invocationFailureLogger);
     }
 
     public boolean has(Capability capability) {
@@ -126,12 +145,12 @@ public final class ServerCapabilities {
     }
 
     public BlockState getExplodedBlockState(BlockExplodeEvent event) {
-        Object value = invoke(explodedBlockStateMethod, event);
+        Object value = invoke(Capability.EXPLODED_BLOCK_STATE, explodedBlockStateMethod, event);
         return value instanceof BlockState ? (BlockState) value : null;
     }
 
     public Block getProjectileHitBlock(ProjectileHitEvent event) {
-        Object value = invoke(projectileHitBlockMethod, event);
+        Object value = invoke(Capability.PROJECTILE_HIT_BLOCK, projectileHitBlockMethod, event);
         return value instanceof Block ? (Block) value : null;
     }
 
@@ -144,14 +163,14 @@ public final class ServerCapabilities {
     }
 
     public int getRespawnAnchorCharges(Block block) {
-        Object blockData = invoke(blockDataMethod, block);
-        Object value = invoke(anchorChargesMethod, blockData);
+        Object blockData = invoke(Capability.RESPAWN_ANCHOR_CHARGES, blockDataMethod, block);
+        Object value = invoke(Capability.RESPAWN_ANCHOR_CHARGES, anchorChargesMethod, blockData);
         return value instanceof Number ? ((Number) value).intValue() : -1;
     }
 
     public int getRespawnAnchorMaximumCharges(Block block) {
-        Object blockData = invoke(blockDataMethod, block);
-        Object value = invoke(anchorMaximumChargesMethod, blockData);
+        Object blockData = invoke(Capability.RESPAWN_ANCHOR_CHARGES, blockDataMethod, block);
+        Object value = invoke(Capability.RESPAWN_ANCHOR_CHARGES, anchorMaximumChargesMethod, blockData);
         return value instanceof Number ? ((Number) value).intValue() : -1;
     }
 
@@ -174,19 +193,31 @@ public final class ServerCapabilities {
         }
     }
 
-    private static Object invoke(Method method, Object target) {
+    private Object invoke(Capability capability, Method method, Object target) {
         if (method == null || target == null) {
             return null;
         }
         try {
             return method.invoke(target);
-        } catch (IllegalAccessException ignored) {
+        } catch (IllegalAccessException exception) {
+            reportInvocationFailure(capability, exception);
             return null;
-        } catch (InvocationTargetException ignored) {
+        } catch (InvocationTargetException exception) {
+            reportInvocationFailure(capability, exception);
             return null;
-        } catch (IllegalArgumentException ignored) {
+        } catch (IllegalArgumentException exception) {
+            reportInvocationFailure(capability, exception);
             return null;
         }
+    }
+
+    private void reportInvocationFailure(Capability capability, Throwable failure) {
+        synchronized (warnedInvocationFailures) {
+            if (!warnedInvocationFailures.add(capability)) {
+                return;
+            }
+        }
+        invocationFailureLogger.accept(capability, failure);
     }
 
     private static boolean containsAlias(Set<String> names, String[] aliases, boolean material) {

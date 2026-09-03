@@ -16,7 +16,7 @@ public class TNTExplosionCancelListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onTNTExplode(EntityExplodeEvent e) {
                 if (!isTnt(e.getEntity()))
                         return;

@@ -41,7 +41,7 @@ public class BedExplosionProtectionListener extends WorldScopedFeature {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBedExplosion(BlockExplodeEvent event) {
         if (!isWorldEnabled(getWorld(event.getBlock()))) {
             return;

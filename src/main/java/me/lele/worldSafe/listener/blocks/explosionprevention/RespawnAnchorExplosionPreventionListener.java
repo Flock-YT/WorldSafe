@@ -49,7 +49,7 @@ public class RespawnAnchorExplosionPreventionListener extends WorldScopedFeature
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawnAnchorExplosion(BlockExplodeEvent event) {
         if (!isWorldEnabled(getWorld(event.getBlock()))) {
             return;

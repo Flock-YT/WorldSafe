@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -27,7 +28,7 @@ public class BedExplosionCancelListener extends WorldScopedFeature {
                 this.sourceResolver = new BlockExplosionSourceResolver(capabilities);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerInteractEvent(PlayerInteractEvent e) {
 		// 检查玩家是否为右键点击
 		if (e.getAction() != Action.RIGHT_CLICK_BLOCK)
@@ -52,7 +53,7 @@ public class BedExplosionCancelListener extends WorldScopedFeature {
 
         }
 
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         public void onBedExplosion(BlockExplodeEvent event) {
                 if (!isWorldEnabled(getWorld(event.getBlock()))) {
                         return;

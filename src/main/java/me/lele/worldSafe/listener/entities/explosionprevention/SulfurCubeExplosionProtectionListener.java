@@ -4,6 +4,7 @@ import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class SulfurCubeExplosionProtectionListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onSulfurCubeExplosion(EntityExplodeEvent event) {
         if (!isSulfurCube(event.getEntity())) {
             return;

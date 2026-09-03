@@ -4,6 +4,7 @@ import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class GhastExplosionProtectionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onFireballExplode(EntityExplodeEvent e) {
 		if (!(e.getEntity() instanceof Fireball))
 			return;

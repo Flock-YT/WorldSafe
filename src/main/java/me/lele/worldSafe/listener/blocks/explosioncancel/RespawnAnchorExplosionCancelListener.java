@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -29,7 +30,7 @@ public class RespawnAnchorExplosionCancelListener extends WorldScopedFeature {
         this.sourceResolver = new BlockExplosionSourceResolver(capabilities);
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onAnchorUse(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -48,7 +49,7 @@ public class RespawnAnchorExplosionCancelListener extends WorldScopedFeature {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawnAnchorExplosion(BlockExplodeEvent event) {
         if (!isWorldEnabled(getWorld(event.getBlock()))) {
             return;

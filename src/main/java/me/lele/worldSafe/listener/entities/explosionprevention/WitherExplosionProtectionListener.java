@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
@@ -16,7 +17,7 @@ public class WitherExplosionProtectionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	void onWitherDestroyBlock(EntityChangeBlockEvent e) {
                 // 判断是否为凋零/凋零头
                 if (e.getEntityType() != EntityType.WITHER && e.getEntityType() != EntityType.WITHER_SKULL)
@@ -33,7 +34,7 @@ public class WitherExplosionProtectionListener extends WorldScopedFeature {
                 e.setCancelled(true);
         }
 
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         public void onWitherExplosion(EntityExplodeEvent event) {
                 if (event.getEntityType() != EntityType.WITHER && event.getEntityType() != EntityType.WITHER_SKULL) {
                         return;

@@ -3,6 +3,7 @@ package me.lele.worldSafe.listener.entities.other;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class EnderDragonBlockDestructionProtectionListener extends WorldScopedFe
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onEnderDragonDestroyBlock(EntityExplodeEvent e) {
                 if (e.getEntityType() != EntityType.ENDER_DRAGON)
                         return;

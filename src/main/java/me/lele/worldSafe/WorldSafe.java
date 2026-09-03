@@ -6,6 +6,7 @@ import me.lele.worldSafe.compat.ServerCapabilities;
 import me.lele.worldSafe.config.ConfigManager;
 import me.lele.worldSafe.config.WorldSafeConfig;
 import me.lele.worldSafe.feature.FeatureDefinition;
+import me.lele.worldSafe.listener.ListenerManager;
 import me.lele.worldSafe.listener.blocks.explosioncancel.BedExplosionCancelListener;
 import me.lele.worldSafe.listener.blocks.explosioncancel.RespawnAnchorExplosionCancelListener;
 import me.lele.worldSafe.listener.blocks.explosioncancel.TNTExplosionCancelListener;
@@ -37,6 +38,7 @@ import me.lele.worldSafe.listener.entities.other.PhantomDamagePreventionListener
 import me.lele.worldSafe.listener.entities.other.SnowGolemSnowTrailPreventionListener;
 import me.lele.worldSafe.listener.entities.other.WindChargeBlockDestructionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.WitherRoseFormationPreventionListener;
+import me.lele.worldSafe.metrics.MetricsManager;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.event.HandlerList;
@@ -156,9 +158,10 @@ public final class WorldSafe extends JavaPlugin {
                     (worlds, capabilities) -> new SulfurCubeExplosionProtectionListener(worlds))
     ));
 
-    private final List<Listener> listeners = new ArrayList<Listener>();
     private final Set<String> warnedBestEffortFeatures = new LinkedHashSet<String>();
     private ConfigManager configManager;
+    private ListenerManager listenerManager;
+    private MetricsManager metricsManager;
     private ServerCapabilities capabilities;
     private MinecraftVersion minecraftVersion;
 
@@ -173,11 +176,20 @@ public final class WorldSafe extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        capabilities = ServerCapabilities.detect();
+        capabilities = ServerCapabilities.detect((capability, failure) ->
+                getLogger().warning("Compatibility capability " + capability.name()
+                        + " failed via reflection and will continue in fallback mode: "
+                        + failure.getClass().getSimpleName()));
         configManager = new ConfigManager(new File(getDataFolder(), "config.yml"), getLogger());
+        listenerManager = new ListenerManager(
+                listener -> getServer().getPluginManager().registerEvents(listener, this),
+                HandlerList::unregisterAll,
+                message -> getLogger().severe(message));
+        metricsManager = new MetricsManager(() -> new Metrics(this, 22831),
+                message -> getLogger().warning(message));
 
-        WorldSafeConfig initialConfig = configManager.loadInitial(featureKeys());
-        if (initialConfig == null || !replaceListeners(initialConfig, false)) {
+        WorldSafeConfig initialConfig = configManager.loadCandidate(featureKeys());
+        if (initialConfig == null || !applyConfiguration(initialConfig)) {
             getLogger().severe("WorldSafe could not load a valid configuration and will be disabled.");
             getServer().getPluginManager().disablePlugin(this);
             return;
@@ -193,64 +205,42 @@ public final class WorldSafe extends JavaPlugin {
         command.setExecutor(commandHandler);
         command.setTabCompleter(commandHandler);
 
-        if (initialConfig.isBStatsEnabled()) {
-            try {
-                new Metrics(this, 22831);
-            } catch (RuntimeException exception) {
-                getLogger().warning("bStats could not be started: " + exception.getMessage());
-            } catch (LinkageError error) {
-                getLogger().warning("bStats is unavailable on this server: " + error.getClass().getSimpleName());
-            }
-        }
-
         getLogger().info("WorldSafe enabled for Minecraft " + minecraftVersion + ".");
     }
 
     @Override
     public void onDisable() {
+        if (metricsManager != null) {
+            metricsManager.shutdown();
+        }
+        if (listenerManager != null) {
+            listenerManager.clear();
+        }
         HandlerList.unregisterAll(this);
-        listeners.clear();
     }
 
     public boolean reloadWorldSafe() {
         WorldSafeConfig candidate = configManager.loadCandidate(featureKeys());
         if (candidate == null) {
-            getLogger().severe("Reload failed; the previous configuration and listeners remain active.");
+            getLogger().severe("Reload failed; the previous configuration, listeners, and bStats state remain active.");
             return false;
         }
-        return replaceListeners(candidate, true);
+        if (!applyConfiguration(candidate)) {
+            getLogger().severe("Reload failed; the previous configuration, listeners, and bStats state remain active.");
+            return false;
+        }
+        return true;
     }
 
-    private boolean replaceListeners(WorldSafeConfig candidate, boolean commit) {
+    private boolean applyConfiguration(final WorldSafeConfig candidate) {
         List<Listener> replacements = createListeners(candidate);
         if (replacements == null) {
             return false;
         }
-
-        List<Listener> previous = new ArrayList<Listener>(listeners);
-        for (Listener listener : previous) {
-            HandlerList.unregisterAll(listener);
-        }
-
-        List<Listener> registered = new ArrayList<Listener>();
-        try {
-            for (Listener listener : replacements) {
-                getServer().getPluginManager().registerEvents(listener, this);
-                registered.add(listener);
-            }
-        } catch (RuntimeException exception) {
-            rollbackListeners(previous, registered, exception);
-            return false;
-        } catch (LinkageError error) {
-            rollbackListeners(previous, registered, error);
+        if (!listenerManager.replace(replacements, () -> configManager.commit(candidate))) {
             return false;
         }
-
-        listeners.clear();
-        listeners.addAll(replacements);
-        if (commit) {
-            configManager.commit(candidate);
-        }
+        metricsManager.sync(candidate.isBStatsEnabled());
         return true;
     }
 
@@ -302,18 +292,6 @@ public final class WorldSafe extends JavaPlugin {
         }
     }
 
-    private void rollbackListeners(List<Listener> previous, List<Listener> registered, Throwable failure) {
-        for (Listener listener : registered) {
-            HandlerList.unregisterAll(listener);
-        }
-        listeners.clear();
-        for (Listener listener : previous) {
-            getServer().getPluginManager().registerEvents(listener, this);
-            listeners.add(listener);
-        }
-        getLogger().severe("Listener replacement failed; previous listeners were restored: " + failure.getMessage());
-    }
-
     private static List<String> featureKeys() {
         List<String> keys = new ArrayList<String>();
         for (FeatureDefinition feature : FEATURES) {
@@ -323,7 +301,9 @@ public final class WorldSafe extends JavaPlugin {
     }
 
     public List<Listener> getListeners() {
-        return Collections.unmodifiableList(listeners);
+        return listenerManager == null
+                ? Collections.<Listener>emptyList()
+                : listenerManager.getListeners();
     }
 
     private static FeatureDefinition simple(String key, MinecraftVersion minimumVersion,

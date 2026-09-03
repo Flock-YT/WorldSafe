@@ -4,6 +4,7 @@ import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.compat.MaterialMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.EntityBlockFormEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class SnowGolemSnowTrailPreventionListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onSnowForm(EntityBlockFormEvent event) {
         if (!EntityTypeMatcher.matches(event.getEntity(), "SNOWMAN", "SNOW_GOLEM")) {
             return;

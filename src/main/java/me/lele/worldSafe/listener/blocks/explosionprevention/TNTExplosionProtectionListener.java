@@ -3,6 +3,7 @@ package me.lele.worldSafe.listener.blocks.explosionprevention;
 import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class TNTExplosionProtectionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	void onTNTExplode(EntityExplodeEvent e) {
                 if (!EntityTypeMatcher.matches(e.getEntity(), "PRIMED_TNT", "TNT", "MINECART_TNT", "TNT_MINECART"))
                         return;

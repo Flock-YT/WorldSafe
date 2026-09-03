@@ -4,6 +4,7 @@ import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class EndCrystalExplosionPreventionListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityExplode(EntityExplodeEvent event) {
         // 检查爆炸实体是否是末地水晶
         if (isEndCrystal(event.getEntity())) {

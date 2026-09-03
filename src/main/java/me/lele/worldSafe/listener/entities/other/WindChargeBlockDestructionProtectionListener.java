@@ -6,6 +6,7 @@ import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public class WindChargeBlockDestructionProtectionListener extends WorldScopedFea
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onWindChargeExplosion(EntityExplodeEvent event) {
         if (!isWindCharge(event.getEntity())) {
             return;

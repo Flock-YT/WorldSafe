@@ -16,7 +16,7 @@ public class SulfurCubeExplosionCancelListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onSulfurCubeExplosion(EntityExplodeEvent event) {
         if (!isSulfurCube(event.getEntity())) {
             return;

@@ -16,7 +16,7 @@ public class CreeperExplosionCancelListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         public void onCreeperExplode(EntityExplodeEvent event) {
                 // 检查是否是Creeper的爆炸
                 if (isCreeper(event.getEntity())) {

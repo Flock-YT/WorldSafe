@@ -3,6 +3,7 @@ package me.lele.worldSafe.listener.entities.other;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class EnderManBlockPickupProtectionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onEnderManBlockPickup(EntityChangeBlockEvent event) {
                 // 检查是否是末影人
                 if (event.getEntityType() == EntityType.ENDERMAN) {

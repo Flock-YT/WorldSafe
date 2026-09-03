@@ -18,7 +18,7 @@ public class GhastExplosionCancelListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onFireballExplode(EntityExplodeEvent e) {
                 if (!(e.getEntity() instanceof Fireball))
                         return;
@@ -39,7 +39,7 @@ public class GhastExplosionCancelListener extends WorldScopedFeature {
                 }
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
                 if (!(e.getDamager() instanceof Fireball))
                         return;

@@ -4,6 +4,7 @@ import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class PhantomDamagePreventionListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
         // 检测造成伤害的实体是否为幻翼
         Entity damager = e.getDamager();

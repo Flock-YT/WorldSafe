@@ -2,6 +2,7 @@ package me.lele.worldSafe.listener.blocks.other;
 
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockIgniteEvent;
 
 import java.util.Arrays;
@@ -19,7 +20,7 @@ public class FireIgnitionPreventionListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockIgnite(BlockIgniteEvent event) {
         if (!isWorldEnabled(getWorld(event.getBlock()))) {
             return;

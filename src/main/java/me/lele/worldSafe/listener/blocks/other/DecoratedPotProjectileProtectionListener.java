@@ -6,6 +6,7 @@ import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 
@@ -24,7 +25,7 @@ public class DecoratedPotProjectileProtectionListener extends WorldScopedFeature
         this.capabilities = capabilities;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onProjectileHit(ProjectileHitEvent event) {
         Block hitBlock = capabilities.getProjectileHitBlock(event);
         if (isDecoratedPot(hitBlock) && isWorldEnabled(getWorld(hitBlock))) {
@@ -32,7 +33,7 @@ public class DecoratedPotProjectileProtectionListener extends WorldScopedFeature
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onProjectileChangeBlock(EntityChangeBlockEvent event) {
         if (!(event.getEntity() instanceof Projectile)) {
             return;

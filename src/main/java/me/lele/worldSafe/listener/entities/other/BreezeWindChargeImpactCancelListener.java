@@ -25,7 +25,7 @@ public class BreezeWindChargeImpactCancelListener extends WorldScopedFeature {
         this.capabilities = capabilities;
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBreezeWindChargeExplosion(EntityExplodeEvent event) {
         if (isBreezeWindCharge(event.getEntity()) && isWorldEnabled(event.getLocation())) {
             capabilities.cancelIfPossible(event);
@@ -39,14 +39,14 @@ public class BreezeWindChargeImpactCancelListener extends WorldScopedFeature {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBreezeWindChargeHit(ProjectileHitEvent event) {
         if (isBreezeWindCharge(event.getEntity()) && isWorldEnabled(getWorld(event.getEntity()))) {
             capabilities.cancelIfPossible(event);
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBreezeWindChargeInteract(EntityInteractEvent event) {
         if (isBreezeWindCharge(event.getEntity()) && isWorldEnabled(getWorld(event.getBlock()))) {
             event.setCancelled(true);

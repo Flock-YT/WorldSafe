@@ -4,6 +4,7 @@ import me.lele.worldSafe.compat.MaterialMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
@@ -16,7 +17,7 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         void onFireSpread(BlockSpreadEvent event) {
                 if (!isFire(event.getNewState().getType())) {
                         return;
@@ -27,7 +28,7 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
                 event.setCancelled(true);
         }
 
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         void onBlockIgnite(BlockIgniteEvent event) {
                 if (!isWorldEnabled(getWorld(event.getBlock()))) {
                         return;
@@ -39,7 +40,7 @@ public class FireSpreadPreventionListener extends WorldScopedFeature {
                 }
         }
 
-        @EventHandler
+        @EventHandler(priority = EventPriority.HIGHEST)
         void onBlockBurn(BlockBurnEvent event) {
                 if (!isWorldEnabled(getWorld(event.getBlock()))) {
                         return;

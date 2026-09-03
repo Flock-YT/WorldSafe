@@ -4,6 +4,7 @@ import me.lele.worldSafe.listener.WorldScopedFeature;
 import me.lele.worldSafe.compat.MaterialMatcher;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class CropTrampleProtectionListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onBlockChangeByEntity(EntityChangeBlockEvent e) {
 		Block b = e.getBlock();
 		// 判断是否为耕地

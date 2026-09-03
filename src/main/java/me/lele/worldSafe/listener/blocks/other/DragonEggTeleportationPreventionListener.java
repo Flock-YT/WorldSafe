@@ -4,6 +4,7 @@ import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockFromToEvent;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public class DragonEggTeleportationPreventionListener extends WorldScopedFeature
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	void onDragonEggTeleport(BlockFromToEvent e) {
                 Block b = e.getBlock();
                 // 检测方块是否为龙蛋

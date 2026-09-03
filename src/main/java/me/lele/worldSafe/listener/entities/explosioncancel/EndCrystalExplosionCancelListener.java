@@ -16,7 +16,7 @@ public class EndCrystalExplosionCancelListener extends WorldScopedFeature {
         super(worlds);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityExplode(EntityExplodeEvent event) {
         // 检查爆炸实体是否是末地水晶
         if (isEndCrystal(event.getEntity())) {

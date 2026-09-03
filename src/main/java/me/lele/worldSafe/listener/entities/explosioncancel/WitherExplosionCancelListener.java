@@ -16,7 +16,7 @@ public class WitherExplosionCancelListener extends WorldScopedFeature {
                 super(worlds);
         }
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onExplode(EntityExplodeEvent e) {
 		// 检测是否为凋零/凋零头颅
 		if (!isWitherExplosion(e.getEntity()))
