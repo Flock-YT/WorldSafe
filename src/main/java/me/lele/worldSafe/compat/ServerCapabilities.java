@@ -34,10 +34,12 @@ public final class ServerCapabilities {
     private final Method anchorChargesMethod;
     private final Method anchorMaximumChargesMethod;
     private final Method projectileHitBlockMethod;
+    private final boolean paperServer;
 
     private ServerCapabilities(EnumSet<Capability> capabilities, Set<String> materialNames,
             Set<String> entityTypeNames, Method explodedBlockStateMethod, Method blockDataMethod,
-            Method anchorChargesMethod, Method anchorMaximumChargesMethod, Method projectileHitBlockMethod) {
+            Method anchorChargesMethod, Method anchorMaximumChargesMethod, Method projectileHitBlockMethod,
+            boolean paperServer) {
         this.capabilities = capabilities.clone();
         this.materialNames = Collections.unmodifiableSet(new LinkedHashSet<String>(materialNames));
         this.entityTypeNames = Collections.unmodifiableSet(new LinkedHashSet<String>(entityTypeNames));
@@ -46,6 +48,7 @@ public final class ServerCapabilities {
         this.anchorChargesMethod = anchorChargesMethod;
         this.anchorMaximumChargesMethod = anchorMaximumChargesMethod;
         this.projectileHitBlockMethod = projectileHitBlockMethod;
+        this.paperServer = paperServer;
     }
 
     public static ServerCapabilities detect() {
@@ -86,7 +89,7 @@ public final class ServerCapabilities {
             entities.add(normalize(type.name()));
         }
         return new ServerCapabilities(detected, materials, entities, explodedState, getBlockData,
-                getCharges, getMaximumCharges, getHitBlock);
+                getCharges, getMaximumCharges, getHitBlock, classExists("io.papermc.paper.ServerBuildInfo"));
     }
 
     public static ServerCapabilities forTesting(Set<Capability> capabilities, Set<String> materialNames,
@@ -94,7 +97,7 @@ public final class ServerCapabilities {
         EnumSet<Capability> copy = capabilities.isEmpty()
                 ? EnumSet.noneOf(Capability.class) : EnumSet.copyOf(capabilities);
         return new ServerCapabilities(copy, normalizeAll(materialNames), normalizeAll(entityTypeNames),
-                null, null, null, null, null);
+                null, null, null, null, null, false);
     }
 
     static ServerCapabilities forTestingWithMethods(Set<Capability> capabilities, Method explodedBlockStateMethod,
@@ -103,11 +106,15 @@ public final class ServerCapabilities {
         return new ServerCapabilities(capabilities.isEmpty() ? EnumSet.noneOf(Capability.class)
                 : EnumSet.copyOf(capabilities), Collections.<String>emptySet(), Collections.<String>emptySet(),
                 explodedBlockStateMethod, blockDataMethod, anchorChargesMethod, anchorMaximumChargesMethod,
-                projectileHitBlockMethod);
+                projectileHitBlockMethod, false);
     }
 
     public boolean has(Capability capability) {
         return capabilities.contains(capability);
+    }
+
+    public boolean isPaperServer() {
+        return paperServer;
     }
 
     public boolean hasMaterial(String... aliases) {
@@ -153,6 +160,17 @@ public final class ServerCapabilities {
             return type.getMethod(name);
         } catch (NoSuchMethodException ignored) {
             return null;
+        }
+    }
+
+    private static boolean classExists(String className) {
+        try {
+            Class.forName(className, false, ServerCapabilities.class.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        } catch (LinkageError ignored) {
+            return false;
         }
     }
 

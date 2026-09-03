@@ -4,7 +4,9 @@ import me.lele.worldSafe.compat.EntityTypeMatcher;
 import me.lele.worldSafe.listener.WorldScopedFeature;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 
 import java.util.List;
 
@@ -22,6 +24,13 @@ public class EndCrystalExplosionCancelListener extends WorldScopedFeature {
                 return;
             }
             // 清空爆炸影响的方块
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onExplosionPrime(ExplosionPrimeEvent event) {
+        if (isEndCrystal(event.getEntity()) && isWorldEnabled(getWorld(event.getEntity()))) {
             event.setCancelled(true);
         }
     }

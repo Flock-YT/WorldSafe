@@ -47,7 +47,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class WorldSafe extends JavaPlugin {
 
@@ -155,6 +157,7 @@ public final class WorldSafe extends JavaPlugin {
     ));
 
     private final List<Listener> listeners = new ArrayList<Listener>();
+    private final Set<String> warnedBestEffortFeatures = new LinkedHashSet<String>();
     private ConfigManager configManager;
     private ServerCapabilities capabilities;
     private MinecraftVersion minecraftVersion;
@@ -268,6 +271,7 @@ public final class WorldSafe extends JavaPlugin {
                 getLogger().warning("Skipping feature '" + feature.getConfigKey() + "': " + unsupportedReason);
                 continue;
             }
+            warnAboutBestEffortCancellation(feature.getConfigKey());
             try {
                 created.add(feature.createListener(worlds, capabilities));
             } catch (RuntimeException exception) {
@@ -281,6 +285,21 @@ public final class WorldSafe extends JavaPlugin {
             }
         }
         return created;
+    }
+
+    private void warnAboutBestEffortCancellation(String featureKey) {
+        if (capabilities.isPaperServer()) {
+            return;
+        }
+        if (!"breezeWindChargeImpactCancel".equals(featureKey)
+                && !"sulfurCubeExplosionCancel".equals(featureKey)) {
+            return;
+        }
+        if (warnedBestEffortFeatures.add(featureKey)) {
+            getLogger().warning("IMPORTANT: Feature '" + featureKey + "' is running in best-effort mode on "
+                    + "a non-Paper server; explosion damage or knockback may remain because Spigot does not "
+                    + "expose the required early explosion hook.");
+        }
     }
 
     private void rollbackListeners(List<Listener> previous, List<Listener> registered, Throwable failure) {

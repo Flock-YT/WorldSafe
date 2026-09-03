@@ -52,19 +52,20 @@ public final class BlockExplosionSourceResolver {
             return false;
         }
 
+        purgeExpired();
+        Block eventBlock = event.getBlock();
+        TrackedSource tracked = eventBlock == null ? null : recentSources.remove(BlockKey.from(eventBlock));
+
         BlockState explodedState = capabilities.getExplodedBlockState(event);
         if (explodedState != null && MaterialMatcher.matches(explodedState, materialAliases)) {
             return true;
         }
 
-        Block eventBlock = event.getBlock();
         if (eventBlock != null && eventBlock.getType() != Material.AIR
                 && MaterialMatcher.matches(eventBlock, materialAliases)) {
             return true;
         }
 
-        purgeExpired();
-        TrackedSource tracked = eventBlock == null ? null : recentSources.remove(BlockKey.from(eventBlock));
         return tracked != null && MaterialMatcher.matchesName(tracked.getMaterialName(), materialAliases);
     }
 

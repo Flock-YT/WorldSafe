@@ -1,7 +1,6 @@
 package me.lele.worldSafe.listener.entities.explosionprevention;
 
 import me.lele.worldSafe.listener.WorldScopedFeature;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
 import org.bukkit.event.EventHandler;
@@ -16,9 +15,8 @@ public class GhastExplosionProtectionListener extends WorldScopedFeature {
         }
 
 	@EventHandler
-	void onFileballExplode(EntityExplodeEvent e) {
-		// 检测实体是否为火球
-		if (e.getEntityType() != EntityType.FIREBALL)
+	public void onFireballExplode(EntityExplodeEvent e) {
+		if (!(e.getEntity() instanceof Fireball))
 			return;
                 Fireball ent = (Fireball) e.getEntity();
                 if (!isWorldEnabled(getWorld(ent)))

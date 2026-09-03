@@ -6,6 +6,7 @@ import me.lele.worldSafe.listener.blocks.other.CropTrampleProtectionListener;
 import me.lele.worldSafe.listener.blocks.other.WeavingCobwebFormationPreventionListener;
 import me.lele.worldSafe.listener.entities.explosioncancel.CreeperExplosionCancelListener;
 import me.lele.worldSafe.listener.entities.explosionprevention.CreeperExplosionProtectionListener;
+import me.lele.worldSafe.listener.entities.explosionprevention.GhastExplosionProtectionListener;
 import me.lele.worldSafe.listener.entities.other.SnowGolemSnowTrailPreventionListener;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -112,6 +113,20 @@ class ListenerCompatibilityTest {
         new CreeperExplosionProtectionListener(Collections.singletonList("world")).onCreeperExplode(protect);
         assertFalse(protect.isCancelled());
         assertTrue(protect.blockList().isEmpty());
+    }
+
+    @Test
+    void ghastProtectionIgnoresNonFireballEntityWithoutCasting() {
+        World world = world("world", World.Environment.NORMAL);
+        Entity entity = mock(Entity.class);
+        when(entity.getType()).thenReturn(EntityType.FIREBALL);
+        when(entity.getWorld()).thenReturn(world);
+        List<Block> affected = new ArrayList<Block>(Collections.singletonList(mock(Block.class)));
+        EntityExplodeEvent event = new EntityExplodeEvent(entity, new Location(world, 0, 64, 0), affected, 1.0f);
+
+        new GhastExplosionProtectionListener(Collections.singletonList("world")).onFireballExplode(event);
+
+        assertFalse(event.blockList().isEmpty());
     }
 
     private Block block(World world, Material material) {

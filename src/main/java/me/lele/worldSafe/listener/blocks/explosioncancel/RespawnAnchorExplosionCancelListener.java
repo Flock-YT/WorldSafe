@@ -44,7 +44,6 @@ public class RespawnAnchorExplosionCancelListener extends WorldScopedFeature {
         int charges = capabilities.getRespawnAnchorCharges(block);
         int maximumCharges = capabilities.getRespawnAnchorMaximumCharges(block);
         if (charges > 0 && (event.getMaterial() != Material.GLOWSTONE || charges >= maximumCharges)) {
-            sourceResolver.remember(block);
             event.setCancelled(true);
         }
     }

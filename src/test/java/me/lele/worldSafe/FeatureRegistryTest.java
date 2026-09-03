@@ -42,9 +42,13 @@ class FeatureRegistryTest {
         add(expected, MinecraftVersion.V26_2, "sulfurCubeExplosionCancel", "sulfurCubeExplosionProtection");
 
         assertEquals(expected.size(), WorldSafe.FEATURES.size());
+        Set<String> actualKeys = new LinkedHashSet<String>();
         for (FeatureDefinition feature : WorldSafe.FEATURES) {
+            actualKeys.add(feature.getConfigKey());
             assertEquals(expected.get(feature.getConfigKey()), feature.getMinimumVersion(), feature.getConfigKey());
         }
+        assertEquals(expected.keySet(), actualKeys);
+        assertEquals(WorldSafe.FEATURES.size(), actualKeys.size(), "FEATURES contains duplicate config keys");
     }
 
     @Test

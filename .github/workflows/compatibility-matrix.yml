@@ -9,6 +9,24 @@ permissions:
   contents: read
 
 jobs:
+  verify:
+    name: Tests / Spigot 1.8.8 / JDK 17
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Verify with Maven
+        run: mvn -B --no-transfer-progress clean verify
+
   compile:
     name: Spigot ${{ matrix.api }} / JDK ${{ matrix.java }}
     runs-on: ubuntu-latest
@@ -40,7 +58,11 @@ jobs:
             java: '17'
           - api: 1.19.4-R0.1-SNAPSHOT
             java: '17'
+          - api: 1.20.3-R0.1-SNAPSHOT
+            java: '17'
           - api: 1.20.6-R0.1-SNAPSHOT
+            java: '21'
+          - api: 1.21-R0.1-SNAPSHOT
             java: '21'
           - api: 1.21.11-R0.1-SNAPSHOT
             java: '21'

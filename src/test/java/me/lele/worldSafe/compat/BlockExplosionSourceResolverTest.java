@@ -58,6 +58,33 @@ class BlockExplosionSourceResolverTest {
         assertTrue(new BlockExplosionSourceResolver(capabilities).isSource(event, "TNT"));
     }
 
+    @Test
+    void directBlockMatchConsumesCachedInteractionRecord() {
+        BlockExplosionSourceResolver resolver = new BlockExplosionSourceResolver(ServerCapabilities.detect());
+        Block block = block(Material.BED_BLOCK);
+        resolver.remember(block);
+
+        assertTrue(resolver.isSource(new BlockExplodeEvent(block, new ArrayList<Block>(), 1.0f), "BED_BLOCK"));
+        when(block.getType()).thenReturn(Material.AIR);
+        assertFalse(resolver.isSource(new BlockExplodeEvent(block, new ArrayList<Block>(), 1.0f), "BED_BLOCK"));
+    }
+
+    @Test
+    void explodedStateMatchConsumesCachedInteractionRecord() throws Exception {
+        Method method = ModernBlockExplodeEvent.class.getMethod("getExplodedBlockState");
+        ServerCapabilities capabilities = ServerCapabilities.forTestingWithMethods(
+                EnumSet.of(ServerCapabilities.Capability.EXPLODED_BLOCK_STATE), method, null, null, null, null);
+        Block block = block(Material.BED_BLOCK);
+        BlockExplosionSourceResolver resolver = new BlockExplosionSourceResolver(capabilities);
+        resolver.remember(block);
+        when(block.getType()).thenReturn(Material.AIR);
+        BlockState state = mock(BlockState.class);
+        when(state.getType()).thenReturn(Material.BED_BLOCK);
+
+        assertTrue(resolver.isSource(new ModernBlockExplodeEvent(block, state), "BED_BLOCK"));
+        assertFalse(resolver.isSource(new BlockExplodeEvent(block, new ArrayList<Block>(), 1.0f), "BED_BLOCK"));
+    }
+
     private Block block(Material material) {
         World world = mock(World.class);
         when(world.getName()).thenReturn("world");

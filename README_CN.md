@@ -106,7 +106,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 <summary><strong>Minecraft 1.21+</strong></summary>
 
 - **`windChargeBlockDestructionProtection`** - 防止风弹破坏装饰陶罐、紫颂花和滴水石锥，同时保留冲击伤害。
-- **`breezeWindChargeImpactCancel`** - 完全取消旋风人的风弹冲击，不影响玩家发射的风弹。
+- **`breezeWindChargeImpactCancel`** - 完全取消旋风人的风弹冲击，不影响玩家发射的风弹。非 Paper 服务端仅能以最佳努力模式运行；由于 Spigot 不提供所需的提前爆炸钩子，仍可能保留伤害或击退。
 - **`weavingCobwebFormationPrevention`** - 防止盘丝效果生成蜘蛛网。
 
 </details>
@@ -116,7 +116,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 
 ### 直接取消爆炸
 
-- **`sulfurCubeExplosionCancel`** - 完全禁止硫磺立方体吞入 TNT 后产生的爆炸。
+- **`sulfurCubeExplosionCancel`** - 完全禁止硫磺立方体吞入 TNT 后产生的爆炸。非 Paper 服务端仅能以最佳努力模式运行；由于 Spigot 不提供所需的提前爆炸钩子，仍可能保留伤害或击退。
 
 ### 禁止破坏方块但保留伤害
 

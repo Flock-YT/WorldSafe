@@ -47,7 +47,6 @@ public class BedExplosionCancelListener extends WorldScopedFeature {
                 // 检查玩家点击的是否为床
                 if (!MaterialMatcher.isBed(clickedBlock))
                         return;
-                sourceResolver.remember(clickedBlock);
                 // 取消事件，防止爆炸
                 e.setCancelled(true);
 

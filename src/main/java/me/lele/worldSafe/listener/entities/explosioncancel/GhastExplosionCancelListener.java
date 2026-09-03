@@ -1,12 +1,14 @@
 package me.lele.worldSafe.listener.entities.explosioncancel;
 
 import me.lele.worldSafe.listener.WorldScopedFeature;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.Ghast;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 
 import java.util.List;
 
@@ -17,10 +19,9 @@ public class GhastExplosionCancelListener extends WorldScopedFeature {
         }
 
 	@EventHandler
-	void onFileballExplode(EntityExplodeEvent e) {
-		// 检测实体是否为火球
-		if (e.getEntityType() != EntityType.FIREBALL)
-			return;
+	public void onFireballExplode(EntityExplodeEvent e) {
+                if (!(e.getEntity() instanceof Fireball))
+                        return;
                 Fireball ent = (Fireball) e.getEntity();
                 if (!isWorldEnabled(getWorld(ent)))
                         return;
@@ -31,11 +32,17 @@ public class GhastExplosionCancelListener extends WorldScopedFeature {
                 e.setCancelled(true);
         }
 
+        @EventHandler(priority = EventPriority.HIGHEST)
+        public void onFireballPrime(ExplosionPrimeEvent event) {
+                if (isGhastFireball(event.getEntity()) && isWorldEnabled(getWorld(event.getEntity()))) {
+                        event.setCancelled(true);
+                }
+        }
+
 	@EventHandler
-	void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
-		// 检测造成伤害的实体是否为火球
-		if (e.getDamager().getType() != EntityType.FIREBALL)
-			return;
+	public void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
+                if (!(e.getDamager() instanceof Fireball))
+                        return;
                 Fireball ent = (Fireball) e.getDamager();
                 if (!isWorldEnabled(getWorld(ent)))
                         return;
@@ -44,6 +51,10 @@ public class GhastExplosionCancelListener extends WorldScopedFeature {
                         return;
                 //消除火球伤害
                 e.setCancelled(true);
+        }
+
+        private boolean isGhastFireball(Entity entity) {
+                return entity instanceof Fireball && ((Fireball) entity).getShooter() instanceof Ghast;
         }
 
 }

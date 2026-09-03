@@ -106,7 +106,7 @@ Find your server version, then read the version groups from top to bottom. You c
 <summary><strong>Minecraft 1.21+</strong></summary>
 
 - **`windChargeBlockDestructionProtection`** - Prevent wind charges from breaking decorated pots, chorus flowers, and pointed dripstone while keeping impact damage.
-- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind-charge impacts without affecting wind charges fired by players.
+- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind-charge impacts without affecting wind charges fired by players. On non-Paper servers this runs in best-effort mode, so damage or knockback may remain because Spigot does not expose the required early explosion hook.
 - **`weavingCobwebFormationPrevention`** - Prevent the weaving effect from creating cobwebs.
 
 </details>
@@ -116,7 +116,7 @@ Find your server version, then read the version groups from top to bottom. You c
 
 ### Direct Explosion Cancellation
 
-- **`sulfurCubeExplosionCancel`** - Fully prevent sulfur cube explosions caused by consumed TNT.
+- **`sulfurCubeExplosionCancel`** - Fully prevent sulfur cube explosions caused by consumed TNT. On non-Paper servers this runs in best-effort mode, so damage or knockback may remain because Spigot does not expose the required early explosion hook.
 
 ### Prevent Block Destruction but Keep Damage
 
