@@ -10,8 +10,8 @@ enabled-bstats: true
 # 例如下面这个配置就代表苦力怕爆炸不破坏方块，然后下面是生效的世界。
 # To add more features, continue configuring as shown in the second example below.
 # 要继续添加功能就继续配置就行，就像下面第二个配置一样，一直叠下去就好
-# You can view the supported features here: https://github.com/Flock-YT/WorldSafe?tab=readme-ov-file#currently-implemented-features
-# 可以在这里查看支持的功能: https://github.com/Flock-YT/WorldSafe/blob/master/README_CN.md#%E7%9B%AE%E5%89%8D%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%8A%9F%E8%83%BD
+# You can view the supported features here: https://github.com/Flock-YT/WorldSafe#feature-availability
+# 可以在这里查看支持的功能: https://github.com/Flock-YT/WorldSafe/blob/master/README_CN.md#功能版本表
 
 # Creeper Explosion Protection / 苦力怕爆炸不破坏方块
 creeperExplosionProtection:
@@ -24,45 +24,3 @@ tntExplosionProtection:
   - world
   - world_nether
   - world_the_end
-
-# New protections are disabled by default. Add world names to enable them.
-# 新增防护默认不启用，如需启用请在对应配置项下添加世界名称。
-
-bedExplosionCancel: []
-respawnAnchorExplosionCancel: []
-tntExplosionCancel: []
-sulfurCubeExplosionCancel: []
-# Protect surrounding terrain, not the bed itself; keep explosion damage.
-# 保护周围地形，床本身仍可能消失；保留爆炸伤害。
-bedExplosionProtection: []
-respawnAnchorExplosionPrevention: []
-sulfurCubeExplosionProtection: []
-cropTrampleProtection: []
-dragonEggTeleportationPrevention: []
-fireSpreadPrevention: []
-creeperExplosionCancel: []
-endCrystalExplosionCancel: []
-ghastExplosionCancel: []
-witherExplosionCancel: []
-endCrystalExplosionPrevention: []
-ghastExplosionProtection: []
-witherExplosionProtection: []
-enderDragonBlockDestructionProtection: []
-enderManBlockPickupProtection: []
-phantomDamagePrevention: []
-# Player/breeze wind charges: explosion lists and direct-hit block changes; keep impact.
-# 玩家和旋风人风弹：同时保护爆炸列表与直击方块变化，保留冲击。
-windChargeBlockDestructionProtection: []
-breezeWindChargeImpactCancel: []
-decoratedPotProjectileProtection: []
-weavingCobwebFormationPrevention: []
-ravagerBlockDestructionProtection: []
-silverfishBlockChangeProtection: []
-rabbitCropEatingProtection: []
-sheepGrassEatingProtection: []
-villagerCropModificationProtection: []
-foxBerryHarvestProtection: []
-mobDoorBreakProtection: []
-snowGolemSnowTrailPrevention: []
-witherRoseFormationPrevention: []
-fireIgnitionPrevention: []

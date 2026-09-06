@@ -17,6 +17,8 @@ Features added in newer Minecraft versions are automatically ignored on older se
 2. Restart the server.
 3. Configure world lists in `plugins/WorldSafe/config.yml`.
 
+The default configuration contains only the main and bStats switches plus creeper/TNT block-protection examples. Add other keys from the [feature list](#feature-availability) as needed; omitted features are disabled. Existing server configuration files are not overwritten.
+
 ## Commands And Permission
 
 - `/worldsafe help` - Show command help.
