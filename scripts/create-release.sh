@@ -25,12 +25,13 @@ if [[ "$actual_sha256" != "$expected_sha256" ]]; then
   exit 1
 fi
 
-channel_args=()
+# Keep the array nonempty: Bash 3.2 treats empty arrays as unset under set -u.
+release_args=(release create "v$version" "$artifact" "$artifact.sha256"
+  --target "${GITHUB_SHA:?Missing release commit SHA}"
+  --title "WorldSafe v$version"
+  --generate-notes)
 if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
-  channel_args+=(--prerelease --latest=false)
+  release_args+=(--prerelease --latest=false)
 fi
 
-gh release create "v$version" "$artifact" "$artifact.sha256" \
-  --target "${GITHUB_SHA:?Missing release commit SHA}" \
-  --title "WorldSafe v$version" \
-  --generate-notes "${channel_args[@]}"
+gh "${release_args[@]}"

@@ -8,7 +8,7 @@
 | --- | --- |
 | 修复前回归 | 新增测试分别复现 F-01 缺少方块变化事件、F-02 床另一端坐标漏判、F-03 有效快照被旧来源覆盖，共 3 项失败 |
 | 修复后针对性测试 | 通过 |
-| 最终 `mvn -B --no-transfer-progress clean verify` | JDK 17.0.19，Spigot 1.8.8 基线，70 项测试通过，0 失败／错误／跳过 |
+| 最终 `mvn -B --no-transfer-progress clean verify` | JDK 17.0.19，Spigot 1.8.8 基线，71 项测试通过，0 失败／错误／跳过 |
 | `scripts/verify-release-jar.sh` | 版本正确，所有打包类为 Java 8 或更早字节码，无 Bukkit API、禁用依赖或签名残留 |
 | 发布脚本 | `bash -n` 通过；稳定版、alpha、beta、rc、snapshot、preview 参数测试通过；无真实发布调用 |
 | 发布失败路径 | JAR 被修改、摘要侧文件被一起修改、摘要文件缺失、非法输入均在调用模拟 GitHub CLI 前失败 |
@@ -17,6 +17,12 @@
 | Diff 检查 | `git diff --check` 通过 |
 
 床测试包含旧／新数据接口、四个朝向和两端、错误邻居、反射异常、读取失败、快照与缓存双向冲突、空气快照、两秒 TTL 边界、整组一次性消费、覆盖记录及世界隔离。风弹测试组合两种风弹／无关实体、三种目标／普通方块、两条事件路径、配置／未配置世界，并确认不取消整个爆炸事件。
+
+## IDEA 构建兼容修正
+
+随后在 macOS 系统 Bash 3.2 下复现稳定版发布测试失败：`set -u` 会将空的 `channel_args` 数组视为未定义变量。发布脚本现改为组装始终非空的完整参数数组；测试显式覆盖 PATH 中的 `bash` 和 `/bin/bash`，失败时输出脚本日志。
+
+使用 IDEA 2026.2.2 自带 Maven、用户提供的 Maven 参数、JDK 21.0.11 和仅包含系统工具的 PATH 执行 `package` 成功。随后用 JDK 17.0.19 执行 `clean verify`，71 项测试全部通过，并重新检查最终 JAR。本次仅修复构建脚本和测试，没有修改插件行为；下列 API 矩阵结果沿用前次验证，未重复运行。
 
 ## 编译矩阵：18 / 18 通过
 
@@ -38,7 +44,7 @@ mvn -B --no-transfer-progress clean package -Dspigot.version=<API> -Dmaven.test.
 
 - JAR：`target/WorldSafe-1.1.0-beta.1.jar`
 - 校验文件：`target/WorldSafe-1.1.0-beta.1.jar.sha256`
-- 本次构建 SHA-256：`c7236f686dfdceb28de50fabb67ed02ef4cdfe449eda554bf01fb995acf9a94b`
+- 本次构建 SHA-256：`f8fabae2620135ffddd1fa645406771960de9fefdb5948352927c70df9e690d7`
 
 在 `target` 目录执行 `shasum -a 256 -c WorldSafe-1.1.0-beta.1.jar.sha256` 可复核。摘要仅对应本次构建；后续重新打包的时间戳可能改变摘要。
 

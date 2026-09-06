@@ -2,6 +2,8 @@ package me.lele.worldSafe;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
@@ -29,8 +31,9 @@ class ReleaseWorkflowTest {
         assertFalse(Files.exists(temporary.resolve("gh-args")));
     }
 
-    @Test
-    void releaseChannelsAndArtifactDigestAreCheckedBeforeCallingGitHub() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"bash", "/bin/bash"})
+    void releaseChannelsAndArtifactDigestAreCheckedBeforeCallingGitHub(String shell) throws Exception {
         for (String version : Arrays.asList("1.2.3", "1.2.3-beta.1", "1.2.3-alpha.1", "1.2.3-rc.1",
                 "1.2.3-SNAPSHOT", "1.2.3-preview.1")) {
             Path dir = Files.createDirectory(temporary.resolve(version));
@@ -39,7 +42,8 @@ class ReleaseWorkflowTest {
             Files.write(dir.resolve(artifact), bytes);
             String digest = digest(bytes);
             Files.write(dir.resolve(artifact + ".sha256"), (digest + "  " + artifact + "\n").getBytes(StandardCharsets.UTF_8));
-            assertEquals(0, runRelease(version, dir, digest));
+            assertEquals(0, runRelease(shell, version, dir, digest), shell + " / " + version + ":\n"
+                    + new String(Files.readAllBytes(dir.resolve("process.log")), StandardCharsets.UTF_8));
             List<String> args = Files.readAllLines(dir.resolve("gh-args"), StandardCharsets.UTF_8);
             assertEquals(Arrays.asList("release", "create", "v" + version, artifact, artifact + ".sha256"), args.subList(0, 5));
             assertEquals("0123456789abcdef0123456789abcdef01234567", args.get(args.indexOf("--target") + 1));
@@ -50,15 +54,15 @@ class ReleaseWorkflowTest {
 
             Files.delete(dir.resolve("gh-args"));
             Files.write(dir.resolve(artifact), "tampered".getBytes(StandardCharsets.UTF_8));
-            assertNotEquals(0, runRelease(version, dir, digest));
+            assertNotEquals(0, runRelease(shell, version, dir, digest));
             assertFalse(Files.exists(dir.resolve("gh-args")));
             // Even a modified checksum sidecar cannot override the digest supplied by the build job.
             String changed = digest("tampered".getBytes(StandardCharsets.UTF_8));
             Files.write(dir.resolve(artifact + ".sha256"), (changed + "  " + artifact + "\n").getBytes(StandardCharsets.UTF_8));
-            assertNotEquals(0, runRelease(version, dir, digest));
+            assertNotEquals(0, runRelease(shell, version, dir, digest));
             assertFalse(Files.exists(dir.resolve("gh-args")));
             Files.delete(dir.resolve(artifact + ".sha256"));
-            assertNotEquals(0, runRelease(version, dir, digest));
+            assertNotEquals(0, runRelease(shell, version, dir, digest));
             assertFalse(Files.exists(dir.resolve("gh-args")));
         }
     }
@@ -113,11 +117,15 @@ class ReleaseWorkflowTest {
     }
 
     private int runRelease(String version, Path directory, String digest) throws Exception {
+        return runRelease("bash", version, directory, digest);
+    }
+
+    private int runRelease(String shell, String version, Path directory, String digest) throws Exception {
         Path bin = Files.createDirectories(directory.resolve("bin"));
         Path gh = bin.resolve("gh");
         Files.write(gh, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$GH_ARGUMENT_LOG\"\n".getBytes(StandardCharsets.UTF_8));
         assertTrue(gh.toFile().setExecutable(true));
-        ProcessBuilder builder = new ProcessBuilder("bash", Paths.get("scripts/create-release.sh").toAbsolutePath().toString(),
+        ProcessBuilder builder = new ProcessBuilder(shell, Paths.get("scripts/create-release.sh").toAbsolutePath().toString(),
                 version, directory.toString(), digest);
         builder.environment().put("PATH", bin + java.io.File.pathSeparator + System.getenv("PATH"));
         builder.environment().put("GH_ARGUMENT_LOG", directory.resolve("gh-args").toString());
