@@ -130,7 +130,7 @@ Find your server version, then read the version groups from top to bottom. You c
 
 The release job waits for the same commit's required API compatibility checks and publishes only the verified Spigot 1.8.8 baseline JAR, with its SHA-256 rechecked after artifact download. Numeric dotted versions use GitHub's automatic Latest selection; qualified versions (including alpha, beta, rc and snapshot) are prereleases and never marked Latest. API compilation does not establish real-server event behavior.
 
-See the [concise Chinese server checklist](docs/MANUAL_TEST_CN.md) and [verification record](docs/VERIFICATION.md). Reuse the same baseline JAR across servers, not the JARs rebuilt by the compile matrix.
+Reuse the same baseline JAR across servers, not the JARs rebuilt by the compile matrix.
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 

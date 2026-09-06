@@ -130,7 +130,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 
 发布必须等待同一提交的必需 API 兼容检查成功，只发布通过检查的 Spigot 1.8.8 基线 JAR，并在下载构建产物后再次核对 SHA-256。纯数字点分版本沿用 GitHub 自动选择 Latest 的策略；带限定符的版本（包括 alpha、beta、rc、snapshot）标记为预发行且不设为 Latest。API 编译通过不等于服务端事件行为已经实测。
 
-实服验证请使用[精简中文清单](docs/MANUAL_TEST_CN.md)，自动化结果见[验证记录](docs/VERIFICATION.md)。不同服务端使用同一个基线 JAR，不要使用兼容矩阵重新编译的产物。
+不同服务端使用同一个基线 JAR，不要使用兼容矩阵重新编译的产物。
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 
