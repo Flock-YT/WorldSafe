@@ -44,7 +44,18 @@ public final class BlockExplosionSourceResolver {
             return;
         }
         purgeExpired();
-        recentSources.put(BlockKey.from(block), new TrackedSource(block.getType().name(), nanoTime.getAsLong()));
+        Block otherHalf = BedStructureResolver.DETECTED.getOtherHalf(block);
+        BlockKey primaryKey = BlockKey.from(block);
+        BlockKey otherKey = otherHalf == null ? null : BlockKey.from(otherHalf);
+        consume(primaryKey);
+        if (otherKey != null) {
+            consume(otherKey);
+        }
+        TrackedSource source = new TrackedSource(block.getType().name(), nanoTime.getAsLong(), primaryKey, otherKey);
+        recentSources.put(primaryKey, source);
+        if (otherKey != null) {
+            recentSources.put(otherKey, source);
+        }
     }
 
     public boolean isSource(BlockExplodeEvent event, String... materialAliases) {
@@ -54,11 +65,12 @@ public final class BlockExplosionSourceResolver {
 
         purgeExpired();
         Block eventBlock = event.getBlock();
-        TrackedSource tracked = eventBlock == null ? null : recentSources.remove(BlockKey.from(eventBlock));
+        TrackedSource tracked = eventBlock == null ? null : consume(BlockKey.from(eventBlock));
 
         BlockState explodedState = capabilities.getExplodedBlockState(event);
-        if (explodedState != null && MaterialMatcher.matches(explodedState, materialAliases)) {
-            return true;
+        if (explodedState != null && explodedState.getType() != null
+                && !MaterialMatcher.matches(explodedState, "AIR", "CAVE_AIR", "VOID_AIR")) {
+            return MaterialMatcher.matches(explodedState, materialAliases);
         }
 
         if (eventBlock != null && eventBlock.getType() != Material.AIR
@@ -67,6 +79,17 @@ public final class BlockExplosionSourceResolver {
         }
 
         return tracked != null && MaterialMatcher.matchesName(tracked.getMaterialName(), materialAliases);
+    }
+
+    private TrackedSource consume(BlockKey key) {
+        TrackedSource source = recentSources.remove(key);
+        if (source != null) {
+            recentSources.remove(source.primaryKey, source);
+            if (source.otherKey != null) {
+                recentSources.remove(source.otherKey, source);
+            }
+        }
+        return source;
     }
 
     private void purgeExpired() {
@@ -82,10 +105,14 @@ public final class BlockExplosionSourceResolver {
     private static final class TrackedSource {
         private final String materialName;
         private final long createdAtNanos;
+        private final BlockKey primaryKey;
+        private final BlockKey otherKey;
 
-        private TrackedSource(String materialName, long createdAtNanos) {
+        private TrackedSource(String materialName, long createdAtNanos, BlockKey primaryKey, BlockKey otherKey) {
             this.materialName = materialName;
             this.createdAtNanos = createdAtNanos;
+            this.primaryKey = primaryKey;
+            this.otherKey = otherKey;
         }
 
         private String getMaterialName() {

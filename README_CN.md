@@ -42,7 +42,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 
 ### 禁止破坏方块但保留伤害
 
-- **`bedExplosionProtection`** - 禁止床爆炸破坏方块，但保留爆炸伤害。
+- **`bedExplosionProtection`** - 保护床爆炸周围的方块，但保留爆炸伤害；床本身仍可能消失。有意义的爆炸前快照优先；无可用快照时，使用两秒交互缓存，按朝向和床头／床尾数据关联经过校验的床两端。结构数据不可读取时仅记录点击位置，不猜测邻居；不推断数据包自定义维度的床规则。
 - **`tntExplosionProtection`** - 禁止 TNT 和 TNT 矿车爆炸破坏方块。
 - **`creeperExplosionProtection`** - 禁止苦力怕爆炸破坏方块。
 - **`endCrystalExplosionPrevention`** - 禁止末地水晶爆炸破坏方块。
@@ -105,7 +105,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 <details>
 <summary><strong>Minecraft 1.21+</strong></summary>
 
-- **`windChargeBlockDestructionProtection`** - 防止风弹破坏装饰陶罐、紫颂花和滴水石锥，同时保留冲击伤害。
+- **`windChargeBlockDestructionProtection`** - 通过爆炸列表和直击方块变化事件，防止玩家及旋风人风弹破坏装饰陶罐、紫颂花和滴水石锥，保留冲击伤害与击退。不依赖 `decoratedPotProjectileProtection`，不取消整个弹射物命中。覆盖范围取决于服务端是否提供对应事件；某种命中原本就不破坏方块，不能用来证明保护有效。
 - **`breezeWindChargeImpactCancel`** - 完全取消旋风人的风弹冲击，不影响玩家发射的风弹。非 Paper 服务端仅能以最佳努力模式运行；由于 Spigot 不提供所需的提前爆炸钩子，仍可能保留伤害或击退。
 - **`weavingCobwebFormationPrevention`** - 防止盘丝效果生成蜘蛛网。
 
@@ -123,6 +123,12 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 - **`sulfurCubeExplosionProtection`** - 防止硫磺立方体爆炸破坏方块，但保留爆炸伤害。
 
 </details>
+
+## 验证与发布
+
+发布必须等待同一提交的必需 API 兼容检查成功，只发布通过检查的 Spigot 1.8.8 基线 JAR，并在下载构建产物后再次核对 SHA-256。纯数字点分版本沿用 GitHub 自动选择 Latest 的策略；带限定符的版本（包括 alpha、beta、rc、snapshot）标记为预发行且不设为 Latest。API 编译通过不等于服务端事件行为已经实测。
+
+实服验证请使用[精简中文清单](docs/MANUAL_TEST_CN.md)，自动化结果见[验证记录](docs/VERIFICATION.md)。不同服务端使用同一个基线 JAR，不要使用兼容矩阵重新编译的产物。
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 

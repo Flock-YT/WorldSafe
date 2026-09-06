@@ -51,7 +51,7 @@ class ListenerPriorityTest {
         }
 
         assertEquals(2, observerCount);
-        assertEquals(49, modifyingCount);
+        assertEquals(50, modifyingCount);
     }
 
     private boolean isSourceObserver(Listener listener, Method method) {

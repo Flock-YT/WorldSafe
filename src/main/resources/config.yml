@@ -32,6 +32,8 @@ bedExplosionCancel: []
 respawnAnchorExplosionCancel: []
 tntExplosionCancel: []
 sulfurCubeExplosionCancel: []
+# Protect surrounding terrain, not the bed itself; keep explosion damage.
+# 保护周围地形，床本身仍可能消失；保留爆炸伤害。
 bedExplosionProtection: []
 respawnAnchorExplosionPrevention: []
 sulfurCubeExplosionProtection: []
@@ -48,6 +50,8 @@ witherExplosionProtection: []
 enderDragonBlockDestructionProtection: []
 enderManBlockPickupProtection: []
 phantomDamagePrevention: []
+# Player/breeze wind charges: explosion lists and direct-hit block changes; keep impact.
+# 玩家和旋风人风弹：同时保护爆炸列表与直击方块变化，保留冲击。
 windChargeBlockDestructionProtection: []
 breezeWindChargeImpactCancel: []
 decoratedPotProjectileProtection: []

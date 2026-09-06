@@ -42,7 +42,7 @@ Find your server version, then read the version groups from top to bottom. You c
 
 ### Prevent Block Destruction but Keep Damage
 
-- **`bedExplosionProtection`** - Prevent bed explosions from destroying blocks while keeping explosion damage.
+- **`bedExplosionProtection`** - Protect surrounding blocks from bed explosions while keeping explosion damage; the bed itself may still disappear. Meaningful pre-explosion snapshots take precedence. Without a usable snapshot, a two-second interaction cache associates both verified bed halves using their facing and head/foot data; if that data is unavailable, only the clicked position is tracked. Custom dimension bed rules are not inferred from datapacks.
 - **`tntExplosionProtection`** - Prevent TNT and TNT minecart explosions from destroying blocks.
 - **`creeperExplosionProtection`** - Prevent creeper explosions from destroying blocks.
 - **`endCrystalExplosionPrevention`** - Prevent end crystal explosions from destroying blocks.
@@ -105,7 +105,7 @@ Find your server version, then read the version groups from top to bottom. You c
 <details>
 <summary><strong>Minecraft 1.21+</strong></summary>
 
-- **`windChargeBlockDestructionProtection`** - Prevent wind charges from breaking decorated pots, chorus flowers, and pointed dripstone while keeping impact damage.
+- **`windChargeBlockDestructionProtection`** - Prevent player and breeze wind charges from breaking decorated pots, chorus flowers, and pointed dripstone through explosion lists and direct-hit block-change events, while keeping impact damage and knockback. Does not require `decoratedPotProjectileProtection` and does not cancel the entire projectile hit. Coverage depends on the server exposing these events; a material/path with no native destruction is not evidence of protection.
 - **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind-charge impacts without affecting wind charges fired by players. On non-Paper servers this runs in best-effort mode, so damage or knockback may remain because Spigot does not expose the required early explosion hook.
 - **`weavingCobwebFormationPrevention`** - Prevent the weaving effect from creating cobwebs.
 
@@ -123,6 +123,12 @@ Find your server version, then read the version groups from top to bottom. You c
 - **`sulfurCubeExplosionProtection`** - Prevent sulfur cube explosions from destroying blocks while keeping explosion damage.
 
 </details>
+
+## Verification and releases
+
+The release job waits for the same commit's required API compatibility checks and publishes only the verified Spigot 1.8.8 baseline JAR, with its SHA-256 rechecked after artifact download. Numeric dotted versions use GitHub's automatic Latest selection; qualified versions (including alpha, beta, rc and snapshot) are prereleases and never marked Latest. API compilation does not establish real-server event behavior.
+
+See the [concise Chinese server checklist](docs/MANUAL_TEST_CN.md) and [verification record](docs/VERIFICATION.md). Reuse the same baseline JAR across servers, not the JARs rebuilt by the compile matrix.
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 

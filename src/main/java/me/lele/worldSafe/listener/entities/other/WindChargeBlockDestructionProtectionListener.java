@@ -7,6 +7,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.List;
@@ -15,6 +16,14 @@ public class WindChargeBlockDestructionProtectionListener extends WorldScopedFea
 
     public WindChargeBlockDestructionProtectionListener(List<String> worlds) {
         super(worlds);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onWindChargeChangeBlock(EntityChangeBlockEvent event) {
+        if (isWindCharge(event.getEntity()) && isFragileBlock(event.getBlock())
+                && isWorldEnabled(getWorld(event.getBlock()))) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

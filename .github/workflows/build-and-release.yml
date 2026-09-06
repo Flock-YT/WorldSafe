@@ -90,6 +90,8 @@ jobs:
     needs: detect-version
     if: needs.detect-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      sha256: ${{ steps.digest.outputs.sha256 }}
 
     steps:
       - name: Checkout code
@@ -108,17 +110,37 @@ jobs:
       - name: Verify release JAR
         run: ./scripts/verify-release-jar.sh "target/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"
 
+      - name: Record verified JAR digest
+        id: digest
+        working-directory: target
+        env:
+          ARTIFACT: ${{ needs.detect-version.outputs.artifact }}
+        run: |
+          set -euo pipefail
+          shasum -a 256 "$ARTIFACT" > "$ARTIFACT.sha256"
+          digest="$(shasum -a 256 "$ARTIFACT")"
+          echo "sha256=${digest%% *}" >> "$GITHUB_OUTPUT"
+          cat "$ARTIFACT.sha256" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload release JAR
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-jar
-          path: target/${{ needs.detect-version.outputs.artifact }}
+          path: |
+            target/${{ needs.detect-version.outputs.artifact }}
+            target/${{ needs.detect-version.outputs.artifact }}.sha256
           if-no-files-found: error
+
+  compatibility:
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
+    uses: ./.github/workflows/compatibility-matrix.yml
 
   release:
     needs:
       - detect-version
       - build
+      - compatibility
     if: needs.detect-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -149,11 +171,7 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.detect-version.outputs.tag }}
-          ARTIFACT: ${{ needs.detect-version.outputs.artifact }}
+          VERSION: ${{ needs.detect-version.outputs.version }}
+          EXPECTED_SHA256: ${{ needs.build.outputs.sha256 }}
         run: |
-          set -euo pipefail
-          gh release create "$TAG" "dist/$ARTIFACT" \
-            --target "$GITHUB_SHA" \
-            --title "WorldSafe $TAG" \
-            --generate-notes
+          bash scripts/create-release.sh "$VERSION" dist "$EXPECTED_SHA256"

@@ -65,6 +65,68 @@ class ListenerCompatibilityTest {
     }
 
     @Test
+    void bedSourceObservationRespectsWorldAndDimensionFilters() {
+        for (boolean configured : new boolean[] {true, false}) {
+            for (World.Environment environment : new World.Environment[] {
+                    World.Environment.NORMAL, World.Environment.NETHER}) {
+                World world = world("test", environment);
+                Block bed = bedHalf(world, BlockFace.NORTH, false, 1, 2);
+                BedExplosionProtectionListener listener = new BedExplosionProtectionListener(
+                        Collections.singletonList(configured ? "test" : "other"));
+                listener.onBedUse(new PlayerInteractEvent(mock(Player.class), Action.RIGHT_CLICK_BLOCK,
+                        null, bed, BlockFace.UP));
+                when(bed.getType()).thenReturn(Material.AIR);
+                BlockExplodeEvent event = new BlockExplodeEvent(bed,
+                        new ArrayList<Block>(Collections.singletonList(mock(Block.class))), 1.0f);
+                listener.onBedExplosion(event);
+                org.junit.jupiter.api.Assertions.assertEquals(configured && environment == World.Environment.NETHER,
+                        event.blockList().isEmpty());
+                assertFalse(event.isCancelled());
+            }
+        }
+    }
+
+    @Test
+    void legacyBedExplosionAtOtherHalfIsProtectedInEveryDirection() {
+        for (BlockFace facing : new BlockFace[] {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
+            for (boolean clickHead : new boolean[] {true, false}) {
+                World world = world("world_nether", World.Environment.NETHER);
+                Block foot = bedHalf(world, facing, false, 10, 10);
+                Block head = bedHalf(world, facing, true, 10 + facing.getModX(), 10 + facing.getModZ());
+                when(foot.getRelative(facing)).thenReturn(head);
+                when(head.getRelative(facing.getOppositeFace())).thenReturn(foot);
+                BedExplosionProtectionListener listener = new BedExplosionProtectionListener(
+                        Collections.singletonList("world_nether"));
+                listener.onBedUse(new PlayerInteractEvent(mock(Player.class), Action.RIGHT_CLICK_BLOCK,
+                        null, clickHead ? head : foot, BlockFace.UP));
+                when(foot.getType()).thenReturn(Material.AIR);
+                when(head.getType()).thenReturn(Material.AIR);
+                BlockExplodeEvent explosion = new BlockExplodeEvent(clickHead ? foot : head,
+                        new ArrayList<Block>(Collections.singletonList(mock(Block.class))), 1.0f);
+                listener.onBedExplosion(explosion);
+                assertTrue(explosion.blockList().isEmpty(), facing + " head=" + clickHead);
+                assertFalse(explosion.isCancelled());
+                BlockExplodeEvent repeated = new BlockExplodeEvent(clickHead ? head : foot,
+                        new ArrayList<Block>(Collections.singletonList(mock(Block.class))), 1.0f);
+                listener.onBedExplosion(repeated);
+                assertFalse(repeated.blockList().isEmpty(), "Both halves must be consumed together");
+            }
+        }
+    }
+
+    private Block bedHalf(World world, BlockFace facing, boolean head, int x, int z) {
+        Block block = block(world, Material.BED_BLOCK);
+        when(block.getX()).thenReturn(x);
+        when(block.getZ()).thenReturn(z);
+        org.bukkit.material.Bed data = new org.bukkit.material.Bed(facing);
+        data.setHeadOfBed(head);
+        BlockState state = mock(BlockState.class);
+        when(state.getData()).thenReturn(data);
+        when(block.getState()).thenReturn(state);
+        return block;
+    }
+
+    @Test
     void legacyFarmlandAndCobwebNamesAreProtected() {
         World world = world("world", World.Environment.NORMAL);
         Block soil = block(world, Material.SOIL);
