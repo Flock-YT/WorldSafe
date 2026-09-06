@@ -2,6 +2,8 @@
 
 # WorldSafe
 
+<img src="assets/branding/worldsafe-logo.png" alt="WorldSafe logo" width="160" height="160">
+
 WorldSafe is a lightweight Bukkit plugin that prevents selected entities and game mechanics from damaging configured worlds.
 
 ## Compatibility

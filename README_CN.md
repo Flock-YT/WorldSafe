@@ -2,6 +2,8 @@
 
 # WorldSafe
 
+<img src="assets/branding/worldsafe-logo.png" alt="WorldSafe logo" width="160" height="160">
+
 WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏机制破坏已配置的世界。
 
 ## 兼容范围
