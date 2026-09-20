@@ -4,14 +4,14 @@
 
 <img src="assets/branding/worldsafe-logo.png" alt="WorldSafe logo" width="160" height="160">
 
-WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏机制破坏已配置的世界。
+WorldSafe 是一个轻量级 Bukkit 插件，用于阻止各种生物/实体和游戏机制破坏世界
 
 ## 兼容范围
 
 - 支持 **Minecraft 1.8.8 至 26.2**。
 - 支持常见的 Bukkit、Spigot 和 Paper 服务端。
 
-较新版本才有的功能会在旧版本服务端上自动跳过，其他可用的保护功能仍会正常运行。如果配置重载失败，插件会继续使用之前正常工作的设置。
+较新版本才有的功能会在旧版本服务端上自动跳过，其他可用的功能仍会正常运行。如果配置重载失败，插件会继续使用之前正常工作的设置。
 
 ## 安装
 
@@ -19,7 +19,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 2. 重启服务端。
 3. 在 `plugins/WorldSafe/config.yml` 中配置需要生效的世界列表。
 
-默认配置仅保留总开关、bStats 开关，以及苦力怕和 TNT 方块保护示例。其他配置项请按需从[功能版本表](#功能版本表)添加；未配置的功能默认禁用。已有服务端配置文件不会被覆盖。
+默认配置仅保留总开关、bStats 开关，以及苦力怕和 TNT 方块保护示例。其他配置项请按需从[功能版本表](#功能版本表)添加；未配置的功能默认禁用。
 
 ## 命令与权限
 
@@ -30,6 +30,8 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 ## 功能版本表
 
 请先确认你的服务端版本，然后从上往下查看版本分组。只要分组中的版本不高于你的服务端版本，就可以使用其中的功能。
+例如，如果你运行的是 1.13 版本，那你就可以使用 1.8.8+ 和 1.13 版本这两个分支当中的所有配置，
+但是你不能使用 1.14+ 及以上版本的配置（因为新版本当中的一些东西在旧版本里面并不存在）
 
 <details open>
 <summary><strong>Minecraft 1.8.8+</strong></summary>
@@ -46,7 +48,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 
 ### 禁止破坏方块但保留伤害
 
-- **`bedExplosionProtection`** - 保护床爆炸周围的方块，但保留爆炸伤害；床本身仍可能消失。有意义的爆炸前快照优先；无可用快照时，使用两秒交互缓存，按朝向和床头／床尾数据关联经过校验的床两端。结构数据不可读取时仅记录点击位置，不猜测邻居；不推断数据包自定义维度的床规则。
+- **`bedExplosionProtection`** - 保护床爆炸周围的方块，但保留爆炸伤害。
 - **`tntExplosionProtection`** - 禁止 TNT 和 TNT 矿车爆炸破坏方块。
 - **`creeperExplosionProtection`** - 禁止苦力怕爆炸破坏方块。
 - **`endCrystalExplosionPrevention`** - 禁止末地水晶爆炸破坏方块。
@@ -127,12 +129,6 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止指定实体和游戏�
 - **`sulfurCubeExplosionProtection`** - 防止硫磺立方体爆炸破坏方块，但保留爆炸伤害。
 
 </details>
-
-## 验证与发布
-
-发布必须等待同一提交的必需 API 兼容检查成功，只发布通过检查的 Spigot 1.8.8 基线 JAR，并在下载构建产物后再次核对 SHA-256。纯数字点分版本沿用 GitHub 自动选择 Latest 的策略；带限定符的版本（包括 alpha、beta、rc、snapshot）标记为预发行且不设为 Latest。API 编译通过不等于服务端事件行为已经实测。
-
-不同服务端使用同一个基线 JAR，不要使用兼容矩阵重新编译的产物。
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 
