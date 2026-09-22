@@ -8,7 +8,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止各种生物/实体和�
 
 ## 兼容范围
 
-- 支持 **Minecraft 1.8.8 至 26.2**。
+- 支持 **Minecraft 1.8.8 至 26.3**。
 - 支持常见的 Bukkit、Spigot 和 Paper 服务端。
 
 较新版本才有的功能会在旧版本服务端上自动跳过，其他可用的功能仍会正常运行。如果配置重载失败，插件会继续使用之前正常工作的设置。
@@ -41,7 +41,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止各种生物/实体和�
 
 *(如果配置了某种爆炸的完整取消项，就不需要再配置对应的方块保护项。)*
 
-- **`bedExplosionCancel`** - 完全禁止床爆炸。此配置请勿添加主世界。
+- **`bedExplosionCancel`** - 完全禁止普通床爆炸。此配置请勿添加主世界。稻草床不会爆炸，因此不属于此功能的处理范围。
 - **`tntExplosionCancel`** - 完全禁止 TNT 和 TNT 矿车爆炸。
 - **`creeperExplosionCancel`** - 完全禁止苦力怕爆炸。
 - **`endCrystalExplosionCancel`** - 完全禁止末地水晶爆炸。
@@ -50,7 +50,7 @@ WorldSafe 是一个轻量级 Bukkit 插件，用于阻止各种生物/实体和�
 
 ### 禁止破坏方块但保留伤害
 
-- **`bedExplosionProtection`** - 保护床爆炸周围的方块，但保留爆炸伤害。
+- **`bedExplosionProtection`** - 保护普通床爆炸周围的方块，但保留爆炸伤害。稻草床不会爆炸，因此不属于此功能的处理范围。
 - **`tntExplosionProtection`** - 禁止 TNT 和 TNT 矿车爆炸破坏方块。
 - **`creeperExplosionProtection`** - 禁止苦力怕爆炸破坏方块。
 - **`endCrystalExplosionPrevention`** - 禁止末地水晶爆炸破坏方块。

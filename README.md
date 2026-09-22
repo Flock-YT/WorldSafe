@@ -8,7 +8,7 @@ WorldSafe is a lightweight Bukkit plugin that prevents various mobs/entities and
 
 ## Compatibility
 
-- Supports **Minecraft 1.8.8 through 26.2**.
+- Supports **Minecraft 1.8.8 through 26.3**.
 - Works with commonly used Bukkit, Spigot, and Paper servers.
 
 Features that are only available in newer versions are automatically skipped on older servers, while all other available features continue to work normally. If the configuration fails to reload, the plugin continues using the previous working settings.
@@ -41,7 +41,7 @@ First, confirm your server version, then read the version groups from top to bot
 
 *(If you configure the full cancellation option for an explosion type, you do not need to configure the corresponding block protection option.)*
 
-- **`bedExplosionCancel`** - Fully prevent bed explosions. Do not add the Overworld to this configuration.
+- **`bedExplosionCancel`** - Fully prevent standard bed explosions. Do not add the Overworld to this configuration. Straw beds are not included because they do not explode.
 - **`tntExplosionCancel`** - Fully prevent TNT and TNT minecart explosions.
 - **`creeperExplosionCancel`** - Fully prevent creeper explosions.
 - **`endCrystalExplosionCancel`** - Fully prevent end crystal explosions.
@@ -50,7 +50,7 @@ First, confirm your server version, then read the version groups from top to bot
 
 ### Prevent Block Destruction but Keep Damage
 
-- **`bedExplosionProtection`** - Protect blocks around bed explosions while retaining explosion damage.
+- **`bedExplosionProtection`** - Protect blocks around standard bed explosions while retaining explosion damage. Straw beds are not included because they do not explode.
 - **`tntExplosionProtection`** - Prevent TNT and TNT minecart explosions from destroying blocks.
 - **`creeperExplosionProtection`** - Prevent creeper explosions from destroying blocks.
 - **`endCrystalExplosionPrevention`** - Prevent end crystal explosions from destroying blocks.

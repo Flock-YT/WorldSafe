@@ -48,6 +48,21 @@ class ListenerCompatibilityTest {
     }
 
     @Test
+    void strawBedKeepsVanillaInvalidDimensionBehavior() {
+        World world = world("world_nether", World.Environment.NETHER);
+        Material strawBed = mock(Material.class);
+        when(strawBed.name()).thenReturn("STRAW_BED");
+        Block bed = block(world, strawBed);
+        Player player = mock(Player.class);
+        when(player.getWorld()).thenReturn(world);
+        PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, bed, BlockFace.UP);
+
+        new BedExplosionCancelListener(Collections.singletonList("world_nether")).onPlayerInteractEvent(event);
+
+        assertFalse(event.isCancelled());
+    }
+
+    @Test
     void oldBlockExplosionFallbackProtectsBlocksWithoutCancellingDamage() {
         World world = world("world_nether", World.Environment.NETHER);
         Block bed = block(world, Material.BED_BLOCK);

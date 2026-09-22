@@ -37,7 +37,7 @@ public final class MaterialMatcher {
     }
 
     public static boolean isBed(Block block) {
-        return block != null && isBedName(block.getType().name());
+        return block != null && isExplosiveBedName(block.getType().name());
     }
 
     private static String normalize(String name) {
@@ -56,13 +56,16 @@ public final class MaterialMatcher {
         if ("WEB".equals(name) || "LEGACY_WEB".equals(name) || "COBWEB".equals(name)) {
             return "COBWEB";
         }
-        if (isBedName(name)) {
+        if (isExplosiveBedName(name)) {
             return "BED_BLOCK";
         }
         return name;
     }
 
-    private static boolean isBedName(String name) {
+    private static boolean isExplosiveBedName(String name) {
+        if ("STRAW_BED".equals(name)) {
+            return false;
+        }
         return "BED".equals(name) || "BED_BLOCK".equals(name) || "LEGACY_BED".equals(name)
                 || "LEGACY_BED_BLOCK".equals(name) || name.endsWith("_BED");
     }

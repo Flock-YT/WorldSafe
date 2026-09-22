@@ -14,6 +14,8 @@ class MatcherTest {
         assertTrue(MaterialMatcher.matchesName("GRASS", "GRASS_BLOCK"));
         assertTrue(MaterialMatcher.matchesName("BED_BLOCK", "RED_BED"));
         assertTrue(MaterialMatcher.matchesName("LEGACY_BED", "BLACK_BED"));
+        assertFalse(MaterialMatcher.matchesName("STRAW_BED", "BED_BLOCK"));
+        assertFalse(MaterialMatcher.matchesName("STRAW_BED", "RED_BED"));
         assertTrue(MaterialMatcher.matchesName("WEB", "COBWEB"));
         assertFalse(MaterialMatcher.matchesName("STONE", "COBWEB"));
     }

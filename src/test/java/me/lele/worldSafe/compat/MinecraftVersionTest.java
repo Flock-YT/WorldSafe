@@ -13,6 +13,7 @@ class MinecraftVersionTest {
         assertEquals(new MinecraftVersion(1, 21, 11),
                 MinecraftVersion.parse("git-Paper-123 (MC: 1.21.11)"));
         assertEquals(new MinecraftVersion(26, 2, 0), MinecraftVersion.parse("26.2-R0.1-SNAPSHOT"));
+        assertEquals(new MinecraftVersion(26, 3, 0), MinecraftVersion.parse("26.3-R0.1-SNAPSHOT"));
     }
 
     @Test
