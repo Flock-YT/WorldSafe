@@ -4,49 +4,53 @@
 
 <img src="assets/branding/worldsafe-logo.png" alt="WorldSafe logo" width="160" height="160">
 
-WorldSafe is a lightweight Bukkit plugin that prevents selected entities and game mechanics from damaging configured worlds.
+WorldSafe is a lightweight Bukkit plugin that prevents various mobs/entities and game mechanics from damaging worlds.
 
 ## Compatibility
 
 - Supports **Minecraft 1.8.8 through 26.2**.
 - Works with commonly used Bukkit, Spigot, and Paper servers.
 
-Features added in newer Minecraft versions are automatically ignored on older servers. Other available protections continue to work normally. If a configuration reload fails, the previous working settings remain active.
+Features that are only available in newer versions are automatically skipped on older servers, while all other available features continue to work normally. If the configuration fails to reload, the plugin continues using the previous working settings.
 
 ## Installation
 
 1. Put `WorldSafe-<version>.jar` in the server's `plugins` directory.
 2. Restart the server.
-3. Configure world lists in `plugins/WorldSafe/config.yml`.
+3. Configure the list of worlds where the plugin should take effect in `plugins/WorldSafe/config.yml`.
 
-The default configuration contains only the main and bStats switches plus creeper/TNT block-protection examples. Add other keys from the [feature list](#feature-availability) as needed; omitted features are disabled. Existing server configuration files are not overwritten.
+The default configuration contains only the main switch, the bStats switch, and example block protections for creepers and TNT. Add other configuration options from the [feature availability table](#feature-availability-table) as needed; features that are not configured are disabled by default.
 
-## Commands And Permission
+## Commands and Permissions
 
-- `/worldsafe help` - Show command help.
+- `/worldsafe help` - View command help.
 - `/worldsafe reload` - Reload the configuration.
-- `worldsafe.admin` - Allows use of WorldSafe administration commands. Defaults to operators.
+- `worldsafe.admin` - Allows the use of WorldSafe administration commands; available only to operators by default.
 
-## Feature Availability
+## Feature Availability Table
 
-Find your server version, then read the version groups from top to bottom. You can use every group whose version is not newer than your server.
+First, confirm your server version, then read the version groups from top to bottom. You can use the features in any group whose version is not newer than your server version.
+
+> For example, if you are running version 1.13, you can use all configuration options in both the 1.8.8+ and 1.13 groups,
+> but you cannot use configuration options for 1.14+ or later versions (because some things in newer versions do not exist in older versions).
 
 <details open>
 <summary><strong>Minecraft 1.8.8+</strong></summary>
 
 ### Direct Explosion Cancellation
-*(If you configure an explosion cancellation option, you do not also need its block-protection counterpart.)*
 
-- **`bedExplosionCancel`** - Prevent bed explosions. Do not add overworld worlds to this option.
+*(If you configure the full cancellation option for an explosion type, you do not need to configure the corresponding block protection option.)*
+
+- **`bedExplosionCancel`** - Fully prevent bed explosions. Do not add the Overworld to this configuration.
 - **`tntExplosionCancel`** - Fully prevent TNT and TNT minecart explosions.
 - **`creeperExplosionCancel`** - Fully prevent creeper explosions.
 - **`endCrystalExplosionCancel`** - Fully prevent end crystal explosions.
-- **`ghastExplosionCancel`** - Prevent ghast fireball explosions and damage.
+- **`ghastExplosionCancel`** - Prevent ghast fireball explosions and cancel fireball damage.
 - **`witherExplosionCancel`** - Fully prevent wither and wither skull explosions.
 
 ### Prevent Block Destruction but Keep Damage
 
-- **`bedExplosionProtection`** - Protect surrounding blocks from bed explosions while keeping explosion damage; the bed itself may still disappear. Meaningful pre-explosion snapshots take precedence. Without a usable snapshot, a two-second interaction cache associates both verified bed halves using their facing and head/foot data; if that data is unavailable, only the clicked position is tracked. Custom dimension bed rules are not inferred from datapacks.
+- **`bedExplosionProtection`** - Protect blocks around bed explosions while retaining explosion damage.
 - **`tntExplosionProtection`** - Prevent TNT and TNT minecart explosions from destroying blocks.
 - **`creeperExplosionProtection`** - Prevent creeper explosions from destroying blocks.
 - **`endCrystalExplosionPrevention`** - Prevent end crystal explosions from destroying blocks.
@@ -109,8 +113,8 @@ Find your server version, then read the version groups from top to bottom. You c
 <details>
 <summary><strong>Minecraft 1.21+</strong></summary>
 
-- **`windChargeBlockDestructionProtection`** - Prevent player and breeze wind charges from breaking decorated pots, chorus flowers, and pointed dripstone through explosion lists and direct-hit block-change events, while keeping impact damage and knockback. Does not require `decoratedPotProjectileProtection` and does not cancel the entire projectile hit. Coverage depends on the server exposing these events; a material/path with no native destruction is not evidence of protection.
-- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind-charge impacts without affecting wind charges fired by players. On non-Paper servers this runs in best-effort mode, so damage or knockback may remain because Spigot does not expose the required early explosion hook.
+- **`windChargeBlockDestructionProtection`** - Prevent wind charges fired by players and breezes from breaking decorated pots, chorus flowers, and pointed dripstone through explosion lists and direct-hit block-change events, while retaining impact damage and knockback. This does not depend on `decoratedPotProjectileProtection` and does not cancel the entire projectile hit. Coverage depends on whether the server provides the corresponding events; a type of hit that does not normally break blocks cannot be used as proof that the protection is working.
+- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind charge impacts without affecting wind charges fired by players. On non-Paper servers, this can only run in best-effort mode; damage or knockback may remain because Spigot does not provide the required early explosion hook.
 - **`weavingCobwebFormationPrevention`** - Prevent the weaving effect from creating cobwebs.
 
 </details>
@@ -120,19 +124,13 @@ Find your server version, then read the version groups from top to bottom. You c
 
 ### Direct Explosion Cancellation
 
-- **`sulfurCubeExplosionCancel`** - Fully prevent sulfur cube explosions caused by consumed TNT. On non-Paper servers this runs in best-effort mode, so damage or knockback may remain because Spigot does not expose the required early explosion hook.
+- **`sulfurCubeExplosionCancel`** - Fully prevent explosions caused when sulfur cubes consume TNT. On non-Paper servers, this can only run in best-effort mode; damage or knockback may remain because Spigot does not provide the required early explosion hook.
 
 ### Prevent Block Destruction but Keep Damage
 
 - **`sulfurCubeExplosionProtection`** - Prevent sulfur cube explosions from destroying blocks while keeping explosion damage.
 
 </details>
-
-## Verification and releases
-
-The release job waits for the same commit's required API compatibility checks and publishes only the verified Spigot 1.8.8 baseline JAR, with its SHA-256 rechecked after artifact download. Numeric dotted versions use GitHub's automatic Latest selection; qualified versions (including alpha, beta, rc and snapshot) are prereleases and never marked Latest. API compilation does not establish real-server event behavior.
-
-Reuse the same baseline JAR across servers, not the JARs rebuilt by the compile matrix.
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 
