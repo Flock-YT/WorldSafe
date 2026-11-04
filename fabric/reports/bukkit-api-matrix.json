@@ -2,115 +2,134 @@
   {
     "api": "1.8.8-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 2.64
+    "elapsedSeconds": 2.75
   },
   {
     "api": "1.9.4-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 11.09
+    "elapsedSeconds": 4.12
   },
   {
     "api": "1.10.2-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 8.47
+    "elapsedSeconds": 8.38
   },
   {
     "api": "1.11.2-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 10.57
+    "elapsedSeconds": 8.79
   },
   {
     "api": "1.12.2-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 8.6
+    "elapsedSeconds": 9.09
   },
   {
     "api": "1.13.2-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 10.29
+    "elapsedSeconds": 8.1
   },
   {
     "api": "1.14.4-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 8.59
+    "elapsedSeconds": 8.44
   },
   {
     "api": "1.15.2-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 12.85
+    "elapsedSeconds": 8.47
   },
   {
     "api": "1.16.5-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 10.45
+    "elapsedSeconds": 5.95
   },
   {
     "api": "1.17.1-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 9.6
+    "elapsedSeconds": 4.3
   },
   {
     "api": "1.18.2-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 20.29
+    "elapsedSeconds": 4.58
   },
   {
     "api": "1.19.4-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 20.91
+    "elapsedSeconds": 4.63
   },
   {
     "api": "1.20.3-R0.1-SNAPSHOT",
     "java": 17,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 20.16
+    "elapsedSeconds": 9.08
   },
   {
     "api": "1.20.6-R0.1-SNAPSHOT",
     "java": 21,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 10.23
+    "elapsedSeconds": 4.92
   },
   {
     "api": "1.21-R0.1-SNAPSHOT",
     "java": 21,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 9.23
+    "elapsedSeconds": 6.37
   },
   {
     "api": "1.21.11-R0.1-SNAPSHOT",
     "java": 21,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 29.12
+    "elapsedSeconds": 6.89
   },
   {
     "api": "26.1.2-R0.1-SNAPSHOT",
     "java": 25,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 8.61
+    "elapsedSeconds": 4.45
   },
   {
     "api": "26.2-R0.1-SNAPSHOT",
     "java": 25,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 18.39
+    "elapsedSeconds": 4.84
   },
   {
     "api": "26.3-R0.1-SNAPSHOT",
     "java": 25,
+    "buildTool": "Gradle 9.6.0",
     "passed": true,
-    "elapsedSeconds": 16.39
+    "elapsedSeconds": 9.27
   }
 ]

@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import zipfile
+from project_version import read_version
 
 ROOT = Path(__file__).resolve().parent.parent
 module = importlib.util.spec_from_file_location("fabric_package", ROOT / "scripts/verify-fabric-probe.py")
@@ -18,7 +19,7 @@ module.loader.exec_module(packaging)
 
 def collect(jar, build, lock):
     package = packaging.verify(jar, lock, require_all=True)
-    project_version = ET.parse(ROOT / "pom.xml").getroot().findtext("{http://maven.apache.org/POM/4.0.0}version")
+    project_version = read_version()
     results = []
     source = (ROOT / "shared/src/main/java/me/lele/worldSafe/core/FeatureCatalog.java").read_text()
     features = {key: value.replace("_", ".") for key, value in re.findall(
@@ -31,7 +32,7 @@ def collect(jar, build, lock):
     with zipfile.ZipFile(jar) as universal:
         metadata = json.loads(universal.read("fabric.mod.json"))
         if metadata["version"] != project_version:
-            raise ValueError("Fabric artifact does not match the root Maven version")
+            raise ValueError("Fabric artifact does not match the root Gradle version")
         for target in lock["targets"]:
             game = target["minecraft"]
             report_file = build / "targets" / ("mc" + game.replace(".", "_")) / "build/reports/native-hooks.json"

@@ -102,24 +102,14 @@ $RECYCLE.BIN/
 target/
 /dist/
 
-# Fabric build caches and generated target projects
+# Gradle build caches and generated target projects
+/.gradle/
+/build/
 fabric/.gradle/
 fabric/build/
 fabric/**/build/
 __pycache__/
-!fabric/gradle/wrapper/gradle-wrapper.jar
-
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-.flattened-pom.xml
+!gradle/wrapper/gradle-wrapper.jar
 
 # Common working directory
 run/

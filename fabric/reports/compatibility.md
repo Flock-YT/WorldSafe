@@ -4,18 +4,20 @@ Acceptance scope: **code-only**, as requested. No full in-game behavior certific
 
 The workspace version remains `1.1.1`; no release was published.
 
-- Bukkit: `mvn clean verify` passed 78 JUnit/Mockito tests; release JAR validation passed (Java 8, version, dependency and signature checks).
-- Bukkit API/JDK compile matrix: all 19 entries passed, from Spigot 1.8.8 / JDK 17 through 26.3 / JDK 25.
-- Fabric: 53 JUnit/Mockito tests and 17 Python packaging/report tests passed.
+- Bukkit: `./gradlew clean build` passed 80 JUnit/Mockito tests and 11 Python version/release-detection tests; release JAR validation passed (Java 8, version, bStats relocation, excluded dependencies and signatures).
+- Bukkit API/JDK compile matrix: all 19 entries passed using Gradle 9.6.0, from Spigot 1.8.8 / JDK 17 through 26.3 / JDK 25.
+- Fabric: `./gradlew -p fabric check shadowJar` passed 53 JUnit/Mockito tests and 17 Python packaging/report tests.
 - Fabric: all 48 pinned modules compiled and passed offline checks against matching intermediary/official game classes, including fields, descriptors, callback signatures, required native invocation sites and Mixin registration.
 - Fire-burn regression: all 48 modules cancel the native burn operation at `HEAD` before TNT priming when `fireSpreadPrevention` applies. The verifier also rejected 39 broken hook variants across legacy intermediary, modern intermediary and official signatures.
+- Unified root Wrapper: `buildAll` passed on JDK 25 with the JDK 17 Bukkit toolchain. The independent JDK 17 Bukkit build did not configure Fabric or Loom.
+- Migration comparison: all 73 Bukkit class files and both configuration resources are byte-identical to the previous Maven-built JAR. The actual prior-commit version comparison returned `should_release=false` for version `1.1.1`.
 - The universal JAR passed nested-module, exact-version selection, Java bytecode, entrypoint, package-case, signature and excluded-dependency checks.
 
 ## Artifacts
 
 | Platform | File | SHA-256 |
 | --- | --- | --- |
-| Bukkit | `WorldSafe-1.1.1.jar` | `470eab6c877e7e604fff3a5460e8c4ff89e1d1904bbb6979a77490ab15a594a4` |
+| Bukkit | `WorldSafe-1.1.1.jar` | `ecf656512ebf6d1f07d556466a2409ea90923bddd3d8b834235afecebb8523c3` |
 | Fabric | `WorldSafe-Fabric-1.1.1.jar` | `535b160186b50b16eabb486c8837772b29b80e329df2e88228f6422dedeeb440` |
 
 Checksums accompany both files in `dist/`. The Fabric verification JSON matches the final JAR hash. Release CI uploads the verified file without rebuilding it.

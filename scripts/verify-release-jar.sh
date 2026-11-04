@@ -6,13 +6,11 @@ project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$project_root"
 
 read_project_version() {
-    mvn -q -Dstyle.color=never help:evaluate \
-        -Dexpression=project.version \
-        -DforceStdout 2>/dev/null | tr -d '\r'
+    python3 scripts/project_version.py
 }
 
 expected_version="${2:-$(read_project_version)}"
-jar_path="${1:-target/WorldSafe-${expected_version}.jar}"
+jar_path="${1:-build/libs/WorldSafe-${expected_version}.jar}"
 
 if [[ "$jar_path" = /* ]]; then
     absolute_jar_path="$jar_path"
@@ -63,6 +61,16 @@ fi
 
 if printf '%s\n' "$jar_entries" | grep -Eq '^org/bukkit/'; then
     echo "Bukkit API classes must not be bundled in $jar_path." >&2
+    exit 1
+fi
+
+if printf '%s\n' "$jar_entries" | grep -E '^org/bstats/' >/dev/null; then
+    echo "bStats classes must be privately relocated in $jar_path." >&2
+    exit 1
+fi
+
+if ! printf '%s\n' "$jar_entries" | grep -F 'me/lele/worldSafe/shaded/bstats/bukkit/Metrics.class' >/dev/null; then
+    echo "Relocated bStats Bukkit Metrics is missing from $jar_path." >&2
     exit 1
 fi
 

@@ -23,10 +23,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: maven
+          cache: gradle
+          cache-dependency-path: |
+            *.gradle
+            gradle.properties
+            gradle/*.gradle
+            gradle/wrapper/gradle-wrapper.properties
 
-      - name: Verify with Maven
-        run: mvn -B --no-transfer-progress clean verify
+      - name: Verify with Gradle
+        run: ./gradlew --no-daemon clean build
 
   compile:
     name: Spigot ${{ matrix.api }} / JDK ${{ matrix.java }}
@@ -83,10 +88,15 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
-          cache: maven
+          cache: gradle
+          cache-dependency-path: |
+            *.gradle
+            gradle.properties
+            gradle/*.gradle
+            gradle/wrapper/gradle-wrapper.properties
 
       - name: Compile against Spigot API ${{ matrix.api }}
         run: >-
-          mvn -B --no-transfer-progress clean package
-          -Dspigot.version=${{ matrix.api }}
-          -Dmaven.test.skip=true
+          ./gradlew --no-daemon clean compileJava
+          -PspigotVersion=${{ matrix.api }}
+          -PbukkitJava=${{ matrix.java }}

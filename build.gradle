@@ -1,0 +1,102 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.2.2'
+}
+
+apply from: file('gradle/project-version.gradle')
+group = 'me.lele'
+
+def bukkitJava = providers.gradleProperty('bukkitJava').orElse('17').map { Integer.parseInt(it) }
+def spigotVersion = providers.gradleProperty('spigotVersion').orElse('1.8.8-R0.1-SNAPSHOT')
+def releaseVersion = project.version.toString()
+java { toolchain { languageVersion = bukkitJava.map { JavaLanguageVersion.of(it) } } }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 8
+}
+sourceSets.main.java.srcDir('shared/src/main/java')
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+}
+dependencies {
+    compileOnly("org.spigotmc:spigot-api:${spigotVersion.get()}") {
+        exclude group: 'net.md-5', module: 'bungeecord-chat'
+    }
+    implementation 'org.bstats:bstats-bukkit:3.1.0'
+    testImplementation("org.spigotmc:spigot-api:${spigotVersion.get()}") {
+        exclude group: 'net.md-5', module: 'bungeecord-chat'
+    }
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.mockito:mockito-core:5.23.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
+}
+
+tasks.named('processResources') {
+    inputs.property('version', releaseVersion)
+    filesMatching('plugin.yml') {
+        filter { line -> line.replace('${project.version}', releaseVersion) }
+    }
+}
+tasks.named('test') {
+    useJUnitPlatform()
+    workingDir(rootDir)
+}
+tasks.named('jar') { enabled = false }
+tasks.named('shadowJar') {
+    archiveBaseName = 'WorldSafe'
+    archiveClassifier = ''
+    manifest { attributes('Multi-Release': 'false') }
+    relocate 'org.bstats', 'me.lele.worldSafe.shaded.bstats'
+    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.EC', 'META-INF/SIG-*'
+}
+tasks.named('assemble') { dependsOn('shadowJar') }
+
+tasks.register('verifyReleaseJar', Exec) {
+    group = 'verification'
+    dependsOn('shadowJar')
+    inputs.file(tasks.named('shadowJar').flatMap { it.archiveFile })
+    inputs.files('scripts/verify-release-jar.sh', 'scripts/project_version.py', 'gradle.properties')
+    workingDir(rootDir)
+    commandLine 'bash', 'scripts/verify-release-jar.sh',
+            tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath, releaseVersion
+    def launcher = javaToolchains.launcherFor { languageVersion = bukkitJava.map { JavaLanguageVersion.of(it) } }
+    doFirst {
+        String javaHome = launcher.get().metadata.installationPath.asFile.absolutePath
+        environment 'JAVA_HOME', javaHome
+        environment 'PATH', javaHome + '/bin' + File.pathSeparator + System.getenv('PATH')
+    }
+}
+tasks.register('pythonTests', Exec) {
+    group = 'verification'
+    workingDir(rootDir)
+    commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
+}
+tasks.named('check') { dependsOn('verifyReleaseJar', 'pythonTests') }
+
+// A nested build preserves Fabric's rootProject assumptions and keeps Bukkit configuration lightweight.
+tasks.register('fabricBuild', GradleBuild) {
+    group = 'build'
+    description = 'Build and check all selected Fabric runtimes (requires JDK 25).'
+    dir = file('fabric')
+    tasks = ['check', 'shadowJar']
+    startParameter.projectProperties = gradle.startParameter.projectProperties
+    doFirst {
+        if (JavaVersion.current() < JavaVersion.VERSION_25) {
+            throw new GradleException('fabricBuild and buildAll must run on JDK 25')
+        }
+    }
+}
+tasks.register('verifyFabricJar', Exec) {
+    group = 'verification'
+    dependsOn('fabricBuild')
+    workingDir(rootDir)
+    commandLine 'python3', 'scripts/verify-fabric-code.py',
+            "fabric/build/libs/WorldSafe-Fabric-${releaseVersion}.jar"
+}
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Build, test and verify both release JARs (requires JDK 25).'
+    dependsOn('build', 'verifyFabricJar')
+}

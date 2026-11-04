@@ -11,6 +11,10 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
+import java.io.StringReader;
+import java.util.Properties;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +27,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PluginMetadataTest {
+
+    @Test
+    void gradleOnlyReplacesThePluginVersionAndPreservesConfiguration(@TempDir Path directory) throws Exception {
+        Properties properties = new Properties();
+        properties.load(new StringReader(new String(Files.readAllBytes(Paths.get("gradle.properties")), StandardCharsets.UTF_8)));
+        String version = properties.getProperty("version");
+        assertNotNull(version);
+        for (String resource : Arrays.asList("plugin.yml", "config.yml")) {
+            Path processed = directory.resolve(resource);
+            try (InputStream input = getClass().getClassLoader().getResourceAsStream(resource)) {
+                assertNotNull(input);
+                Files.copy(input, processed);
+            }
+            String original = new String(Files.readAllBytes(Paths.get("src/main/resources", resource)), StandardCharsets.UTF_8);
+            String actual = new String(Files.readAllBytes(processed), StandardCharsets.UTF_8);
+            assertEquals(resource.equals("plugin.yml") ? original.replace("${project.version}", version) : original, actual);
+        }
+    }
 
     @Test
     void pluginDescriptionLoadsOnTheLegacyApiParser() throws Exception {

@@ -50,8 +50,25 @@ Fabric 允许控制台、OP 等级 2 及以上玩家和单人世界房主管理�
 
 ## 构建与验证
 
-Bukkit 保留根目录 Maven 构建：默认使用 JDK 17，执行 `mvn clean verify` 和 `./scripts/verify-release-jar.sh`。Fabric 在 JDK 25 下使用 `fabric/gradlew`，版本号统一读取根 `pom.xml`。公共源码位于 `shared/src/main/java`，不依赖平台类型。
+两个平台统一使用根目录 Gradle Wrapper，固定为 Gradle 9.6.0，无需安装 Maven。根 `gradle.properties` 是唯一版本来源。验证脚本需要 Python 3，发布检测测试需要 Git。公共源码仍位于 `shared/src/main/java`，不依赖平台类型。
 
+```sh
+# Bukkit：JDK 17，包含测试和发布 JAR 校验
+./gradlew clean build
+
+# Fabric：使用 JDK 25 运行 Gradle，检查全部 48 个锁定版本
+./gradlew -p fabric check shadowJar
+python3 scripts/verify-fabric-code.py fabric/build/libs/WorldSafe-Fabric-1.1.1.jar
+
+# 同时构建两端并校验最终产物：使用 JDK 25 运行 Gradle
+./gradlew buildAll
+```
+
+Bukkit 产物为 `build/libs/WorldSafe-<版本>.jar`，Fabric 产物为 `fabric/build/libs/WorldSafe-Fabric-<版本>.jar`，仅生成包含所需依赖的发布 JAR。Bukkit 默认使用 JDK 17 工具链编译和测试，继续输出 Java 8 字节码；因此 `buildAll` 需要同时安装 JDK 17 和 JDK 25。可使用 Gradle 自动发现工具链，或通过 `-Porg.gradle.java.installations.paths=<jdk17>,<jdk25>` 指定安装位置。
+
+指定 Bukkit 测试使用 `./gradlew test --tests '<TestClass>'`。API 编译使用 `./gradlew clean compileJava -PspigotVersion=<API版本> -PbukkitJava=<JDK版本>`，配对关系与 CI 矩阵一致。单独构建 Bukkit 不配置 Fabric。根 `clean` 仅清理 Bukkit 构建目录；清理 Fabric 时须自行保留 `fabric/build` 下可选的游戏测试存档。
+
+向 `master` 推送根 `gradle.properties` 中的版本号变更会触发发布检查；只修改其他属性且版本不变时不会发布。本次迁移会与旧 POM 中的版本比较，无需 Maven，也不会因构建工具切换而自动发布。
 Fabric 清单固定游戏版本、映射、Java 目标和构建工具。内部模块精确匹配游戏版本，最终只交付一个通用 JAR，独立行为测试模组不进入发布产物。具体命令见 [Fabric 构建和验收说明](fabric/README.md)。编译、启动和实际功能验收分别报告；发布使用代码验证过的同一份 JAR，并核对哈希；游戏实测保留为可选工具，不作为本次验收门槛。
 
 ## 命令与权限

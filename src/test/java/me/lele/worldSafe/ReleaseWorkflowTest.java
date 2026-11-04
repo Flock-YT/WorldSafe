@@ -97,6 +97,32 @@ class ReleaseWorkflowTest {
     }
 
     @Test
+    void gradleReleaseUsesTheSharedVersionAndBuildsBothPlatforms() throws Exception {
+        Map<?, ?> workflow = yaml(".github/workflows/build-and-release.yml");
+        Map<?, ?> triggers = map(workflow.containsKey("on") ? workflow.get("on") : workflow.get(Boolean.TRUE));
+        assertEquals(Arrays.asList("gradle.properties"), map(triggers.get("push")).get("paths"));
+        Map<?, ?> jobs = map(workflow.get("jobs"));
+        Map<?, ?> detection = map(jobs.get("detect-version"));
+        boolean foundDetector = false;
+        for (Object value : (List<?>) detection.get("steps")) {
+            Map<?, ?> step = map(value);
+            if ("version".equals(step.get("id"))) {
+                assertEquals("python3 scripts/detect-release.py", step.get("run"));
+                foundDetector = true;
+            }
+        }
+        assertTrue(foundDetector);
+        boolean foundBuild = false;
+        for (Object value : (List<?>) map(jobs.get("build")).get("steps")) {
+            Map<?, ?> step = map(value);
+            String command = String.valueOf(step.get("run"));
+            assertFalse(command.contains("mvn "));
+            foundBuild |= command.equals("./gradlew --no-daemon clean build");
+        }
+        assertTrue(foundBuild);
+    }
+
+    @Test
     void releaseRequiresSameCommitCompatibilityAndVerifiedBuild() throws Exception {
         Map<?, ?> workflow = yaml(".github/workflows/build-and-release.yml");
         Map<?, ?> jobs = map(workflow.get("jobs"));

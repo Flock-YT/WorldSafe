@@ -7,18 +7,19 @@ WorldSafe produces one Bukkit JAR and one universal Fabric JAR. The Fabric build
 - The Java 8 shared core lives in `../shared/src/main/java`. It defines the 36 protection keys, minimum versions, immutable configuration, validation, dimension matching, and explosion decisions without platform types.
 - The Java 8 Fabric shell contains the core and privately relocated SnakeYAML. It requires one nested `worldsafe_runtime` module. Every candidate has a distinct version and exact Minecraft dependency; Loader selects the compatible candidate.
 - `generate-native.gradle` compiles required native Mixins for each pinned game. It isolates game types, mappings and Java requirements inside that module. Older modules are remapped before nesting; 26.x uses official, unmapped names. Fabric API is not required.
-- Maven remains the Bukkit build. Its Java 8 / Spigot 1.8.8 baseline, compatibility helpers and bStats integration remain intact. Both builds read the root Maven project version.
+- Bukkit has its own root Gradle build, retaining the Java 8 / Spigot 1.8.8 baseline, compatibility helpers and bStats integration. Both builds use the root Wrapper and read the same root `gradle.properties` version.
 - Preserve the existing `me.lele.worldSafe` Java package spelling, including its uppercase `S`, on case-insensitive filesystems.
 
 ## Build
 
-Run Gradle on JDK 25:
+Run from the repository root with Gradle on JDK 25:
 
 ```sh
-cd fabric
-./gradlew --no-daemon check shadowJar
-python3 ../scripts/verify-fabric-code.py build/libs/WorldSafe-Fabric-1.1.1.jar
+./gradlew --no-daemon -p fabric check shadowJar
+python3 scripts/verify-fabric-code.py fabric/build/libs/WorldSafe-Fabric-1.1.1.jar
 ```
+
+The root `buildAll` task also runs this independent build and final JAR verification, alongside Bukkit (which needs a JDK 17 toolchain). A Bukkit-only build does not configure Fabric.
 
 The default includes **all 48 locked releases**. A development-only subset can be selected with `-Ptargets=1.14,1.21.11,26.3`; it cannot pass the universal-artifact acceptance check. Do not run `clean` while preserving generated development worlds or reports under `build`.
 

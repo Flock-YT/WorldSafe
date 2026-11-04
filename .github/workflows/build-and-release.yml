@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - pom.xml
+      - gradle.properties
   workflow_dispatch:
 
 permissions:
@@ -30,61 +30,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-
-      - name: Detect Maven version change
+      - name: Detect project version change
         id: version
         env:
           BEFORE_SHA: ${{ github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-
-          read_version() {
-            mvn -q -Dstyle.color=never -f "$1" help:evaluate \
-              -Dexpression=project.version \
-              -DforceStdout 2>/dev/null | tr -d '\r'
-          }
-
-          current_version="$(read_version pom.xml)"
-          if [[ ! "$current_version" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*$ ]]; then
-            echo "Invalid Maven project.version: $current_version" >&2
-            exit 1
-          fi
-
-          should_release=false
-          previous_version='<manual>'
-
-          if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
-            if [[ "$GITHUB_REF" != 'refs/heads/master' ]]; then
-              echo "Manual releases must run from the master branch." >&2
-              exit 1
-            fi
-            should_release=true
-          elif [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
-            previous_version='<none>'
-            should_release=true
-          else
-            git show "${BEFORE_SHA}:pom.xml" > "$RUNNER_TEMP/pom-before.xml"
-            previous_version="$(read_version "$RUNNER_TEMP/pom-before.xml")"
-            if [[ "$previous_version" != "$current_version" ]]; then
-              should_release=true
-            fi
-          fi
-
-          echo "Previous version: $previous_version"
-          echo "Current version: $current_version"
-          echo "Release required: $should_release"
-
-          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
-          echo "version=$current_version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$current_version" >> "$GITHUB_OUTPUT"
-          echo "artifact=WorldSafe-$current_version.jar" >> "$GITHUB_OUTPUT"
+        run: python3 scripts/detect-release.py
 
   build:
     needs: detect-version
@@ -102,17 +53,22 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: maven
+          cache: gradle
+          cache-dependency-path: |
+            *.gradle
+            gradle.properties
+            gradle/*.gradle
+            gradle/wrapper/gradle-wrapper.properties
 
-      - name: Build with Maven
-        run: mvn -B --no-transfer-progress clean verify
+      - name: Build with Gradle
+        run: ./gradlew --no-daemon clean build
 
       - name: Verify release JAR
-        run: ./scripts/verify-release-jar.sh "target/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"
+        run: ./scripts/verify-release-jar.sh "build/libs/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"
 
       - name: Record verified JAR digest
         id: digest
-        working-directory: target
+        working-directory: build/libs
         env:
           ARTIFACT: ${{ needs.detect-version.outputs.artifact }}
         run: |
@@ -127,8 +83,8 @@ jobs:
         with:
           name: release-jar
           path: |
-            target/${{ needs.detect-version.outputs.artifact }}
-            target/${{ needs.detect-version.outputs.artifact }}.sha256
+            build/libs/${{ needs.detect-version.outputs.artifact }}
+            build/libs/${{ needs.detect-version.outputs.artifact }}.sha256
           if-no-files-found: error
 
   compatibility:

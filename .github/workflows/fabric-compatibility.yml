@@ -30,19 +30,20 @@ jobs:
           java-version: '25'
           cache: gradle
           cache-dependency-path: |
+            gradle.properties
+            gradle/*.gradle
             fabric/*.gradle
             fabric/versions.lock.json
-            fabric/gradle/wrapper/gradle-wrapper.properties
+            gradle/wrapper/gradle-wrapper.properties
 
       - name: Verify Fabric code matrix and build universal JAR
-        working-directory: fabric
-        run: ./gradlew --no-daemon check shadowJar
+        run: ./gradlew --no-daemon -p fabric check shadowJar
 
       - name: Verify and record the exact release artifact
         id: digest
         run: |
           set -euo pipefail
-          version="$(python3 -c 'import xml.etree.ElementTree as E; print(E.parse("pom.xml").getroot().findtext("{http://maven.apache.org/POM/4.0.0}version"))')"
+          version="$(python3 scripts/project_version.py)"
           artifact="WorldSafe-Fabric-$version.jar"
           python3 scripts/verify-fabric-code.py "fabric/build/libs/$artifact"
           cp fabric/build/code-report.json "fabric/build/libs/WorldSafe-Fabric-$version-verification.json"

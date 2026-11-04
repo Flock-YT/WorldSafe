@@ -4,7 +4,7 @@
 
 <img src="assets/branding/worldsafe-logo.png" alt="WorldSafe logo" width="160" height="160">
 
-WorldSafe prevents mobs, entities, and game mechanics from damaging worlds. It has a Maven Bukkit plugin and an independent Fabric build sharing the same 36 protection definitions.
+WorldSafe prevents mobs, entities, and game mechanics from damaging worlds. It has Gradle builds for a Bukkit plugin and an independent Fabric mod sharing the same 36 protection definitions.
 
 ## Compatibility
 
@@ -50,8 +50,25 @@ Fabric permits console administration, OP level 2 or higher, and the singleplaye
 
 ## Building and verification
 
-Keep the root Maven commands for Bukkit (`mvn clean verify`, then `./scripts/verify-release-jar.sh`), using JDK 17 for the default build. Fabric uses `fabric/gradlew` on JDK 25; its project version comes from the root `pom.xml`. Shared source is in `shared/src/main/java` and contains no platform types.
+Both platforms use the root Gradle Wrapper, pinned to Gradle 9.6.0. The single version source is root `gradle.properties`; Maven is not needed. Install Python 3 for the verification scripts and Git for release-detection tests. Shared source remains in `shared/src/main/java` and contains no platform types.
 
+```sh
+# Bukkit: JDK 17, includes tests and release JAR checks
+./gradlew clean build
+
+# Fabric: run Gradle on JDK 25, checks all 48 pinned modules
+./gradlew -p fabric check shadowJar
+python3 scripts/verify-fabric-code.py fabric/build/libs/WorldSafe-Fabric-1.1.1.jar
+
+# Both platforms and their final artifact checks: run Gradle on JDK 25
+./gradlew buildAll
+```
+
+Bukkit outputs `build/libs/WorldSafe-<version>.jar`; Fabric outputs `fabric/build/libs/WorldSafe-Fabric-<version>.jar`. Only shaded release JARs are produced. Bukkit compilation and tests default to a JDK 17 toolchain while emitting Java 8 bytecode; `buildAll` therefore needs both JDK 17 and JDK 25 installed. Use Gradle toolchain discovery or `-Porg.gradle.java.installations.paths=<jdk17>,<jdk25>` to identify installations.
+
+For a focused Bukkit test, use `./gradlew test --tests '<TestClass>'`. API compilation uses `./gradlew clean compileJava -PspigotVersion=<api-version> -PbukkitJava=<jdk-major>` with the API/JDK pairs from CI. A Bukkit-only build does not configure Fabric. Root `clean` only clears the Bukkit build directory; preserve any optional game worlds under `fabric/build` when cleaning Fabric.
+
+Pushing a change to `version` in root `gradle.properties` on `master` triggers release checks. Changes to other properties with the same version do not publish; the Maven-to-Gradle migration compares against the old POM version without requiring Maven.
 The Fabric version lock fixes game releases, mappings, Java targets, and build tools. Native modules have exact game dependencies and remain inside one universal JAR; external behavior test drivers are excluded. See [Fabric build and acceptance commands](fabric/README.md). Compilation and startup are reported separately from native behavior acceptance. Release uses the same JAR hash covered by code verification. Full in-game tests are optional and are not the acceptance gate for this migration.
 
 ## Commands and Permissions

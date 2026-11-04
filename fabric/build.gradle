@@ -1,5 +1,4 @@
 import groovy.json.JsonOutput
-import groovy.xml.XmlSlurper
 
 plugins {
     id 'java'
@@ -8,8 +7,7 @@ plugins {
     id 'net.fabricmc.fabric-loom' version '1.17.21' apply false
 }
 
-def pom = new XmlSlurper().parse(file('../pom.xml'))
-version = pom.version.text()
+apply from: file('../gradle/project-version.gradle')
 group = 'me.lele.worldSafe'
 def lock = gradle.ext.fabricLock
 def targets = gradle.ext.fabricTargets
