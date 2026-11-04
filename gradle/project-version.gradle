@@ -1,4 +1,4 @@
-// Both independent builds read the same checked-in version, including when invoked with -p fabric.
+// All projects in both independent builds read the same checked-in version, including when invoked with -p fabric.
 File versionFile = new File(buildscript.sourceFile.parentFile.parentFile, 'gradle.properties')
 List<String> declarations = versionFile.readLines('UTF-8').findAll { it ==~ /\s*version\s*=.*/ }
 if (declarations.size() != 1) throw new GradleException('Expected exactly one version= entry in root gradle.properties')

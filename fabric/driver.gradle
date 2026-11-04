@@ -5,6 +5,7 @@ apply plugin: spec.namespace == 'intermediary' ? 'net.fabricmc.fabric-loom-remap
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 tasks.withType(JavaCompile).configureEach { options.release = spec.java as int }
 dependencies {
+    compileOnly project(':shared')
     compileOnly rootProject.files(rootProject.sourceSets.main.output)
     minecraft "com.mojang:minecraft:${spec.minecraft}"
     if (spec.namespace == 'intermediary') {

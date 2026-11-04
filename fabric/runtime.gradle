@@ -8,6 +8,7 @@ java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 tasks.withType(JavaCompile).configureEach { options.release = spec.java as int }
 
 dependencies {
+    compileOnly project(':shared')
     compileOnly rootProject.files(rootProject.sourceSets.main.output)
     compileOnly 'io.github.llamalad7:mixinextras-fabric:0.5.5'
     minecraft "com.mojang:minecraft:${spec.minecraft}"

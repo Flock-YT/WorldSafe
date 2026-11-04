@@ -40,7 +40,7 @@ class PluginMetadataTest {
                 assertNotNull(input);
                 Files.copy(input, processed);
             }
-            String original = new String(Files.readAllBytes(Paths.get("src/main/resources", resource)), StandardCharsets.UTF_8);
+            String original = new String(Files.readAllBytes(Paths.get("bukkit/src/main/resources", resource)), StandardCharsets.UTF_8);
             String actual = new String(Files.readAllBytes(processed), StandardCharsets.UTF_8);
             assertEquals(resource.equals("plugin.yml") ? original.replace("${project.version}", version) : original, actual);
         }

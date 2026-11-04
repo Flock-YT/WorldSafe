@@ -105,6 +105,8 @@ target/
 # Gradle build caches and generated target projects
 /.gradle/
 /build/
+bukkit/build/
+shared/build/
 fabric/.gradle/
 fabric/build/
 fabric/**/build/

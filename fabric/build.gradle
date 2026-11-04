@@ -25,6 +25,7 @@ allprojects {
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 tasks.withType(JavaCompile).configureEach { options.release = 8 }
 dependencies {
+    implementation project(':shared')
     compileOnly "net.fabricmc:fabric-loader:${lock.loader}"
     implementation 'org.yaml:snakeyaml:2.5'
     testImplementation "net.fabricmc:fabric-loader:${lock.loader}"
@@ -32,7 +33,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:5.23.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
 }
-sourceSets.main.java.setSrcDirs(['bootstrap/src/main/java', '../shared/src/main/java'])
+sourceSets.main.java.setSrcDirs(['bootstrap/src/main/java'])
 sourceSets.test.java.setSrcDirs(['bootstrap/src/test/java'])
 tasks.named('compileTestJava') { options.release = 17 }
 tasks.named('test') { useJUnitPlatform() }
@@ -60,19 +61,24 @@ tasks.register('shellMetadata') {
 sourceSets.main.resources.srcDir(metadataDirectory)
 tasks.named('processResources') { dependsOn('shellMetadata') }
 
-subprojects { child ->
+// Only locked runtime/driver projects participate in game-specific configuration.
+def gameProjects = targets.collectMany { target ->
+    def name = 'mc' + target.minecraft.replace('.', '_')
+    [project(':' + name), project(':driver_' + name)]
+}
+gameProjects.each { child ->
     child.ext.isArchitectureDriver = child.name.startsWith('driver_')
     def runtimeName = child.name.replaceFirst('^driver_', '')
     child.ext.targetSpec = targets.find { 'mc' + it.minecraft.replace('.', '_') == runtimeName }
     child.version = rootProject.version.toString() + '-mc.' + child.targetSpec.minecraft
     child.group = rootProject.group
-    apply from: rootProject.file(child.isArchitectureDriver ? 'driver.gradle' : 'runtime.gradle')
+    child.apply from: rootProject.file(child.isArchitectureDriver ? 'driver.gradle' : 'runtime.gradle')
 }
 
 tasks.named('jar') { enabled = false }
 
 tasks.register('architectureDrivers') {
-    subprojects.findAll { it.isArchitectureDriver }.each { child ->
+    gameProjects.findAll { it.isArchitectureDriver }.each { child ->
         dependsOn(child.tasks.named(child.targetSpec.namespace == 'intermediary' ? 'remapJar' : 'jar'))
     }
 }
@@ -83,7 +89,7 @@ tasks.named('shadowJar') {
     relocate 'org.yaml.snakeyaml', 'me.lele.worldSafe.shaded.snakeyaml'
     exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.EC', 'META-INF/SIG-*'
     exclude 'META-INF/versions/**', 'module-info.class'
-    subprojects.findAll { !it.isArchitectureDriver }.each { child ->
+    gameProjects.findAll { !it.isArchitectureDriver }.each { child ->
         def runtimeJar = child.tasks.named(child.targetSpec.namespace == 'intermediary' ? 'remapJar' : 'jar')
         dependsOn(runtimeJar)
         into('META-INF/jars') {
@@ -100,8 +106,8 @@ tasks.register('pythonTests', Exec) {
     commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
 }
 tasks.named('check') {
-    dependsOn('pythonTests', 'testHookVerifier')
-    subprojects.findAll { !it.isArchitectureDriver }.each { dependsOn(it.tasks.named('verifyNativeHooks')) }
+    dependsOn('pythonTests', 'testHookVerifier', ':shared:check')
+    gameProjects.findAll { !it.isArchitectureDriver }.each { dependsOn(it.tasks.named('verifyNativeHooks')) }
 }
 
 tasks.named('build') { dependsOn('shadowJar') }

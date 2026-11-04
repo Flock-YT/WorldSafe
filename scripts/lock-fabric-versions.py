@@ -85,8 +85,8 @@ def main():
         targets = list(executor.map(lambda version: lock_target(version, manifest), VERSIONS))
     lock = {
         "schemaVersion": 1,
-        "gradle": "9.6.0",
-        "gradleSha256": fetch("https://downloads.gradle.org/distributions/gradle-9.6.0-bin.zip.sha256").decode().strip(),
+        "gradle": "9.8.2",
+        "gradleSha256": fetch("https://downloads.gradle.org/distributions/gradle-9.8.2-bin.zip.sha256").decode().strip(),
         "loom": "1.17.21",
         "loader": "0.20.1",
         "targets": targets,

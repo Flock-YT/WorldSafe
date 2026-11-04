@@ -10,7 +10,7 @@ read_project_version() {
 }
 
 expected_version="${2:-$(read_project_version)}"
-jar_path="${1:-build/libs/WorldSafe-${expected_version}.jar}"
+jar_path="${1:-bukkit/build/libs/WorldSafe-${expected_version}.jar}"
 
 if [[ "$jar_path" = /* ]]; then
     absolute_jar_path="$jar_path"
@@ -43,6 +43,8 @@ if printf '%s\n' "$jarsigner_output" | grep -Eiq 'digest error|invalid signature
     echo "jarsigner reported a signature or digest error for $jar_path" >&2
     exit 1
 fi
+
+python3 scripts/shared_artifact.py "$absolute_jar_path"
 
 temporary_directory="$(mktemp -d)"
 trap 'rm -rf "$temporary_directory"' EXIT

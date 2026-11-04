@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "gradle": "9.6.0",
-  "gradleSha256": "bbaeb2fef8710818cf0e261201dab964c572f92b942812df0c3620d62a529a01",
+  "gradle": "9.8.2",
+  "gradleSha256": "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
   "loom": "1.17.21",
   "loader": "0.20.1",
   "targets": [

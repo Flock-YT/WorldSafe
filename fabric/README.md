@@ -4,10 +4,10 @@ WorldSafe produces one Bukkit JAR and one universal Fabric JAR. The Fabric build
 
 ## Architecture
 
-- The Java 8 shared core lives in `../shared/src/main/java`. It defines the 36 protection keys, minimum versions, immutable configuration, validation, dimension matching, and explosion decisions without platform types.
+- The Java 8 shared core is the `:shared` Java library project at `../shared`, included by both independent builds. It has no production dependencies and is bundled only in the outer release JAR, never in nested runtimes. It defines the 36 protection keys, minimum versions, immutable configuration, validation, dimension matching, and explosion decisions without platform types.
 - The Java 8 Fabric shell contains the core and privately relocated SnakeYAML. It requires one nested `worldsafe_runtime` module. Every candidate has a distinct version and exact Minecraft dependency; Loader selects the compatible candidate.
 - `generate-native.gradle` compiles required native Mixins for each pinned game. It isolates game types, mappings and Java requirements inside that module. Older modules are remapped before nesting; 26.x uses official, unmapped names. Fabric API is not required.
-- Bukkit has its own root Gradle build, retaining the Java 8 / Spigot 1.8.8 baseline, compatibility helpers and bStats integration. Both builds use the root Wrapper and read the same root `gradle.properties` version.
+- Bukkit lives in `../bukkit` within the root Gradle build, retaining the Java 8 / Spigot 1.8.8 baseline, compatibility helpers and bStats integration. Both builds use the root Wrapper and read the same root `gradle.properties` version.
 - Preserve the existing `me.lele.worldSafe` Java package spelling, including its uppercase `S`, on case-insensitive filesystems.
 
 ## Build
@@ -23,9 +23,9 @@ The root `buildAll` task also runs this independent build and final JAR verifica
 
 The default includes **all 48 locked releases**. A development-only subset can be selected with `-Ptargets=1.14,1.21.11,26.3`; it cannot pass the universal-artifact acceptance check. Do not run `clean` while preserving generated development worlds or reports under `build`.
 
-`check` runs Fabric JUnit/Mockito policy and lifecycle tests, Python packaging/report tests, and offline native-hook checks. `verify-native.gradle` checks the final remapped modules against their corresponding game classes: native fields, method descriptors, callback signatures, required invoke sites, and complete Mixin registration. Missing hooks fail verification. It does not launch Minecraft.
+`check` runs shared-core tests and isolation checks (outputs under `build/shared`), Fabric JUnit/Mockito policy and lifecycle tests, Python packaging/report tests, and offline native-hook checks. `verify-native.gradle` checks the final remapped modules against their corresponding game classes: native fields, method descriptors, callback signatures, required invoke sites, and complete Mixin registration. Missing hooks fail verification. It does not launch Minecraft.
 
-`verify-fabric-code.py` requires every locked module, matches each embedded module hash to its native verification report, checks successful unit-test results, and writes `build/code-report.json`. It also checks Java bytecode targets, namespace consistency, exact module selection, entrypoints, signatures, and exclusion of game, Loader, metrics and test classes from the release artifact.
+`verify-fabric-code.py` requires every locked module, matches each embedded module hash to its native verification report, checks successful Fabric and shared-core unit-test results, and writes `build/code-report.json`. It also checks Java bytecode targets, namespace consistency, exact module selection, entrypoints, signatures, and exclusion of game, Loader, metrics and test classes from the release artifact.
 
 The release workflow waits for Bukkit verification, the Bukkit API matrix, and Fabric code verification on the same commit. It uploads the exact verified artifacts and their SHA-256 sidecars, plus the Fabric code report, without rebuilding during release. This migration does not bump the project version or publish a release.
 

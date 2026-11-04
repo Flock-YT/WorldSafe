@@ -32,3 +32,6 @@ gradle.ext.fabricTargets.each { target ->
     driverDirectory.mkdirs()
     project(':' + driverName).projectDir = driverDirectory
 }
+
+include('shared')
+project(':shared').projectDir = file('../shared')

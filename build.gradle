@@ -1,79 +1,16 @@
-plugins {
-    id 'java'
-    id 'com.gradleup.shadow' version '9.2.2'
-}
+plugins { id 'base' }
 
 apply from: file('gradle/project-version.gradle')
-group = 'me.lele'
-
-def bukkitJava = providers.gradleProperty('bukkitJava').orElse('17').map { Integer.parseInt(it) }
-def spigotVersion = providers.gradleProperty('spigotVersion').orElse('1.8.8-R0.1-SNAPSHOT')
 def releaseVersion = project.version.toString()
-java { toolchain { languageVersion = bukkitJava.map { JavaLanguageVersion.of(it) } } }
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release = 8
-}
-sourceSets.main.java.srcDir('shared/src/main/java')
 
-repositories {
-    mavenCentral()
-    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
-}
-dependencies {
-    compileOnly("org.spigotmc:spigot-api:${spigotVersion.get()}") {
-        exclude group: 'net.md-5', module: 'bungeecord-chat'
-    }
-    implementation 'org.bstats:bstats-bukkit:3.1.0'
-    testImplementation("org.spigotmc:spigot-api:${spigotVersion.get()}") {
-        exclude group: 'net.md-5', module: 'bungeecord-chat'
-    }
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
-    testImplementation 'org.mockito:mockito-core:5.23.0'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
-}
-
-tasks.named('processResources') {
-    inputs.property('version', releaseVersion)
-    filesMatching('plugin.yml') {
-        filter { line -> line.replace('${project.version}', releaseVersion) }
-    }
-}
-tasks.named('test') {
-    useJUnitPlatform()
-    workingDir(rootDir)
-}
-tasks.named('jar') { enabled = false }
-tasks.named('shadowJar') {
-    archiveBaseName = 'WorldSafe'
-    archiveClassifier = ''
-    manifest { attributes('Multi-Release': 'false') }
-    relocate 'org.bstats', 'me.lele.worldSafe.shaded.bstats'
-    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.EC', 'META-INF/SIG-*'
-}
-tasks.named('assemble') { dependsOn('shadowJar') }
-
-tasks.register('verifyReleaseJar', Exec) {
-    group = 'verification'
-    dependsOn('shadowJar')
-    inputs.file(tasks.named('shadowJar').flatMap { it.archiveFile })
-    inputs.files('scripts/verify-release-jar.sh', 'scripts/project_version.py', 'gradle.properties')
-    workingDir(rootDir)
-    commandLine 'bash', 'scripts/verify-release-jar.sh',
-            tasks.named('shadowJar').get().archiveFile.get().asFile.absolutePath, releaseVersion
-    def launcher = javaToolchains.launcherFor { languageVersion = bukkitJava.map { JavaLanguageVersion.of(it) } }
-    doFirst {
-        String javaHome = launcher.get().metadata.installationPath.asFile.absolutePath
-        environment 'JAVA_HOME', javaHome
-        environment 'PATH', javaHome + '/bin' + File.pathSeparator + System.getenv('PATH')
-    }
-}
 tasks.register('pythonTests', Exec) {
     group = 'verification'
     workingDir(rootDir)
     commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
 }
-tasks.named('check') { dependsOn('verifyReleaseJar', 'pythonTests') }
+tasks.named('clean') { dependsOn(':bukkit:clean', ':shared:clean') }
+tasks.named('assemble') { dependsOn(':bukkit:assemble') }
+tasks.named('check') { dependsOn(':bukkit:check', ':shared:check', 'pythonTests') }
 
 // A nested build preserves Fabric's rootProject assumptions and keeps Bukkit configuration lightweight.
 tasks.register('fabricBuild', GradleBuild) {

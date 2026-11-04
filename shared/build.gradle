@@ -1,0 +1,38 @@
+plugins { id 'java-library' }
+
+apply from: file('../gradle/project-version.gradle')
+group = 'me.lele.worldSafe'
+
+repositories { mavenCentral() }
+// Use the build JVM (17 for Bukkit, 25 for Fabric), keeping the runtime baseline at Java 8.
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 8
+}
+tasks.named('compileTestJava') { options.release = 17 }
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
+}
+tasks.named('test') { useJUnitPlatform() }
+
+// The same project is consumed by independent builds; never share their outputs.
+if (rootProject.name == 'WorldSafe-Fabric') {
+    layout.buildDirectory = rootProject.layout.buildDirectory.dir('shared')
+}
+
+tasks.register('verifyPlatformIsolation') {
+    group = 'verification'
+    inputs.files(sourceSets.main.allSource)
+    doLast {
+        if (!configurations.compileClasspath.files.empty || !configurations.runtimeClasspath.files.empty) {
+            throw new GradleException('Shared core must not have production dependencies')
+        }
+        sourceSets.main.allJava.each { source ->
+            if (source.getText('UTF-8') =~ /(?:org\.bukkit|io\.papermc|net\.(?:minecraft|fabricmc|minecraftforge|neoforged))\./) {
+                throw new GradleException("Platform reference in shared core: ${source}")
+            }
+        }
+    }
+}
+tasks.named('check') { dependsOn('verifyPlatformIsolation') }

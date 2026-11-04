@@ -10,6 +10,8 @@ import re
 import struct
 import zipfile
 
+from shared_artifact import is_shared_class, verify_shared_core
+
 
 def internal_class_name(data):
     count = struct.unpack_from(">H", data, 8)[0]
@@ -52,6 +54,8 @@ def inspect_classes(jar, maximum, bootstrap=False):
             raise ValueError("Bundled platform class: " + name)
         if "/fabric/driver/" in name:
             raise ValueError("Bundled test driver: " + name)
+        if not bootstrap and is_shared_class(name):
+            raise ValueError("Shared core must not be bundled in a nested runtime")
         data = jar.read(name)
         magic, minor, major = struct.unpack(">IHH", data[:8])
         if magic != 0xCAFEBABE or major > maximum:
@@ -93,6 +97,7 @@ def verify(path, lock, require_all=False):
         entrypoints(shell, metadata)
         if metadata.get("mixins"):
             raise ValueError("Shell must not register version-specific mixins")
+        verify_shared_core(shell)
         inspect_classes(shell, 52, bootstrap=True)
         for nested in metadata["jars"]:
             with zipfile.ZipFile(io.BytesIO(shell.read(nested["file"]))) as runtime:

@@ -56,6 +56,8 @@ jobs:
           cache: gradle
           cache-dependency-path: |
             *.gradle
+            bukkit/*.gradle
+            shared/*.gradle
             gradle.properties
             gradle/*.gradle
             gradle/wrapper/gradle-wrapper.properties
@@ -64,11 +66,11 @@ jobs:
         run: ./gradlew --no-daemon clean build
 
       - name: Verify release JAR
-        run: ./scripts/verify-release-jar.sh "build/libs/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"
+        run: ./scripts/verify-release-jar.sh "bukkit/build/libs/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"
 
       - name: Record verified JAR digest
         id: digest
-        working-directory: build/libs
+        working-directory: bukkit/build/libs
         env:
           ARTIFACT: ${{ needs.detect-version.outputs.artifact }}
         run: |
@@ -83,8 +85,8 @@ jobs:
         with:
           name: release-jar
           path: |
-            build/libs/${{ needs.detect-version.outputs.artifact }}
-            build/libs/${{ needs.detect-version.outputs.artifact }}.sha256
+            bukkit/build/libs/${{ needs.detect-version.outputs.artifact }}
+            bukkit/build/libs/${{ needs.detect-version.outputs.artifact }}.sha256
           if-no-files-found: error
 
   compatibility:

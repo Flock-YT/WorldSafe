@@ -26,6 +26,8 @@ jobs:
           cache: gradle
           cache-dependency-path: |
             *.gradle
+            bukkit/*.gradle
+            shared/*.gradle
             gradle.properties
             gradle/*.gradle
             gradle/wrapper/gradle-wrapper.properties
@@ -91,12 +93,14 @@ jobs:
           cache: gradle
           cache-dependency-path: |
             *.gradle
+            bukkit/*.gradle
+            shared/*.gradle
             gradle.properties
             gradle/*.gradle
             gradle/wrapper/gradle-wrapper.properties
 
       - name: Compile against Spigot API ${{ matrix.api }}
         run: >-
-          ./gradlew --no-daemon clean compileJava
+          ./gradlew --no-daemon :bukkit:clean :bukkit:compileJava
           -PspigotVersion=${{ matrix.api }}
           -PbukkitJava=${{ matrix.java }}

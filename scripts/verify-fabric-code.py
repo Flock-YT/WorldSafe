@@ -17,6 +17,18 @@ packaging = importlib.util.module_from_spec(module)
 module.loader.exec_module(packaging)
 
 
+def collect_tests(directory, label):
+    tests = []
+    for report_file in sorted(directory.glob("TEST-*.xml")):
+        suite = ET.parse(report_file).getroot()
+        if any(int(suite.get(key, "0")) for key in ("failures", "errors", "skipped")):
+            raise ValueError(label + " unit tests failed or were skipped: " + suite.get("name", "unknown"))
+        tests.append({"class": suite.get("name"), "tests": int(suite.get("tests", "0"))})
+    if not tests or sum(item["tests"] for item in tests) == 0:
+        raise ValueError(label + " unit-test results are missing")
+    return tests
+
+
 def collect(jar, build, lock):
     package = packaging.verify(jar, lock, require_all=True)
     project_version = read_version()
@@ -48,17 +60,11 @@ def collect(jar, build, lock):
             proof["applicableFeatures"] = [key for key, minimum in features.items() if version(game) >= version(minimum)]
             proof["notApplicableFeatures"] = [key for key, minimum in features.items() if version(game) < version(minimum)]
             results.append(proof)
-    tests = []
-    for report_file in sorted((build / "test-results/test").glob("TEST-*.xml")):
-        suite = ET.parse(report_file).getroot()
-        if int(suite.get("failures", "0")) or int(suite.get("errors", "0")) or int(suite.get("skipped", "0")):
-            raise ValueError("Fabric unit tests failed or were skipped: " + suite.get("name", "unknown"))
-        tests.append({"class": suite.get("name"), "tests": int(suite.get("tests", "0"))})
-    if not tests or sum(item["tests"] for item in tests) == 0:
-        raise ValueError("Fabric unit-test results are missing")
+    tests = collect_tests(build / "test-results/test", "Fabric")
+    shared_tests = collect_tests(build / "shared/test-results/test", "Shared")
     return {"schemaVersion": 1, "scope": "code", "passed": True, "version": project_version,
             "jarSha256": package["jarSha256"], "targets": package["targets"],
-            "bootstrapJava": package["bootstrapJava"], "unitTests": tests, "nativeModules": results,
+            "bootstrapJava": package["bootstrapJava"], "unitTests": tests, "sharedUnitTests": shared_tests, "nativeModules": results,
             "featureMinimumVersions": features,
             "inGameAcceptanceRequired": False,
             "limitations": ["Offline compilation, ABI/injection checks and unit tests do not certify all in-game behavior."]}
@@ -74,8 +80,9 @@ def main():
     report = collect(args.jar, args.build, lock)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    print("Verified {} native modules and {} Fabric unit tests; SHA-256 {}".format(
-        len(report["nativeModules"]), sum(item["tests"] for item in report["unitTests"]), report["jarSha256"]))
+    print("Verified {} native modules, {} Fabric and {} shared unit tests; SHA-256 {}".format(
+        len(report["nativeModules"]), sum(item["tests"] for item in report["unitTests"]),
+        sum(item["tests"] for item in report["sharedUnitTests"]), report["jarSha256"]))
 
 
 if __name__ == "__main__":

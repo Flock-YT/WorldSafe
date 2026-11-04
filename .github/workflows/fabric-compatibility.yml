@@ -33,6 +33,7 @@ jobs:
             gradle.properties
             gradle/*.gradle
             fabric/*.gradle
+            shared/*.gradle
             fabric/versions.lock.json
             gradle/wrapper/gradle-wrapper.properties
 
