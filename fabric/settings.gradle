@@ -15,6 +15,9 @@ def requested = providers.gradleProperty('targets').orElse(known.join(',')).get(
 if (lock.gradle != gradle.gradleVersion || lock.loom != '1.17.21' || lock.loader != '0.20.1') {
     throw new GradleException('Build tools must match versions.lock.json')
 }
+if (lock.minimumLoader != '0.19.5') {
+    throw new GradleException('Minimum Fabric Loader must match the verified runtime baseline (0.19.5)')
+}
 if (requested.any { !known.contains(it) } || requested.toSet().size() != requested.size()) {
     throw new GradleException('Targets must be distinct releases from versions.lock.json')
 }

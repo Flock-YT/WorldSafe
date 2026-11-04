@@ -32,8 +32,8 @@ jobs:
             gradle/*.gradle
             gradle/wrapper/gradle-wrapper.properties
 
-      - name: Verify with Gradle
-        run: ./gradlew --no-daemon clean build
+      - name: Verify Bukkit with Gradle
+        run: ./gradlew --no-daemon bukkitClean bukkitBuild
 
   compile:
     name: Spigot ${{ matrix.api }} / JDK ${{ matrix.java }}

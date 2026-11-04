@@ -92,7 +92,7 @@ def verify(path, lock, require_all=False):
             raise ValueError("Duplicate root JAR entries")
         if metadata["id"] != "worldsafe" or "worldsafe_runtime" not in metadata["depends"]:
             raise ValueError("Shell must require its runtime")
-        if metadata["depends"].get("java") != ">=8" or metadata["depends"].get("fabricloader") != ">=" + lock["loader"]:
+        if metadata["depends"].get("java") != ">=8" or metadata["depends"].get("fabricloader") != ">=" + lock["minimumLoader"]:
             raise ValueError("Bootstrap Java/Loader dependencies differ from the lock")
         entrypoints(shell, metadata)
         if metadata.get("mixins"):
@@ -117,6 +117,8 @@ def verify(path, lock, require_all=False):
                 if item["depends"]["minecraft"] != "=" + game:
                     raise ValueError("Runtime must match exactly one Minecraft release")
                 spec = targets[game]
+                if item["depends"].get("fabricloader") != ">=" + lock["minimumLoader"]:
+                    raise ValueError("Runtime Loader dependency does not match the lock: " + game)
                 if item["depends"]["java"] != ">=" + str(spec["java"]):
                     raise ValueError("Runtime Java dependency does not match the lock")
                 config = json.loads(runtime.read("worldsafe.mixins.json"))

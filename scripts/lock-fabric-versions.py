@@ -89,6 +89,7 @@ def main():
         "gradleSha256": fetch("https://downloads.gradle.org/distributions/gradle-9.8.2-bin.zip.sha256").decode().strip(),
         "loom": "1.17.21",
         "loader": "0.20.1",
+        "minimumLoader": "0.19.5",
         "targets": targets,
     }
     output = Path(__file__).resolve().parent.parent / "fabric" / "versions.lock.json"

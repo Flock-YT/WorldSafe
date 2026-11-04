@@ -97,7 +97,7 @@ class ReleaseWorkflowTest {
     }
 
     @Test
-    void gradleReleaseUsesTheSharedVersionAndBuildsBothPlatforms() throws Exception {
+    void gradleReleaseUsesTheSharedVersionAndBuildsBukkitSeparately() throws Exception {
         Map<?, ?> workflow = yaml(".github/workflows/build-and-release.yml");
         Map<?, ?> triggers = map(workflow.containsKey("on") ? workflow.get("on") : workflow.get(Boolean.TRUE));
         assertEquals(Arrays.asList("gradle.properties"), map(triggers.get("push")).get("paths"));
@@ -117,7 +117,7 @@ class ReleaseWorkflowTest {
             Map<?, ?> step = map(value);
             String command = String.valueOf(step.get("run"));
             assertFalse(command.contains("mvn "));
-            foundBuild |= command.equals("./gradlew --no-daemon clean build");
+            foundBuild |= command.equals("./gradlew --no-daemon bukkitClean bukkitBuild");
         }
         assertTrue(foundBuild);
     }

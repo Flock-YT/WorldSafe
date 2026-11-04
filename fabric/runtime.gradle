@@ -31,6 +31,7 @@ tasks.register('runtimeMetadata') {
     inputs.property('minecraft', spec.minecraft)
     inputs.property('version', project.version.toString())
     inputs.property('java', spec.java)
+    inputs.property('minimumLoader', gradle.ext.fabricLock.minimumLoader)
     outputs.dir(resourcesDirectory)
     doLast {
         def directory = resourcesDirectory.get().asFile
@@ -41,7 +42,7 @@ tasks.register('runtimeMetadata') {
             name: 'WorldSafe native runtime', environment: '*',
             entrypoints: [main: ['me.lele.worldSafe.fabric.runtime.RuntimeInitializer']],
             mixins: ['worldsafe.mixins.json'],
-            depends: [fabricloader: ">=${gradle.ext.fabricLock.loader}",
+            depends: [fabricloader: ">=${gradle.ext.fabricLock.minimumLoader}",
                       minecraft: '=' + spec.minecraft, java: '>=' + spec.java],
             custom: ['worldsafe:game': spec.minecraft]
         ]

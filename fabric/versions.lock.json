@@ -4,6 +4,7 @@
   "gradleSha256": "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
   "loom": "1.17.21",
   "loader": "0.20.1",
+  "minimumLoader": "0.19.5",
   "targets": [
     {
       "minecraft": "1.14",

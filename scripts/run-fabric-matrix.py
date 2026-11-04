@@ -37,8 +37,8 @@ def main():
     homes = json.loads(args.java_homes.read_text())
     jar = args.jar.resolve()
     digest = hashlib.sha256(jar.read_bytes()).hexdigest()
-    reports = ROOT / "fabric/build/architecture-reports"
-    logs = ROOT / "fabric/build/matrix-logs"
+    reports = ROOT / "fabric/build/architecture-reports" / lock["loader"]
+    logs = ROOT / "fabric/build/matrix-logs" / lock["loader"]
     logs.mkdir(parents=True, exist_ok=True)
 
     def run(game):
@@ -68,7 +68,8 @@ def main():
             with (logs / (game + "-" + environment + ".log")).open("w") as output:
                 completed = subprocess.run(command, cwd=ROOT, stdout=output, stderr=subprocess.STDOUT)
             report = json.loads(report_file.read_text()) if report_file.is_file() else {"error": "Missing report"}
-            valid = completed.returncode == 0 and report.get("passed", False) and report.get("jarSha256") == digest
+            valid = (completed.returncode == 0 and report.get("passed", False)
+                     and report.get("jarSha256") == digest and report.get("loader") == lock["loader"])
             if not args.smoke:
                 valid &= report.get("fullCoverageComplete", False)
             report["matrixPassed"] = bool(valid)
@@ -85,7 +86,7 @@ def main():
     required = {"server", "client"} if args.environments == "both" else {"server"} if args.environments == "dedicated" else {"client"}
     passed = unchanged and all(not item.get("error") and required.issubset(item["environments"])
                               and all(item["environments"][env].get("matrixPassed") for env in required) for item in results)
-    report = {"jarSha256": digest, "artifactUnchanged": unchanged, "targets": games,
+    report = {"jarSha256": digest, "loader": lock["loader"], "artifactUnchanged": unchanged, "targets": games,
               "developmentSmokeOnly": args.smoke, "passed": passed,
               "complete": passed and not args.smoke and set(games) == set(known) and args.environments == "both",
               "results": results}

@@ -8,32 +8,55 @@ tasks.register('pythonTests', Exec) {
     workingDir(rootDir)
     commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
 }
-tasks.named('clean') { dependsOn(':bukkit:clean', ':shared:clean') }
+tasks.register('bukkitClean') {
+    group = 'bukkit'
+    description = 'Clean Bukkit and shared build outputs.'
+    dependsOn(':bukkit:clean', ':shared:clean')
+}
+tasks.register('fabricClean', Delete) {
+    group = 'fabric'
+    description = 'Clean Fabric build outputs, including test worlds (no JDK 25 required).'
+    // Fabric runtimes, drivers and shared outputs all live below this directory.
+    delete(layout.projectDirectory.dir('fabric/build'))
+}
+tasks.named('clean') {
+    description = 'Clean all platform build outputs, including Fabric test worlds.'
+    dependsOn('bukkitClean', 'fabricClean')
+}
 tasks.named('assemble') { dependsOn(':bukkit:assemble') }
 tasks.named('check') { dependsOn(':bukkit:check', ':shared:check', 'pythonTests') }
 
+tasks.register('bukkitBuild') {
+    group = 'bukkit'
+    description = 'Build, test and verify Bukkit and the shared core (JDK 17).'
+    dependsOn(':bukkit:build', ':shared:check', 'pythonTests')
+}
 // A nested build preserves Fabric's rootProject assumptions and keeps Bukkit configuration lightweight.
-tasks.register('fabricBuild', GradleBuild) {
-    group = 'build'
+tasks.register('fabricArtifacts', GradleBuild) {
     description = 'Build and check all selected Fabric runtimes (requires JDK 25).'
+    mustRunAfter('clean', 'fabricClean')
     dir = file('fabric')
     tasks = ['check', 'shadowJar']
     startParameter.projectProperties = gradle.startParameter.projectProperties
     doFirst {
         if (JavaVersion.current() < JavaVersion.VERSION_25) {
-            throw new GradleException('fabricBuild and buildAll must run on JDK 25')
+            throw new GradleException('build and fabricBuild must run on JDK 25; use bukkitBuild for Bukkit on JDK 17')
         }
     }
 }
 tasks.register('verifyFabricJar', Exec) {
     group = 'verification'
-    dependsOn('fabricBuild')
+    dependsOn('fabricArtifacts')
     workingDir(rootDir)
     commandLine 'python3', 'scripts/verify-fabric-code.py',
             "fabric/build/libs/WorldSafe-Fabric-${releaseVersion}.jar"
 }
-tasks.register('buildAll') {
-    group = 'build'
+tasks.register('fabricBuild') {
+    group = 'fabric'
+    description = 'Build, test and verify the universal Fabric JAR (requires JDK 25).'
+    dependsOn('verifyFabricJar')
+}
+tasks.named('build') {
     description = 'Build, test and verify both release JARs (requires JDK 25).'
-    dependsOn('build', 'verifyFabricJar')
+    dependsOn('bukkitBuild', 'fabricBuild')
 }

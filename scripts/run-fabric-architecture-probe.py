@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import subprocess
 import threading
@@ -21,6 +22,22 @@ import urllib.error
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "fabric/build/architecture-cache"
+
+
+def loader_version(value):
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?", value):
+        raise argparse.ArgumentTypeError("Expected a Fabric Loader version, e.g. 0.19.5")
+    return value
+
+
+def add_loader_argument(parser):
+    lock = json.loads((ROOT / "fabric/versions.lock.json").read_text())
+    parser.add_argument("--loader", type=loader_version, default=lock["loader"],
+                        help="Fabric Loader version to launch (default: locked build version)")
+
+
+def probe_path(kind, args, environment):
+    return ROOT / ("fabric/build/architecture-" + kind) / args.loader / (args.game + "-" + environment)
 
 
 def fetch(url):
@@ -70,7 +87,7 @@ def launch(args, report):
     report["jarSha256"] = hashlib.sha256(jar.read_bytes()).hexdigest()
     server = spec["downloads"]["server"]
     game_jar = cached(server["url"], CACHE / args.game / "server.jar", server["sha1"])
-    profile_url = "https://meta.fabricmc.net/v2/versions/loader/{}/{}/server/json".format(args.game, lock["loader"])
+    profile_url = "https://meta.fabricmc.net/v2/versions/loader/{}/{}/server/json".format(args.game, args.loader)
     profile = json.loads(fetch(profile_url))
     classpath = []
     for library in profile["libraries"]:
@@ -82,7 +99,7 @@ def launch(args, report):
         digest = fetch(url + ".sha1").decode().split()[0]
         classpath.append(cached(url, CACHE / "libraries" / relative, digest))
     classpath.append(game_jar)
-    work = ROOT / "fabric/build/architecture-runs" / (args.game + "-server")
+    work = probe_path("runs", args, "server")
     if work.exists():
         shutil.rmtree(work)
     (work / "mods").mkdir(parents=True)
@@ -161,7 +178,8 @@ def launch(args, report):
                 lines.append(line)
         (work / "server.log").write_text("".join(lines), encoding="utf-8")
     log = "".join(lines)
-    expected = ["selected=" + args.game] + ["game=" + args.game + " stage=" + stage for stage in
+    expected = ["Loading Minecraft " + args.game + " with Fabric Loader " + args.loader + "\n",
+                "selected=" + args.game] + ["game=" + args.game + " stage=" + stage for stage in
                 ("runtime-initialized", "server-run", "commands-registered", "command-executed")]
     report["exitCode"] = process.returncode
     report["missingMarkers"] = [marker for marker in expected if marker not in log]
@@ -178,6 +196,7 @@ def launch(args, report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    add_loader_argument(parser)
     parser.add_argument("--game", required=True)
     parser.add_argument("--jar", required=True, type=Path)
     parser.add_argument("--java-home", required=True, type=Path)
@@ -186,13 +205,13 @@ def main():
     parser.add_argument("--driver", type=Path)
     parser.add_argument("--behavior", action="store_true")
     args = parser.parse_args()
-    report = {"minecraft": args.game, "environment": "dedicated-server", "passed": False,
+    report = {"minecraft": args.game, "loader": args.loader, "environment": "dedicated-server", "passed": False,
               "integratedServerTested": False, "protectionFeaturesTested": False}
     try:
         launch(args, report)
     except Exception as error:
         report["error"] = "{}: {}".format(type(error).__name__, error)
-    destination = ROOT / "fabric/build/architecture-reports" / (args.game + "-server.json")
+    destination = Path(str(probe_path("reports", args, "server")) + ".json")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: value for key, value in report.items() if key != "command"}, indent=2))

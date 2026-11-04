@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import json
 from pathlib import Path
 import struct
 import sys
@@ -77,6 +78,60 @@ class PackagingTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(output.getvalue())) as jar:
             with self.assertRaisesRegex(ValueError, "Missing shared core"):
                 verify_shared_core(jar)
+
+
+class LoaderMetadataTest(unittest.TestCase):
+    def verify(self, shell_loader=">=0.19.5", runtime_loaders=(">=0.19.5", ">=0.19.5")):
+        from shared_artifact import shared_entries
+        games = ("1.14", "26.3")
+        lock = {"loader": "0.20.1", "minimumLoader": "0.19.5", "targets": [
+            {"minecraft": game, "java": java} for game, java in zip(games, (8, 25))]}
+        shell = {"id": "worldsafe", "version": "1.1.2", "entrypoints": {"main": ["example.Shell"]},
+                 "depends": {"java": ">=8", "worldsafe_runtime": "*", "minecraft": ["=" + game for game in games]},
+                 "jars": [{"file": "META-INF/jars/" + game + ".jar"} for game in games]}
+        if shell_loader is not None:
+            shell["depends"]["fabricloader"] = shell_loader
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "universal.jar"
+            with zipfile.ZipFile(path, "w") as jar:
+                jar.writestr("fabric.mod.json", json.dumps(shell))
+                jar.writestr("example/Shell.class", class_bytes("example/Shell"))
+                for entry in shared_entries():
+                    jar.writestr(entry, class_bytes(entry[:-6]))
+                for target, loader, nested in zip(lock["targets"], runtime_loaders, shell["jars"]):
+                    game, java = target["minecraft"], target["java"]
+                    runtime = {"id": "worldsafe_runtime", "version": "1.1.2-mc." + game,
+                               "entrypoints": {"main": ["example.Runtime"]},
+                               "depends": {"minecraft": "=" + game, "java": ">=" + str(java)},
+                               "custom": {"worldsafe:game": game}}
+                    if loader is not None:
+                        runtime["depends"]["fabricloader"] = loader
+                    output = io.BytesIO()
+                    with zipfile.ZipFile(output, "w") as module:
+                        module.writestr("fabric.mod.json", json.dumps(runtime))
+                        module.writestr("worldsafe.mixins.json", json.dumps({
+                            "required": True, "package": "example", "mixins": ["NativeMixin"],
+                            "injectors": {"defaultRequire": 1}}))
+                        for name in ("Runtime", "NativeMixin"):
+                            module.writestr("example/" + name + ".class", class_bytes("example/" + name, java + 44))
+                    jar.writestr(nested["file"], output.getvalue())
+            return verifier.verify(path, lock, require_all=True)
+
+    def test_build_loader_can_differ_from_the_minimum_runtime_loader(self):
+        self.assertTrue(self.verify()["allLockedTargetsPresent"])
+
+    def test_rejects_missing_or_incorrect_shell_loader(self):
+        for loader in (None, ">=0.20.1", ">=0.19.4", "*"):
+            with self.subTest(loader=loader), self.assertRaisesRegex(ValueError, "Bootstrap Java/Loader"):
+                self.verify(shell_loader=loader)
+
+    def test_checks_every_nested_runtime_loader(self):
+        for index in range(2):
+            for loader in (None, ">=0.20.1", ">=0.19.4", "*"):
+                loaders = [">=0.19.5", ">=0.19.5"]
+                loaders[index] = loader
+                with self.subTest(index=index, loader=loader), self.assertRaisesRegex(ValueError, "Runtime Loader"):
+                    self.verify(runtime_loaders=loaders)
 
 
 class UnitTestEvidenceTest(unittest.TestCase):

@@ -42,14 +42,14 @@ def metadataDirectory = layout.buildDirectory.dir('generated/shell-resources')
 tasks.register('shellMetadata') {
     inputs.property('version', project.version.toString())
     inputs.property('targets', targets.collect { it.minecraft })
-    inputs.property('loader', lock.loader)
+    inputs.property('minimumLoader', lock.minimumLoader)
     outputs.dir(metadataDirectory)
     doLast {
         def metadata = [
             schemaVersion: 1, id: 'worldsafe', version: project.version.toString(),
             name: 'WorldSafe', environment: '*',
             entrypoints: [main: ['me.lele.worldSafe.fabric.bootstrap.WorldSafeFabric']],
-            depends: [fabricloader: ">=${lock.loader}", java: '>=8',
+            depends: [fabricloader: ">=${lock.minimumLoader}", java: '>=8',
                       minecraft: targets.collect { '=' + it.minecraft }, worldsafe_runtime: '*'],
             jars: targets.collect { [file: "META-INF/jars/worldsafe-runtime-${it.minecraft}.jar"] }
         ]

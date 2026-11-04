@@ -62,8 +62,8 @@ jobs:
             gradle/*.gradle
             gradle/wrapper/gradle-wrapper.properties
 
-      - name: Build with Gradle
-        run: ./gradlew --no-daemon clean build
+      - name: Build Bukkit with Gradle
+        run: ./gradlew --no-daemon bukkitClean bukkitBuild
 
       - name: Verify release JAR
         run: ./scripts/verify-release-jar.sh "bukkit/build/libs/${{ needs.detect-version.outputs.artifact }}" "${{ needs.detect-version.outputs.version }}"

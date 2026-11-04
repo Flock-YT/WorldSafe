@@ -49,8 +49,8 @@ def prepare(args, report):
     metadata = json.loads(raw_metadata.read_text())
     client = spec["downloads"]["client"]
     client_jar = cached(client["url"], CACHE / args.game / "client.jar", client["sha1"])
-    profile = json.loads(fetch("https://meta.fabricmc.net/v2/versions/loader/{}/{}/profile/json".format(args.game, lock["loader"])))
-    work = ROOT / "fabric/build/architecture-runs" / (args.game + "-client")
+    profile = json.loads(fetch("https://meta.fabricmc.net/v2/versions/loader/{}/{}/profile/json".format(args.game, args.loader)))
+    work = helpers.probe_path("runs", args, "client")
     if work.exists():
         shutil.rmtree(work)
     (work / "mods").mkdir(parents=True)
@@ -60,7 +60,7 @@ def prepare(args, report):
         shutil.copy2(source, work / "mods" / source.name)
     if hashlib.sha256((work / "mods" / jar.name).read_bytes()).hexdigest() != report["jarSha256"]:
         raise ValueError("Universal JAR changed while preparing the client")
-    original = ROOT / "fabric/build/architecture-runs" / (args.game + "-server/architecture-probe")
+    original = helpers.probe_path("runs", args, "server") / "architecture-probe"
     if not (original / "level.dat").is_file():
         raise ValueError("Run the dedicated-server probe first to generate the test world")
     shutil.copytree(original, work / "saves/architecture-probe")
@@ -176,7 +176,8 @@ def launch(args, report):
                 lines.append(line)
         (work / "client.log").write_text("".join(lines), encoding="utf-8")
     log = "".join(lines)
-    expected = ["selected=" + args.game] + ["stage=" + stage for stage in
+    expected = ["Loading Minecraft " + args.game + " with Fabric Loader " + args.loader + "\n",
+                "selected=" + args.game] + ["stage=" + stage for stage in
                 ("runtime-initialized", "commands-registered", "server-run", "command-executed",
                  "opening-singleplayer-world", "integrated-command-confirmed")]
     report["missingMarkers"] = [marker for marker in expected if marker not in log]
@@ -194,6 +195,7 @@ def launch(args, report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    helpers.add_loader_argument(parser)
     parser.add_argument("--game", required=True)
     parser.add_argument("--jar", type=Path, required=True)
     parser.add_argument("--driver", type=Path, required=True)
@@ -202,13 +204,13 @@ def main():
     parser.add_argument("--timeout", type=int, default=180)
     parser.add_argument("--behavior", action="store_true")
     args = parser.parse_args()
-    report = {"minecraft": args.game, "environment": "integrated-server", "passed": False,
+    report = {"minecraft": args.game, "loader": args.loader, "environment": "integrated-server", "passed": False,
               "protectionFeaturesTested": False}
     try:
         launch(args, report)
     except Exception as error:
         report["error"] = "{}: {}".format(type(error).__name__, error)
-    destination = ROOT / "fabric/build/architecture-reports" / (args.game + "-client.json")
+    destination = Path(str(helpers.probe_path("reports", args, "client")) + ".json")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: value for key, value in report.items() if key != "command"}, indent=2))
