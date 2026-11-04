@@ -1,0 +1,47 @@
+import groovy.json.JsonOutput
+
+def spec = project.targetSpec
+apply plugin: spec.namespace == 'intermediary' ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
+tasks.withType(JavaCompile).configureEach { options.release = spec.java as int }
+dependencies {
+    compileOnly rootProject.files(rootProject.sourceSets.main.output)
+    minecraft "com.mojang:minecraft:${spec.minecraft}"
+    if (spec.namespace == 'intermediary') {
+        def classifier = spec.mappingClassifier ? ':' + spec.mappingClassifier : ''
+        mappings "net.fabricmc:yarn:${spec.mappings}${classifier}"
+        modImplementation "net.fabricmc:fabric-loader:${gradle.ext.fabricLock.loader}"
+    } else {
+        implementation "net.fabricmc:fabric-loader:${gradle.ext.fabricLock.loader}"
+    }
+}
+def family = spec.namespace == 'official' ? 'official' : (spec.minecraft == '1.14' ? 'legacy' : 'modern')
+sourceSets.main.java.setSrcDirs([rootProject.file('driver/common/src/main/java')])
+def resourcesDirectory = layout.buildDirectory.dir('generated/driver-resources')
+tasks.register('driverMetadata') {
+    inputs.property('minecraft', spec.minecraft)
+    inputs.property('version', project.version.toString())
+    outputs.dir(resourcesDirectory)
+    doLast {
+        def directory = resourcesDirectory.get().asFile
+        project.delete(directory)
+        directory.mkdirs()
+        def metadata = [schemaVersion: 1, id: 'worldsafe_architecture_driver',
+                        version: project.version.toString(), name: 'WorldSafe test driver (not for release)',
+                        environment: '*', mixins: ['worldsafe-driver.mixins.json'],
+                        depends: [minecraft: '=' + spec.minecraft, worldsafe: '*']]
+        new File(directory, 'fabric.mod.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(metadata)) + '\n'
+        def config = [required: true, minVersion: '0.8', package: 'me.lele.worldSafe.fabric.driver.mixin',
+                      compatibilityLevel: 'JAVA_' + spec.java, client: ['MinecraftClientMixin'],
+                      mixins: new groovy.json.JsonSlurper().parse(new File(project.driverSourcesDirectory.get().asFile, 'mixins.json')),
+                      injectors: [defaultRequire: 1]]
+        new File(directory, 'worldsafe-driver.mixins.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(config)) + '\n'
+    }
+}
+sourceSets.main.resources.srcDir(resourcesDirectory)
+tasks.named('processResources') {
+    dependsOn('driverMetadata')
+    doFirst { project.delete(destinationDir) }
+}
+tasks.named('jar') { archiveBaseName = 'WorldSafe-Architecture-Driver-' + spec.minecraft }
+apply from: rootProject.file('generate-driver.gradle')

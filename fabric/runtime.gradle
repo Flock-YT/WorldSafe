@@ -1,0 +1,62 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+def spec = project.targetSpec
+apply plugin: spec.namespace == 'intermediary' ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
+tasks.withType(JavaCompile).configureEach { options.release = spec.java as int }
+
+dependencies {
+    compileOnly rootProject.files(rootProject.sourceSets.main.output)
+    compileOnly 'io.github.llamalad7:mixinextras-fabric:0.5.5'
+    minecraft "com.mojang:minecraft:${spec.minecraft}"
+    if (spec.namespace == 'intermediary') {
+        def classifier = spec.mappingClassifier ? ':' + spec.mappingClassifier : ''
+        mappings "net.fabricmc:yarn:${spec.mappings}${classifier}"
+        modImplementation "net.fabricmc:fabric-loader:${gradle.ext.fabricLock.loader}"
+    } else {
+        implementation "net.fabricmc:fabric-loader:${gradle.ext.fabricLock.loader}"
+    }
+}
+
+def family = spec.namespace == 'official' ? 'official' : (spec.minecraft == '1.14' ? 'legacy' : 'modern')
+sourceSets.main.java.setSrcDirs([
+    rootProject.file('runtime/common/src/main/java')
+])
+
+def resourcesDirectory = layout.buildDirectory.dir('generated/runtime-resources')
+tasks.register('runtimeMetadata') {
+    inputs.property('minecraft', spec.minecraft)
+    inputs.property('version', project.version.toString())
+    inputs.property('java', spec.java)
+    outputs.dir(resourcesDirectory)
+    doLast {
+        def directory = resourcesDirectory.get().asFile
+        project.delete(directory)
+        directory.mkdirs()
+        def metadata = [
+            schemaVersion: 1, id: 'worldsafe_runtime', version: project.version.toString(),
+            name: 'WorldSafe native runtime', environment: '*',
+            entrypoints: [main: ['me.lele.worldSafe.fabric.runtime.RuntimeInitializer']],
+            mixins: ['worldsafe.mixins.json'],
+            depends: [fabricloader: ">=${gradle.ext.fabricLock.loader}",
+                      minecraft: '=' + spec.minecraft, java: '>=' + spec.java],
+            custom: ['worldsafe:game': spec.minecraft]
+        ]
+        new File(directory, 'fabric.mod.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(metadata)) + '\n'
+        def config = [required: true, minVersion: '0.8',
+                      package: 'me.lele.worldSafe.fabric.runtime.mixin',
+                      compatibilityLevel: 'JAVA_' + spec.java,
+                      mixins: new JsonSlurper().parse(new File(project.nativeSourcesDirectory.get().asFile, 'mixins.json')),
+                      injectors: [defaultRequire: 1]]
+        new File(directory, 'worldsafe.mixins.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(config)) + '\n'
+    }
+}
+sourceSets.main.resources.srcDir(resourcesDirectory)
+tasks.named('processResources') {
+    dependsOn('runtimeMetadata')
+    doFirst { project.delete(destinationDir) }
+}
+apply from: rootProject.file('generate-native.gradle')
+apply from: rootProject.file('verify-native.gradle')

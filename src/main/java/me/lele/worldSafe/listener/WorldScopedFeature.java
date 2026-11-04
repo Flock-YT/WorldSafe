@@ -1,5 +1,6 @@
 package me.lele.worldSafe.listener;
 
+import me.lele.worldSafe.core.WorldSelector;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -7,27 +8,14 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Listener;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.Locale;
 import java.util.Set;
 
 public abstract class WorldScopedFeature implements Listener {
 
-        private final Set<String> worlds;
+        private final WorldSelector worlds;
 
         protected WorldScopedFeature(Collection<String> worlds) {
-                if (worlds == null || worlds.isEmpty()) {
-                        this.worlds = Collections.emptySet();
-                        return;
-                }
-                Set<String> normalized = new LinkedHashSet<String>();
-                for (String world : worlds) {
-                        if (world != null && !world.trim().isEmpty()) {
-                                normalized.add(world.trim().toLowerCase(Locale.ROOT));
-                        }
-                }
-                this.worlds = Collections.unmodifiableSet(normalized);
+                this.worlds = new WorldSelector(worlds, WorldSelector::normalize);
         }
 
         protected World getWorld(Location location) {
@@ -47,11 +35,11 @@ public abstract class WorldScopedFeature implements Listener {
         }
 
         protected boolean isWorldEnabled(World world) {
-                return world != null && worlds.contains(normalize(world.getName()));
+                return world != null && worlds.matches(world.getName());
         }
 
         protected boolean isWorldEnabled(String worldName) {
-                return worldName != null && worlds.contains(normalize(worldName));
+                return worldName != null && worlds.matches(worldName);
         }
 
         protected boolean isSameWorld(World first, World second) {
@@ -59,10 +47,7 @@ public abstract class WorldScopedFeature implements Listener {
         }
 
         protected Set<String> getConfiguredWorlds() {
-                return worlds;
+                return worlds.names();
         }
 
-        private String normalize(String worldName) {
-                return worldName.trim().toLowerCase(Locale.ROOT);
-        }
 }

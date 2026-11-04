@@ -100,6 +100,14 @@ $RECYCLE.BIN/
 *.lnk
 
 target/
+/dist/
+
+# Fabric build caches and generated target projects
+fabric/.gradle/
+fabric/build/
+fabric/**/build/
+__pycache__/
+!fabric/gradle/wrapper/gradle-wrapper.jar
 
 pom.xml.tag
 pom.xml.releaseBackup

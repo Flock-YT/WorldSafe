@@ -1,0 +1,249 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree.*
+import java.util.zip.ZipFile
+
+buildscript {
+    repositories { maven { url = 'https://maven.fabricmc.net/' }; mavenCentral() }
+    dependencies { classpath 'org.ow2.asm:asm-tree:9.10.1' }
+}
+
+/** Offline ABI and injection-point checks. This never launches Minecraft. */
+class WorldSafeHookVerifier {
+    final Map<String, ClassNode> game = [:]
+    final Map<String, byte[]> bytecode = [:]
+    int shadows, injections, references
+
+    static Map values(AnnotationNode annotation) {
+        Map result = [:]
+        if (annotation?.values != null) {
+            for (int i = 0; i < annotation.values.size(); i += 2) result[annotation.values[i]] = annotation.values[i + 1]
+        }
+        return result
+    }
+    static List<AnnotationNode> annotations(def member) {
+        return (member.visibleAnnotations ?: []) + (member.invisibleAnnotations ?: [])
+    }
+    static List array(Object input) { input instanceof List ? input : input == null ? [] : [input] }
+    void readGame(List<File> jars) {
+        jars.each { file ->
+            new ZipFile(file).withCloseable { jar ->
+                jar.entries().each { entry ->
+                    if (entry.name.startsWith('net/minecraft/') && entry.name.endsWith('.class')) {
+                        byte[] data = jar.getInputStream(entry).bytes
+                        ClassNode node = new ClassNode()
+                        new ClassReader(data).accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+                        game[node.name] = node
+                        bytecode[node.name] = data
+                    }
+                }
+            }
+        }
+    }
+    def field(String owner, String name, String descriptor) {
+        List<String> pending = [owner]
+        Set<String> seen = [] as Set
+        while (!pending.empty) {
+            String current = pending.remove(0)
+            if (!seen.add(current)) continue
+            ClassNode type = game[current]
+            if (type == null) continue
+            def found = type.fields.find { it.name == name && it.desc == descriptor }
+            if (found != null) return found
+            if (type.superName != null) pending.add(type.superName)
+            pending.addAll(type.interfaces ?: [])
+        }
+        return null
+    }
+    def method(String owner, String name, String descriptor) {
+        List<String> pending = [owner]
+        Set<String> seen = [] as Set
+        while (!pending.empty) {
+            String current = pending.remove(0)
+            if (!seen.add(current)) continue
+            ClassNode type = game[current]
+            if (type == null) continue
+            def found = type.methods.find { it.name == name && it.desc == descriptor }
+            if (found != null) return found
+            if (name == '<init>') return null
+            if (type.superName != null) pending.add(type.superName)
+            pending.addAll(type.interfaces ?: [])
+        }
+        return null
+    }
+    void requireField(String owner, String name, String descriptor) {
+        if (field(owner, name, descriptor) == null) throw new GradleException("Missing native field: ${owner}.${name}:${descriptor}")
+    }
+    void requireMethod(String owner, String name, String descriptor) {
+        if (method(owner, name, descriptor) == null) throw new GradleException("Missing native method: ${owner}.${name}${descriptor}")
+    }
+    List<MethodNode> select(String owner, String selector) {
+        def selected = game[owner].methods.findAll { work -> selector == work.name || selector == work.name + work.desc }
+        if (selected.empty) throw new GradleException("Missing required injection target: ${owner}.${selector}")
+        return selected
+    }
+    void verifyClass(ClassNode mixin) {
+        AnnotationNode marker = annotations(mixin).find { it.desc == 'Lorg/spongepowered/asm/mixin/Mixin;' }
+        if (marker == null) return
+        Map config = values(marker)
+        List<String> targets = array(config.value).collect { ((Type) it).internalName } + array(config.targets).collect { it.replace('.', '/') }
+        if (targets.empty) throw new GradleException("Mixin has no native target: ${mixin.name}")
+        targets.each { target ->
+            if (!game.containsKey(target)) throw new GradleException("Missing native Mixin class: ${target}")
+            mixin.fields.each { item ->
+                if (annotations(item).any { it.desc == 'Lorg/spongepowered/asm/mixin/Shadow;' }) {
+                    requireField(target, item.name, item.desc)
+                    shadows++
+                }
+            }
+            mixin.methods.each { handler ->
+                annotations(handler).findAll { it.desc in [
+                    'Lorg/spongepowered/asm/mixin/injection/Inject;',
+                    'Lcom/llamalad7/mixinextras/injector/wrapmethod/WrapMethod;',
+                    'Lcom/llamalad7/mixinextras/injector/wrapoperation/WrapOperation;'
+                ] }.each { injection ->
+                    Map rule = values(injection)
+                    List<MethodNode> methods = array(rule.method).collectMany { select(target, it as String) }
+                    if (methods.empty) throw new GradleException("Injection has no methods: ${mixin.name}.${handler.name}")
+                    methods.each { nativeMethod ->
+                        def nativeArguments = Type.getArgumentTypes(nativeMethod.desc).toList()
+                        def handlerArguments = Type.getArgumentTypes(handler.desc).toList()
+                        Type nativeResult = Type.getReturnType(nativeMethod.desc)
+                        if (injection.desc.endsWith('/Inject;')) {
+                            int callback = handlerArguments.findIndexOf { it.className.startsWith('org.spongepowered.asm.mixin.injection.callback.CallbackInfo') }
+                            String expected = nativeResult.sort == Type.VOID ? 'org.spongepowered.asm.mixin.injection.callback.CallbackInfo' :
+                                    'org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable'
+                            if (callback < 0 || handlerArguments[callback].className != expected || callback > nativeArguments.size()
+                                    || handlerArguments.take(callback) != nativeArguments.take(callback)) {
+                                throw new GradleException("Incompatible native injection handler: ${mixin.name}.${handler.name}")
+                            }
+                        } else if (injection.desc.endsWith('/WrapMethod;')) {
+                            if (handlerArguments.empty || handlerArguments[-1].className != 'com.llamalad7.mixinextras.injector.wrapoperation.Operation'
+                                    || handlerArguments.dropRight(1) != nativeArguments || Type.getReturnType(handler.desc) != nativeResult) {
+                                throw new GradleException("Incompatible native method wrapper: ${mixin.name}.${handler.name}")
+                            }
+                        }
+                    }
+                    array(rule.at).each { point ->
+                        Map at = values((AnnotationNode) point)
+                        if (at.value == 'INVOKE') {
+                            def match = (at.target as String) =~ /^L([^;]+);([^\(]+)(\(.*)$/
+                            if (!match.matches()) throw new GradleException("Unsupported native invoke selector: ${at.target}")
+                            ClassNode full = new ClassNode()
+                            new ClassReader(bytecode[target]).accept(full, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+                            boolean found = full.methods.findAll { candidate -> methods.any { it.name == candidate.name && it.desc == candidate.desc } }
+                                .any { work -> work.instructions.any { instruction -> instruction instanceof MethodInsnNode &&
+                                    instruction.owner == match.group(1) && instruction.name == match.group(2) && instruction.desc == match.group(3) } }
+                            if (!found) throw new GradleException("Required native invocation is absent: ${target} -> ${at.target}")
+                        }
+                    }
+                    injections++
+                }
+            }
+        }
+    }
+    void verifyReferences(ClassNode type) {
+        type.methods.each { work ->
+            work.instructions.each { instruction ->
+                if (instruction instanceof FieldInsnNode && instruction.owner.startsWith('net/minecraft/')) {
+                    requireField(instruction.owner, instruction.name, instruction.desc)
+                    references++
+                } else if (instruction instanceof MethodInsnNode && instruction.owner.startsWith('net/minecraft/')) {
+                    requireMethod(instruction.owner, instruction.name, instruction.desc)
+                    references++
+                }
+            }
+        }
+    }
+    Map verify(File runtime, List<File> jars) {
+        readGame(jars)
+        Set<String> actual = [] as Set
+        Map metadata
+        new ZipFile(runtime).withCloseable { jar ->
+            metadata = new JsonSlurper().parse(jar.getInputStream(jar.getEntry('worldsafe.mixins.json')))
+            if (!metadata.required || metadata.injectors.defaultRequire != 1) throw new GradleException('Native hooks must be required')
+            jar.entries().each { entry ->
+                if (entry.name.endsWith('.class')) {
+                    ClassNode node = new ClassNode()
+                    new ClassReader(jar.getInputStream(entry)).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+                    if (annotations(node).any { it.desc == 'Lorg/spongepowered/asm/mixin/Mixin;' }) actual.add(node.name)
+                    verifyClass(node)
+                    verifyReferences(node)
+                }
+            }
+        }
+        Set<String> configured = (metadata.mixins ?: []).collect { (metadata.package + '.' + it).replace('.', '/') } as Set
+        if (actual != configured) throw new GradleException('Registered native Mixins differ from compiled Mixins')
+        if (injections == 0 || shadows == 0 || references == 0) throw new GradleException('Native verification did not inspect the complete runtime')
+        return [passed: true, mixins: actual.size(), injections: injections, shadows: shadows, references: references,
+                runtimeJarSha256: java.security.MessageDigest.getInstance('SHA-256').digest(runtime.bytes).encodeHex().toString()]
+    }
+}
+
+if (project == rootProject) {
+    tasks.register('testHookVerifier') {
+        group = 'verification'
+        doLast {
+            def checker = new WorldSafeHookVerifier()
+            ClassNode parent = new ClassNode(); parent.name = 'net/minecraft/TestParent'
+            parent.fields.add(new FieldNode(Opcodes.ACC_PUBLIC, 'blocks', 'Ljava/util/List;', null, null))
+            parent.methods.add(new MethodNode(Opcodes.ACC_PUBLIC, 'tick', '()V', null, null))
+            ClassNode child = new ClassNode(); child.name = 'net/minecraft/TestChild'; child.superName = parent.name
+            checker.game[parent.name] = parent; checker.game[child.name] = child
+            checker.requireField(child.name, 'blocks', 'Ljava/util/List;')
+            checker.requireMethod(child.name, 'tick', '()V')
+            for (Closure invalid : [
+                { checker.requireField(child.name, 'blocks', 'Ljava/util/ArrayList;') },
+                { checker.requireField(child.name, 'missing', 'I') },
+                { checker.requireMethod(child.name, 'tick', '(I)V') },
+                { checker.select(child.name, 'missing()V') },
+                { checker.requireMethod(child.name, '<init>', '()V') }
+            ]) {
+                boolean rejected = false
+                try { invalid() } catch (GradleException expected) { rejected = true }
+                if (!rejected) throw new GradleException('Native verifier accepted a broken ABI fixture')
+            }
+            ClassNode invalidMixin = new ClassNode(); invalidMixin.name = 'test/InvalidMixin'
+            AnnotationNode marker = new AnnotationNode('Lorg/spongepowered/asm/mixin/Mixin;')
+            marker.values = ['value', [Type.getObjectType(parent.name)]]
+            invalidMixin.invisibleAnnotations = [marker]
+            MethodNode handler = new MethodNode(Opcodes.ACC_PRIVATE, 'bad', '(ILorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V', null, null)
+            AnnotationNode inject = new AnnotationNode('Lorg/spongepowered/asm/mixin/injection/Inject;')
+            inject.values = ['method', ['tick()V']]; handler.visibleAnnotations = [inject]
+            invalidMixin.methods.add(handler)
+            boolean rejected = false
+            try { checker.verifyClass(invalidMixin) } catch (GradleException expected) { rejected = true }
+            if (!rejected) throw new GradleException('Native verifier accepted an incompatible callback signature')
+        }
+    }
+} else {
+    def jarTask = tasks.named(project.targetSpec.namespace == 'intermediary' ? 'remapJar' : 'jar')
+    def nativeJars = providers.provider {
+        def extension = project.extensions.getByName('loom')
+        def namespaces = extension.class.classLoader.loadClass('net.fabricmc.loom.api.mappings.layered.MappingsNamespace')
+        String name = project.targetSpec.namespace == 'intermediary' ? 'INTERMEDIARY' : 'NAMED'
+        def namespace = namespaces.enumConstants.find { it.name() == name }
+        extension.getMinecraftJars(namespace).collect { it.toFile() }
+    }
+    tasks.register('verifyNativeHooks') {
+        group = 'verification'
+        dependsOn(jarTask)
+        inputs.file(jarTask.flatMap { it.archiveFile })
+        inputs.file(rootProject.file('verify-native.gradle'))
+        inputs.files(nativeJars)
+        inputs.property('target', project.targetSpec)
+        def report = layout.buildDirectory.file('reports/native-hooks.json')
+        outputs.file(report)
+        doLast {
+            Map result = new WorldSafeHookVerifier().verify(jarTask.get().archiveFile.get().asFile, nativeJars.get())
+            result.minecraft = project.targetSpec.minecraft
+            result.java = project.targetSpec.java
+            result.namespace = project.targetSpec.namespace
+            report.get().asFile.parentFile.mkdirs()
+            report.get().asFile.text = JsonOutput.prettyPrint(JsonOutput.toJson(result)) + '\n'
+        }
+    }
+}

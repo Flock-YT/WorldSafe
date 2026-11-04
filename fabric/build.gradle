@@ -1,0 +1,109 @@
+import groovy.json.JsonOutput
+import groovy.xml.XmlSlurper
+
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.2.2'
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.21' apply false
+    id 'net.fabricmc.fabric-loom' version '1.17.21' apply false
+}
+
+def pom = new XmlSlurper().parse(file('../pom.xml'))
+version = pom.version.text()
+group = 'me.lele.worldSafe'
+def lock = gradle.ext.fabricLock
+def targets = gradle.ext.fabricTargets
+
+allprojects {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        mavenCentral()
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
+tasks.withType(JavaCompile).configureEach { options.release = 8 }
+dependencies {
+    compileOnly "net.fabricmc:fabric-loader:${lock.loader}"
+    implementation 'org.yaml:snakeyaml:2.5'
+    testImplementation "net.fabricmc:fabric-loader:${lock.loader}"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation 'org.mockito:mockito-core:5.23.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
+}
+sourceSets.main.java.setSrcDirs(['bootstrap/src/main/java', '../shared/src/main/java'])
+sourceSets.test.java.setSrcDirs(['bootstrap/src/test/java'])
+tasks.named('compileTestJava') { options.release = 17 }
+tasks.named('test') { useJUnitPlatform() }
+
+def metadataDirectory = layout.buildDirectory.dir('generated/shell-resources')
+tasks.register('shellMetadata') {
+    inputs.property('version', project.version.toString())
+    inputs.property('targets', targets.collect { it.minecraft })
+    inputs.property('loader', lock.loader)
+    outputs.dir(metadataDirectory)
+    doLast {
+        def metadata = [
+            schemaVersion: 1, id: 'worldsafe', version: project.version.toString(),
+            name: 'WorldSafe', environment: '*',
+            entrypoints: [main: ['me.lele.worldSafe.fabric.bootstrap.WorldSafeFabric']],
+            depends: [fabricloader: ">=${lock.loader}", java: '>=8',
+                      minecraft: targets.collect { '=' + it.minecraft }, worldsafe_runtime: '*'],
+            jars: targets.collect { [file: "META-INF/jars/worldsafe-runtime-${it.minecraft}.jar"] }
+        ]
+        def output = metadataDirectory.get().file('fabric.mod.json').asFile
+        output.parentFile.mkdirs()
+        output.text = JsonOutput.prettyPrint(JsonOutput.toJson(metadata)) + '\n'
+    }
+}
+sourceSets.main.resources.srcDir(metadataDirectory)
+tasks.named('processResources') { dependsOn('shellMetadata') }
+
+subprojects { child ->
+    child.ext.isArchitectureDriver = child.name.startsWith('driver_')
+    def runtimeName = child.name.replaceFirst('^driver_', '')
+    child.ext.targetSpec = targets.find { 'mc' + it.minecraft.replace('.', '_') == runtimeName }
+    child.version = rootProject.version.toString() + '-mc.' + child.targetSpec.minecraft
+    child.group = rootProject.group
+    apply from: rootProject.file(child.isArchitectureDriver ? 'driver.gradle' : 'runtime.gradle')
+}
+
+tasks.named('jar') { enabled = false }
+
+tasks.register('architectureDrivers') {
+    subprojects.findAll { it.isArchitectureDriver }.each { child ->
+        dependsOn(child.tasks.named(child.targetSpec.namespace == 'intermediary' ? 'remapJar' : 'jar'))
+    }
+}
+
+tasks.named('shadowJar') {
+    archiveBaseName = 'WorldSafe-Fabric'
+    archiveClassifier = ''
+    relocate 'org.yaml.snakeyaml', 'me.lele.worldSafe.shaded.snakeyaml'
+    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/*.EC', 'META-INF/SIG-*'
+    exclude 'META-INF/versions/**', 'module-info.class'
+    subprojects.findAll { !it.isArchitectureDriver }.each { child ->
+        def runtimeJar = child.tasks.named(child.targetSpec.namespace == 'intermediary' ? 'remapJar' : 'jar')
+        dependsOn(runtimeJar)
+        into('META-INF/jars') {
+            from(runtimeJar.flatMap { it.archiveFile })
+            rename { "worldsafe-runtime-${child.targetSpec.minecraft}.jar" }
+        }
+    }
+}
+
+apply from: file('verify-native.gradle')
+tasks.register('pythonTests', Exec) {
+    group = 'verification'
+    workingDir(projectDir)
+    commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'tests', '-v'
+}
+tasks.named('check') {
+    dependsOn('pythonTests', 'testHookVerifier')
+    subprojects.findAll { !it.isArchitectureDriver }.each { dependsOn(it.tasks.named('verifyNativeHooks')) }
+}
+
+tasks.named('build') { dependsOn('shadowJar') }

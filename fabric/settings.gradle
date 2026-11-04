@@ -1,0 +1,34 @@
+import groovy.json.JsonSlurper
+
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'WorldSafe-Fabric'
+def lock = new JsonSlurper().parse(file('versions.lock.json'))
+def known = lock.targets.collect { it.minecraft }
+def requested = providers.gradleProperty('targets').orElse(known.join(',')).get().split(',').toList()
+if (lock.gradle != gradle.gradleVersion || lock.loom != '1.17.21' || lock.loader != '0.20.1') {
+    throw new GradleException('Build tools must match versions.lock.json')
+}
+if (requested.any { !known.contains(it) } || requested.toSet().size() != requested.size()) {
+    throw new GradleException('Targets must be distinct releases from versions.lock.json')
+}
+gradle.ext.fabricLock = lock
+gradle.ext.fabricTargets = lock.targets.findAll { requested.contains(it.minecraft) }
+gradle.ext.fabricTargets.each { target ->
+    def name = 'mc' + target.minecraft.replace('.', '_')
+    include(name)
+    def directory = file('build/targets/' + name)
+    directory.mkdirs()
+    project(':' + name).projectDir = directory
+    def driverName = 'driver_' + name
+    include(driverName)
+    def driverDirectory = file('build/targets/' + driverName)
+    driverDirectory.mkdirs()
+    project(':' + driverName).projectDir = driverDirectory
+}

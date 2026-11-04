@@ -1,0 +1,966 @@
+import groovy.json.JsonOutput
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree.ClassNode
+import java.util.zip.ZipFile
+
+buildscript {
+    repositories { maven { url = 'https://maven.fabricmc.net/' }; mavenCentral() }
+    dependencies { classpath 'org.ow2.asm:asm-tree:9.10.1' }
+}
+
+class WorldSafeDriverSources {
+    final Map spec
+    final File output
+    final Map<String, ClassNode> classes = [:]
+    final boolean official
+    final List<String> mixins = []
+
+    WorldSafeDriverSources(Map spec, File output, List<File> jars) {
+        this.spec = spec; this.output = output; official = spec.namespace == 'official'
+        jars.each { file ->
+            new ZipFile(file).withCloseable { jar ->
+                jar.entries().each { entry ->
+                    if (entry.name.startsWith('net/minecraft/') && entry.name.endsWith('.class')) {
+                        ClassNode node = new ClassNode()
+                        new ClassReader(jar.getInputStream(entry)).accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+                        classes[node.name.replace('/', '.')] = node
+                    }
+                }
+            }
+        }
+    }
+
+    def method(String owner, List<String> names, Closure filter = { true }) {
+        def result = classes[owner]?.methods?.find { names.contains(it.name) && filter(it) }
+        if (result == null) { throw new GradleException("${spec.minecraft}: test driver requires ${owner} ${names}") }
+        return result
+    }
+    boolean has(String owner, String name) { classes[owner]?.methods?.any { it.name == name } ?: false }
+    def inheritedMethod(String owner, List<String> names, Closure filter = { true }) {
+        String current = owner
+        while (classes[current] != null) {
+            def result = classes[current].methods.find { names.contains(it.name) && filter(it) }
+            if (result != null) { return [owner: current, work: result] }
+            current = classes[current].superName?.replace('/', '.')
+        }
+        throw new GradleException("${spec.minecraft}: test driver requires inherited ${owner} ${names}")
+    }
+    def inheritedField(String owner, Closure filter) {
+        String current = owner
+        while (classes[current] != null) {
+            def field = classes[current].fields.find { (it.access & 8) == 0 && filter(it) }
+            if (field != null) { return [owner: current, field: field] }
+            current = classes[current].superName?.replace('/', '.')
+        }
+        throw new GradleException("${spec.minecraft}: native fixture field missing in ${owner}")
+    }
+    String setField(String name, String owner, def field, String receiver, String value) {
+        String target = owner.contains('$') || (classes[owner].access & 1) == 0 ? '@Mixin(targets="' + owner + '")' : '@Mixin(' + owner + '.class)'
+        write(name + 'Mixin', """
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
+${target}
+public interface ${name}Mixin {
+ @Accessor("${field.name}") void worldsafe_set${name}(${Type.getType(field.desc).className.replace('$', '.')} value);
+}
+""")
+        return '((me.lele.worldSafe.fabric.driver.mixin.' + name + 'Mixin)(Object)' + receiver + ').worldsafe_set' + name + '(' + value + ')'
+    }
+    void write(String name, String body) {
+        File file = new File(output, name + '.java')
+        file.parentFile.mkdirs()
+        String namespace = name.endsWith('Mixin') ? 'me.lele.worldSafe.fabric.driver.mixin' : 'me.lele.worldSafe.fabric.driver'
+        if (name.endsWith('Mixin') && name != 'MinecraftClientMixin') { mixins.add(name) }
+        file.setText('package ' + namespace + ';\nimport me.lele.worldSafe.fabric.driver.*;\n' + body, 'UTF-8')
+    }
+    String invoke(String name, String owner, def work, String receiver, List<String> inputs) {
+        String target = owner.contains('$') || (classes[owner].access & 1) == 0 ? '@Mixin(targets="' + owner + '")' : '@Mixin(' + owner + '.class)'
+        def parameters = Type.getArgumentTypes(work.desc).toList().withIndex().collect { type, index -> type.className.replace('$', '.') + ' arg' + index }
+        write(name + 'Mixin', """
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Invoker;
+${target}
+public interface ${name}Mixin {
+ @Invoker("${work.name}") ${Type.getReturnType(work.desc).className.replace('$', '.')} worldsafe_invoke${name}(${parameters.join(', ')});
+}
+""")
+        return '((me.lele.worldSafe.fabric.driver.mixin.' + name + 'Mixin)(Object)' + receiver + ').worldsafe_invoke' + name + '(' + inputs.join(', ') + ')'
+    }
+    String entityClass(String type, String field) {
+        String signature = classes[type].fields.find { it.name == field }?.signature
+        def match = signature =~ /<L([^;]+);>/
+        if (!match.find()) { throw new GradleException("${spec.minecraft}: entity type signature missing: ${field}") }
+        return match.group(1).replace('/', '.')
+    }
+    boolean atLeast(String version) {
+        def current = spec.minecraft.tokenize('.').collect { it as int }
+        def required = version.tokenize('.').collect { it as int }
+        for (int i = 0; i < 3; i++) {
+            int left = i < current.size() ? current[i] : 0
+            int right = i < required.size() ? required[i] : 0
+            if (left != right) { return left > right }
+        }
+        return true
+    }
+
+    void generate() {
+        String server = 'net.minecraft.server.MinecraftServer'
+        String world = official ? 'net.minecraft.server.level.ServerLevel' : 'net.minecraft.server.world.ServerWorld'
+        String baseWorld = official ? 'net.minecraft.world.level.Level' : 'net.minecraft.world.World'
+        String entity = official ? 'net.minecraft.world.entity.Entity' : 'net.minecraft.entity.Entity'
+        String pos = official ? 'net.minecraft.core.BlockPos' : 'net.minecraft.util.math.BlockPos'
+        String blocks = official ? 'net.minecraft.world.level.block.Blocks' : 'net.minecraft.block.Blocks'
+        String entityType = official ? (classes.containsKey('net.minecraft.world.entity.EntityTypes') ?
+                'net.minecraft.world.entity.EntityTypes' : 'net.minecraft.world.entity.EntityType') : 'net.minecraft.entity.EntityType'
+        String tnt = entityClass(entityType, 'TNT')
+        String pig = entityClass(entityType, 'PIG')
+        String creeper = entityClass(entityType, 'CREEPER')
+        String crystal = entityClass(entityType, 'END_CRYSTAL')
+        String positionSetter = method(entity, ['setPos', 'setPosition', 'updatePosition']) { it.desc == '(DDD)V' }.name
+        String velocity = official ? 'getDeltaMovement' : 'getVelocity'
+        String remove = has(entity, 'discard') ? 'discard' : 'remove'
+        String removed = has(entity, 'isRemoved') ? 'isRemoved()' : 'removed'
+        String spawn = official ? 'addFreshEntity' : 'spawnEntity'
+        String setBlock = official ? 'setBlock' : 'setBlockState'
+        String defaultState = official ? 'defaultBlockState' : 'getDefaultState'
+        String worldKey = official || has(baseWorld, 'getRegistryKey') ? baseWorld : 'net.minecraft.world.dimension.DimensionType'
+        String nether = classes[worldKey].fields.find { ['NETHER', 'THE_NETHER'].contains(it.name) }?.name
+        if (nether == null) { throw new GradleException("${spec.minecraft}: test Nether key missing") }
+        String worldGetter = method(server, ['getWorld', 'getLevel']) { Type.getArgumentTypes(it.desc).size() == 1 }.name
+        String primary = classes[server].methods.find { ['getOverworld', 'getOverWorld', 'overworld'].contains(it.name) && it.desc == '()L' + world.replace('.', '/') + ';' }?.name
+        String primaryExpression = primary != null ? 'server.' + primary + '()' : 'server.' + worldGetter + '(' + worldKey + '.OVERWORLD)'
+        String manager = method(server, ['getCommandManager', 'getCommands']).name
+        String commandSource = method(server, ['getCommandSource', 'createCommandSourceStack']).name
+        String damageSource = official ? 'net.minecraft.world.damagesource.DamageSource' : 'net.minecraft.entity.damage.DamageSource'
+        String genericDamage = classes[damageSource].fields.any { it.name == 'GENERIC' } ? damageSource + '.GENERIC' :
+                'world.' + (official ? 'damageSources' : 'getDamageSources') + '().generic()'
+        def crystalDamage = method(crystal, ['damage', 'hurtServer', 'hurt']) { Type.getArgumentTypes(it.desc).any { t -> t.className == damageSource } }
+        String hurtArguments = Type.getArgumentTypes(crystalDamage.desc).collect { type ->
+            if (type.className == damageSource) { return genericDamage }
+            if (type.className == world) { return 'world' }
+            if (type.sort == Type.FLOAT) { return '1.0f' }
+            throw new GradleException("${spec.minecraft}: unsupported crystal damage test argument ${type}")
+        }.join(', ')
+        String noAi = official ? 'setNoAi' : 'setAiDisabled'
+        String blockState = official ? 'net.minecraft.world.level.block.state.BlockState' : 'net.minecraft.block.BlockState'
+        String tickEntity = method(world, ['tickEntity', 'tickNonPassenger']) { Type.getArgumentTypes(it.desc).size() == 1 }.name
+        Map<String, String> mutations = [:]
+        String farmland = official ? (classes.containsKey('net.minecraft.world.level.block.FarmlandBlock') ?
+                'net.minecraft.world.level.block.FarmlandBlock' : 'net.minecraft.world.level.block.FarmBlock') : 'net.minecraft.block.FarmlandBlock'
+        def fall = method(farmland, ['onLandedUpon', 'fallOn'])
+        def fallArguments = Type.getArgumentTypes(fall.desc).collect { type ->
+            if (type.className in [world, baseWorld]) { return 'world' }
+            if (type.className == blockState) { return 'world.getBlockState(position)' }
+            if (type.className == pos) { return 'position' }
+            if (type.className == entity) { return 'pig' }
+            if (type.sort == Type.FLOAT) { return '100.0f' }
+            if (type.sort == Type.DOUBLE) { return '100.0d' }
+            throw new GradleException("${spec.minecraft}: unsupported native fall argument ${type}")
+        }
+        mutations.cropTrampleProtection = """
+ world.${setBlock}(position, ${blocks}.FARMLAND.${defaultState}(), 3);
+ ${invoke('FarmlandFixture', farmland, fall, blocks + '.FARMLAND', fallArguments)};
+ return world.getBlockState(position).getBlock() == ${blocks}.DIRT;
+"""
+        String egg = official ? 'net.minecraft.world.level.block.DragonEggBlock' : 'net.minecraft.block.DragonEggBlock'
+        def teleport = method(egg, ['teleport'])
+        def eggArguments = Type.getArgumentTypes(teleport.desc).collect { type ->
+            if (type.className in [world, baseWorld]) { return 'world' }
+            if (type.className == blockState) { return 'world.getBlockState(position)' }
+            if (type.className == pos) { return 'position' }
+            throw new GradleException("${spec.minecraft}: unsupported native egg teleport argument ${type}")
+        }
+        mutations.dragonEggTeleportationPrevention = """
+ for (int x = 49; x <= 79; x++) for (int z = 49; z <= 79; z++) {
+  world.${setBlock}(new ${pos}(x, 199, z), ${blocks}.STONE.${defaultState}(), 2);
+ }
+ world.${setBlock}(position, ${blocks}.DRAGON_EGG.${defaultState}(), 3);
+ ${invoke('EggFixture', egg, teleport, blocks + '.DRAGON_EGG', eggArguments)};
+ return world.getBlockState(position).getBlock() != ${blocks}.DRAGON_EGG;
+"""
+        String phantom = entityClass(entityType, 'PHANTOM')
+        def attack = inheritedMethod(phantom, ['tryAttack', 'doHurtTarget']) { work ->
+            Type.getArgumentTypes(work.desc).any { it.className == entity }
+        }
+        def attackArguments = Type.getArgumentTypes(attack.work.desc).collect { type ->
+            if (type.className == world) { return 'world' }
+            if (type.className == entity) { return 'pig' }
+            throw new GradleException("${spec.minecraft}: unsupported native attack parameter ${type}")
+        }
+        mutations.phantomDamagePrevention = """
+ ${phantom} phantom = new ${phantom}(${entityType}.PHANTOM, world);
+ phantom.${positionSetter}(64.5, 201, 65.5);
+ double health = pig.getHealth();
+ try { ${invoke('PhantomAttackFixture', attack.owner, attack.work, 'phantom', attackArguments)}; }
+ finally { phantom.${remove}(); }
+ return pig.getHealth() < health;
+"""
+        String dragon = entityClass(entityType, 'ENDER_DRAGON')
+        def destroy = classes[dragon].methods.find { work ->
+            def args = Type.getArgumentTypes(work.desc)
+            Type.getReturnType(work.desc).sort == Type.BOOLEAN && args.size() in [1, 2] &&
+                    args[-1].className in ['net.minecraft.util.math.Box', 'net.minecraft.util.math.BoundingBox', 'net.minecraft.world.phys.AABB']
+        }
+        if (destroy == null) { throw new GradleException("${spec.minecraft}: native dragon destruction fixture unavailable") }
+        def destroyArguments = Type.getArgumentTypes(destroy.desc).collect { type ->
+            if (type.className == world) { return 'world' }
+            return 'new ' + type.className + '(64, 200, 64, 65, 201, 65)'
+        }
+        mutations.enderDragonBlockDestructionProtection = """
+ world.${setBlock}(position, ${blocks}.DIRT.${defaultState}(), 3);
+ ${dragon} dragon = new ${dragon}(${entityType}.ENDER_DRAGON, world);
+ dragon.${positionSetter}(64.5, 200, 64.5);
+ if (!world.${spawn}(dragon)) throw new IllegalStateException("Cannot spawn dragon fixture");
+ try { within(world, dragon, () -> { ${invoke('DragonDestroyFixture', dragon, destroy, 'dragon', destroyArguments)}; }); }
+ finally { dragon.${remove}(); }
+ return world.getBlockState(position).isAir();
+"""
+        String random = classes[baseWorld].fields.any { it.name == 'random' && (it.access & 1) != 0 } ? 'world.random' : 'world.getRandom()'
+        String fire = official ? 'net.minecraft.world.level.block.FireBlock' : 'net.minecraft.block.FireBlock'
+        def fireTick = method(fire, ['scheduledTick', 'onScheduledTick', 'tick'])
+        def fireArguments = Type.getArgumentTypes(fireTick.desc).collect { type ->
+            if (type.className in [world, baseWorld]) { return 'world' }
+            if (type.className == blockState) { return blocks + '.FIRE.' + defaultState + '()' }
+            if (type.className == pos) { return 'position' }
+            if (type.className.contains('Random')) { return random }
+            throw new GradleException("${spec.minecraft}: unsupported native fire tick parameter ${type}")
+        }
+        mutations.fireSpreadPrevention = """
+ ${pos} wood = new ${pos}(65, 200, 64);
+ world.${setBlock}(wood, ${blocks}.OAK_PLANKS.${defaultState}(), 3);
+ try {
+  for (int i = 0; i < 1000; i++) {
+   world.${setBlock}(position, ${blocks}.FIRE.${defaultState}(), 3);
+   ${invoke('FireSpreadFixture', fire, fireTick, blocks + '.FIRE', fireArguments)};
+   if (world.getBlockState(wood).getBlock() != ${blocks}.OAK_PLANKS) return true;
+  }
+  return false;
+ } finally { world.${setBlock}(wood, ${blocks}.AIR.${defaultState}(), 3); }
+"""
+        String lightning = official ? 'net.minecraft.world.entity.LightningBolt' : 'net.minecraft.entity.LightningEntity'
+        def lightningConstructor = classes[lightning].methods.find { it.name == '<init>' && (it.access & 1) != 0 }
+        def lightningArguments = Type.getArgumentTypes(lightningConstructor.desc).collect { type ->
+            if (type.className in [world, baseWorld]) { return 'world' }
+            if (type.className.endsWith('EntityType')) { return entityType + '.LIGHTNING_BOLT' }
+            if (type.sort == Type.DOUBLE) { return '64.5d' }
+            if (type.sort == Type.BOOLEAN) { return 'false' }
+            throw new GradleException("${spec.minecraft}: unsupported lightning fixture constructor")
+        }
+        def spawnFire = method(lightning, ['spawnFire'])
+        mutations.fireIgnitionPrevention = """
+ ${lightning} lightning = new ${lightning}(${lightningArguments.join(', ')});
+ lightning.${positionSetter}(64.5, 200, 64.5);
+ world.${setBlock}(position, ${blocks}.AIR.${defaultState}(), 3);
+ try { ${invoke('LightningFireFixture', lightning, spawnFire, 'lightning', ['0'])}; }
+ finally { lightning.${remove}(); }
+ return world.getBlockState(position).getBlock() == ${blocks}.FIRE;
+"""
+        String snowman = entityClass(entityType, 'SNOW_GOLEM')
+        String snowMovement = method(snowman, ['tickMovement', 'aiStep']).name
+        mutations.snowGolemSnowTrailPrevention = """
+ ${snowman} snowman = new ${snowman}(${entityType}.SNOW_GOLEM, world);
+ snowman.${positionSetter}(64.5, 200, 64.5);
+ snowman.${noAi}(true);
+ snowman.setNoGravity(true);
+ try {
+  if (!world.${spawn}(snowman)) throw new IllegalStateException("Cannot spawn snow golem fixture");
+  within(world, snowman, () -> snowman.${snowMovement}());
+  return world.getBlockState(position).getBlock() == ${blocks}.SNOW;
+ } finally { snowman.${remove}(); }
+"""
+        String sheep = entityClass(entityType, 'SHEEP')
+        String eatingGoal = official ? 'net.minecraft.world.entity.ai.goal.EatBlockGoal' : 'net.minecraft.entity.ai.goal.EatGrassGoal'
+        mutations.sheepGrassEatingProtection = """
+ world.${setBlock}(position, ${blocks}.GRASS_BLOCK.${defaultState}(), 3);
+ ${sheep} sheep = new ${sheep}(${entityType}.SHEEP, world);
+ sheep.${positionSetter}(64.5, 201, 64.5);
+ sheep.${noAi}(true);
+ sheep.setNoGravity(true);
+ sheep.setSheared(true);
+ ${eatingGoal} eating = new ${eatingGoal}(sheep);
+ eating.start();
+ try {
+  within(world, sheep, () -> { for (int i = 0; i < 40; i++) eating.tick(); });
+  if (sheep.isSheared()) throw new AssertionError("Grass protection removed vanilla wool regrowth");
+  return world.getBlockState(position).getBlock() != ${blocks}.GRASS_BLOCK;
+ } finally { sheep.${remove}(); }
+"""
+        String goalSelector = official ? 'net.minecraft.world.entity.ai.goal.GoalSelector' : 'net.minecraft.entity.ai.goal.GoalSelector'
+        String goalClass = official ? 'net.minecraft.world.entity.ai.goal.Goal' : 'net.minecraft.entity.ai.goal.Goal'
+        Map<String, Map> goals = [
+                enderManBlockPickupProtection: [field: 'ENDERMAN', pattern: /(?i).*enderman.*\$.*(pick.*block|take.*block).*/],
+                silverfishBlockChangeProtection: [field: 'SILVERFISH', pattern: /(?i).*silverfish.*\$.*(callforhelp|wakeupfriends).*/],
+                rabbitCropEatingProtection: [field: 'RABBIT', pattern: /(?i).*rabbit.*\$.*(carrot|raidgarden).*/],
+                foxBerryHarvestProtection: [field: 'FOX', pattern: /(?i).*fox.*\$.*berr.*/]
+        ]
+        goals.each { key, settings ->
+            String actor = entityClass(entityType, settings.field)
+            String target = classes.keySet().find { it ==~ settings.pattern }
+            if (target == null) { throw new GradleException("${spec.minecraft}: native goal fixture missing for ${key}") }
+            String marker = settings.field + 'GoalFixture'
+            def tickGoal = method(target, ['tick'])
+            String tickCall = invoke(marker, target, tickGoal, 'goal', [])
+            String setup = ''
+            String nativeBlock
+            String initialState
+            String changed
+            String actorPosition
+            int iterations
+            if (settings.field == 'ENDERMAN') {
+                nativeBlock = 'DIRT'; initialState = blocks + '.DIRT.' + defaultState + '()'
+                changed = 'world.getBlockState(position).getBlock() != ' + blocks + '.DIRT'
+                actorPosition = '63.5, 200, 64.5'; iterations = 1000
+            } else if (settings.field == 'SILVERFISH') {
+                nativeBlock = 'INFESTED_STONE'; initialState = blocks + '.' + nativeBlock + '.' + defaultState + '()'
+                changed = 'world.getBlockState(position).getBlock() != ' + blocks + '.' + nativeBlock
+                actorPosition = '64.5, 200, 64.5'; iterations = 2
+                def timer = classes[target].fields.find { it.desc == 'I' && (it.access & 8) == 0 }
+                if (timer == null) { throw new GradleException("${spec.minecraft}: silverfish help timer unavailable") }
+                setup += setField(marker + 'Timer', target, timer, 'goal', '1') + ';\n'
+            } else {
+                String blockClass = (official ? 'net.minecraft.world.level.block.' : 'net.minecraft.block.') +
+                        (settings.field == 'RABBIT' ? (official ? 'CarrotBlock' : 'CarrotsBlock') : 'SweetBerryBushBlock')
+                nativeBlock = settings.field == 'RABBIT' ? 'CARROTS' : 'SWEET_BERRY_BUSH'
+                int age = settings.field == 'RABBIT' ? 7 : 3
+                initialState = blocks + '.' + nativeBlock + '.' + defaultState + '().' + (official ? 'setValue' : 'with') + '(' + blockClass + '.AGE, ' + age + ')'
+                changed = '!world.getBlockState(position).equals(initial)'
+                actorPosition = settings.field == 'RABBIT' ? '64.5, 200, 64.5' : '64.5, 201, 64.5'
+                iterations = 60
+                def targetPosition = inheritedField(target) { it.desc == 'L' + pos.replace('.', '/') + ';' }
+                setup += setField(marker + 'Position', targetPosition.owner, targetPosition.field, 'goal',
+                        settings.field == 'RABBIT' ? 'new ' + pos + '(64, 199, 64)' : 'position') + ';\n'
+                classes[target].fields.findAll { it.desc == 'Z' && (it.access & 8) == 0 }.eachWithIndex { field, index ->
+                    setup += setField(marker + 'Flag' + index, target, field, 'goal', 'true') + ';\n'
+                }
+            }
+            mutations[key] = """
+ world.${setBlock}(new ${pos}(64, 199, 64), ${blocks}.${settings.field == 'RABBIT' ? 'FARMLAND' : 'DIRT'}.${defaultState}(), 3);
+ ${blockState} initial = ${initialState};
+ world.${setBlock}(position, initial, 3);
+ ${actor} actor = new ${actor}(${entityType}.${settings.field}, world);
+ actor.${positionSetter}(${actorPosition});
+ actor.${noAi}(true);
+ actor.setNoGravity(true);
+ Object goal = NativeGoals.find(actor, me.lele.worldSafe.fabric.driver.mixin.${marker}Mixin.class, ${goalSelector}.class, ${goalClass}.class);
+ ${setup}
+ try {
+  within(world, actor, () -> { for (int i = 0; i < ${iterations} && !(${changed}); i++) { ${tickCall}; } });
+  return ${changed};
+ } finally { actor.${remove}(); }
+"""
+        }
+        String farmer = classes.keySet().find { it.endsWith('.FarmerTask') || it.endsWith('.FarmerVillagerTask') || it.endsWith('.HarvestFarmland') }
+        String villager = entityClass(entityType, 'VILLAGER')
+        def farmTick = method(farmer, ['keepRunning', 'tick']) { Type.getArgumentTypes(it.desc).any { t -> t.className == world } }
+        def farmlandPos = inheritedField(farmer) { it.desc == 'L' + pos.replace('.', '/') + ';' }
+        String farmSetup = setField('FarmerPositionFixture', farmlandPos.owner, farmlandPos.field, 'task', 'position') + ';\n'
+        classes[farmer].fields.findAll { it.desc in ['I', 'Z'] && (it.access & 8) == 0 }.eachWithIndex { field, index ->
+            farmSetup += setField('FarmerStateFixture' + index, farmer, field, 'task', field.desc == 'I' ? '100' : 'true') + ';\n'
+        }
+        def farmArguments = Type.getArgumentTypes(farmTick.desc).collect { type ->
+            if (type.className == world) { return 'world' }
+            if (type.sort == Type.LONG) { return '1000L' }
+            return 'actor'
+        }
+        String crop = official ? 'net.minecraft.world.level.block.CropBlock' : 'net.minecraft.block.CropBlock'
+        String wheatAge = classes[crop].fields.find { it.name in ['AGE', 'AGE_7'] }?.name
+        if (wheatAge == null) { throw new GradleException("${spec.minecraft}: mature crop fixture property unavailable") }
+        mutations.villagerCropModificationProtection = """
+ world.${setBlock}(new ${pos}(64, 199, 64), ${blocks}.FARMLAND.${defaultState}(), 3);
+ world.${setBlock}(position, ${blocks}.WHEAT.${defaultState}().${official ? 'setValue' : 'with'}(${crop}.${wheatAge}, 7), 3);
+ ${villager} actor = new ${villager}(${entityType}.VILLAGER, world);
+ actor.${positionSetter}(64.5, 200, 64.5);
+ actor.${noAi}(true);
+ actor.setNoGravity(true);
+ ${farmer} task = new ${farmer}();
+ ${farmSetup}
+ try {
+  within(world, actor, () -> { ${invoke('FarmerTickFixture', farmer, farmTick, 'task', farmArguments)}; });
+  return world.getBlockState(position).getBlock() != ${blocks}.WHEAT;
+ } finally { actor.${remove}(); }
+"""
+        String ravager = entityClass(entityType, 'RAVAGER')
+        String ravagerTick = method(ravager, ['tickMovement', 'aiStep']).name
+        mutations.ravagerBlockDestructionProtection = """
+ ${pos} leaves = new ${pos}(66, 200, 64);
+ for (int y = 200; y <= 203; y++) for (int z = 63; z <= 65; z++)
+  world.${setBlock}(new ${pos}(66, y, z), ${blocks}.OAK_LEAVES.${defaultState}(), 3);
+ ${ravager} actor = new ${ravager}(${entityType}.RAVAGER, world);
+ actor.${positionSetter}(64.5, 200, 64.5);
+ actor.${noAi}(false);
+ actor.setNoGravity(true);
+ try {
+  within(world, actor, () -> {
+   actor.${official ? 'setDeltaMovement' : 'setVelocity'}(1, 0, 0);
+   actor.${ravagerTick}();
+  });
+  System.out.println("WORLDSAFE_FIXTURE ravagerCollision=" + actor.horizontalCollision + " alive=" + actor.isAlive() + " difficulty=" + world.getDifficulty() + " box=" + actor.getBoundingBox());
+  return world.getBlockState(leaves).getBlock() != ${blocks}.OAK_LEAVES;
+ } finally {
+  actor.${remove}();
+  for (int y = 200; y <= 203; y++) for (int z = 63; z <= 65; z++)
+   world.${setBlock}(new ${pos}(66, y, z), ${blocks}.AIR.${defaultState}(), 3);
+ }
+"""
+        String doorGoal = official ? 'net.minecraft.world.entity.ai.goal.BreakDoorGoal' : 'net.minecraft.entity.ai.goal.BreakDoorGoal'
+        String zombie = entityClass(entityType, 'ZOMBIE')
+        def doorConstructor = classes[doorGoal].methods.findAll { it.name == '<init>' && (it.access & 1) != 0 }.min { Type.getArgumentTypes(it.desc).size() }
+        def doorArguments = Type.getArgumentTypes(doorConstructor.desc).collect { type ->
+            if (type.className == 'java.util.function.Predicate') { return 'difficulty -> true' }
+            if (type.sort == Type.INT) { return '240' }
+            return 'actor'
+        }
+        def doorPosition = inheritedField(doorGoal) { it.desc == 'L' + pos.replace('.', '/') + ';' }
+        String door = official ? 'net.minecraft.world.level.block.DoorBlock' : 'net.minecraft.block.DoorBlock'
+        String half = official ? 'net.minecraft.world.level.block.state.properties.DoubleBlockHalf' : 'net.minecraft.block.enums.DoubleBlockHalf'
+        mutations.mobDoorBreakProtection = """
+ world.${setBlock}(position, ${blocks}.OAK_DOOR.${defaultState}(), 2);
+ world.${setBlock}(new ${pos}(64, 201, 64), ${blocks}.OAK_DOOR.${defaultState}().${official ? 'setValue' : 'with'}(${door}.HALF, ${half}.UPPER), 2);
+ ${zombie} actor = new ${zombie}(${entityType}.ZOMBIE, world);
+ actor.${positionSetter}(64.5, 200, 65.5);
+ actor.${noAi}(true);
+ ${doorGoal} goal = new ${doorGoal}(${doorArguments.join(', ')});
+ ${setField('DoorPositionFixture', doorPosition.owner, doorPosition.field, 'goal', 'position')};
+ goal.start();
+ try {
+  within(world, actor, () -> { for (int i = 0; i < 300; i++) goal.tick(); });
+  return world.getBlockState(position).getBlock() != ${blocks}.OAK_DOOR;
+ } finally { actor.${remove}(); world.${setBlock}(new ${pos}(64, 201, 64), ${blocks}.AIR.${defaultState}(), 2); }
+"""
+        String wither = entityClass(entityType, 'WITHER')
+        Map<String, String> explosions = [tntExplosionCancel: 'tnt', tntExplosionProtection: 'tnt',
+                creeperExplosionCancel: 'creeper', creeperExplosionProtection: 'creeper',
+                endCrystalExplosionCancel: 'crystal', endCrystalExplosionPrevention: 'crystal',
+                witherExplosionCancel: 'wither', witherExplosionProtection: 'wither',
+                ghastExplosionCancel: 'ghast', ghastExplosionProtection: 'ghast']
+        def invulTimer = method(wither, ['setInvulTimer', 'setInvulnerableTicks'])
+        String fireball = entityClass(entityType, 'FIREBALL')
+        String ghast = entityClass(entityType, 'GHAST')
+        String projectileOwner
+        boolean ownerSetter
+        try { inheritedMethod(fireball, ['setOwner']); ownerSetter = true } catch (GradleException ignored) { ownerSetter = false }
+        projectileOwner = ownerSetter ? 'fireball.setOwner(ghast);' : 'fireball.owner = ghast;'
+        def collision = method(fireball, ['onCollision', 'onHit'])
+        String hitResult = Type.getArgumentTypes(collision.desc)[0].className
+        String hit = official ? 'net.minecraft.world.phys.BlockHitResult' : 'net.minecraft.util.hit.BlockHitResult'
+        String vector = official ? 'net.minecraft.world.phys.Vec3' : 'net.minecraft.util.math.Vec3d'
+        String direction = official ? 'net.minecraft.core.Direction' : 'net.minecraft.util.math.Direction'
+        String collisionCall = invoke('FireballCollisionFixture', fireball, collision, 'fireball',
+                ['new ' + hit + '(new ' + vector + '(64.5, 200, 64.5), ' + direction + '.UP, new ' + pos + '(65, 200, 64), false)'])
+        String serverPlayer = official ? 'net.minecraft.server.level.ServerPlayer' : 'net.minecraft.server.network.ServerPlayerEntity'
+        def playerConstructor = classes[serverPlayer].methods.find { it.name == '<init>' && (it.access & 1) != 0 }
+        def playerArguments = Type.getArgumentTypes(playerConstructor.desc).collect { type ->
+            if (type.className == server) { return 'server' }
+            if (type.className == world) { return 'world' }
+            if (type.className == 'com.mojang.authlib.GameProfile') { return 'new com.mojang.authlib.GameProfile(new java.util.UUID(0, 2), "WorldSafeFixture")' }
+            if (type.className.endsWith('.PlayerPublicKey')) { return 'null' } // Offline fixture profile has no signed chat key.
+            if (type.className.endsWith('ServerPlayerInteractionManager')) { return 'new ' + type.className + '(world)' }
+            def defaults = classes[type.className]?.methods?.find { work -> ['createDefault', 'getDefault'].contains(work.name) &&
+                    (work.access & 9) == 9 && Type.getArgumentTypes(work.desc).size() == 0 }
+            if (defaults != null) { return type.className + '.' + defaults.name + '()' }
+            throw new GradleException("${spec.minecraft}: unsupported native fixture player constructor ${type}")
+        }
+        String commandSourceType = official ? 'net.minecraft.commands.CommandSourceStack' : 'net.minecraft.server.command.ServerCommandSource'
+        def levelSetter = classes[commandSourceType].methods.find { work -> work.name in ['withLevel', 'withPermission'] && work.desc == '(I)L' + commandSourceType.replace('.', '/') + ';' }
+        Closure<String> permissions = { String receiver, int level ->
+            if (levelSetter != null) { return receiver + '.' + levelSetter.name + '(' + level + ')' }
+            if (official) { return receiver + '.withPermission(' + (level == 0 ? 'net.minecraft.server.permissions.PermissionSet.NO_PERMISSIONS' :
+                    'net.minecraft.server.permissions.LevelBasedPermissionSet.' + (level == 1 ? 'MODERATOR' : 'GAMEMASTER')) + ')' }
+            return receiver + '.withPermissions(' + (level == 0 ? 'net.minecraft.command.permission.PermissionPredicate.NONE' :
+                    'net.minecraft.command.permission.LeveledPermissionPredicate.' + (level == 1 ? 'MODERATORS' : 'GAMEMASTERS')) + ')'
+        }
+        def playersManager = method(server, ['getPlayerManager', 'getPlayerList']) { Type.getArgumentTypes(it.desc).size() == 0 }
+        String players = method(Type.getReturnType(playersManager.desc).className, ['getPlayerList', 'getPlayers']) { Type.getArgumentTypes(it.desc).size() == 0 }.name
+        Map<String, String> extraBlasts = [:]
+        String minecart = entityClass(entityType, 'TNT_MINECART')
+        def primeCart = method(minecart, ['prime', 'primeFuse'])
+        String cartArguments = Type.getArgumentTypes(primeCart.desc).collect { type ->
+            if (type.className == damageSource) { return genericDamage }
+            throw new GradleException("${spec.minecraft}: unsupported TNT minecart priming parameter ${type}")
+        }.join(', ')
+        extraBlasts.minecart = """
+   ${minecart} cart = new ${minecart}(${entityType}.TNT_MINECART, world);
+   cart.${positionSetter}(64.5, 200, 64.5);
+   cart.setNoGravity(true);
+   world.${spawn}(cart);
+   sourceEntity = cart;
+   cart.${primeCart.name}(${cartArguments});
+   for (int i = 0; i < 85 && !cart.${removed}; i++) cart.tick();
+"""
+        String skull = entityClass(entityType, 'WITHER_SKULL')
+        def skullCollision = method(skull, ['onCollision', 'onHit'])
+        boolean skullOwnerSetter
+        try { inheritedMethod(skull, ['setOwner']); skullOwnerSetter = true } catch (GradleException ignored) { skullOwnerSetter = false }
+        extraBlasts.skull = """
+   ${wither} wither = new ${wither}(${entityType}.WITHER, world);
+   ${skull} skull = new ${skull}(${entityType}.WITHER_SKULL, world);
+   ${skullOwnerSetter ? 'skull.setOwner(wither);' : 'skull.owner = wither;'}
+   skull.${positionSetter}(64.5, 200, 64.5);
+   world.${spawn}(skull);
+   sourceEntity = skull;
+   ${invoke('SkullCollisionFixture', skull, skullCollision, 'skull', ['new ' + hit + '(new ' + vector + '(64.5, 200, 64.5), ' + direction + '.UP, new ' + pos + '(65, 200, 64), false)'])};
+   wither.${remove}();
+"""
+        def bodyTimer = classes[wither].fields.find { it.name in ['blockBreakingCooldown', 'destroyBlocksTick', 'field_7082'] && it.desc == 'I' }
+        if (bodyTimer == null) { throw new GradleException("${spec.minecraft}: wither body destruction timer unavailable") }
+        def bodyTick = method(wither, ['mobTick', 'customServerAiStep'])
+        def bodyArguments = Type.getArgumentTypes(bodyTick.desc).collect { type ->
+            if (type.className == world) { return 'world' }
+            throw new GradleException("${spec.minecraft}: unsupported native wither body tick parameter")
+        }
+        mutations['wither-body'] = """
+ world.${setBlock}(position, ${blocks}.DIRT.${defaultState}(), 3);
+ ${wither} actor = new ${wither}(${entityType}.WITHER, world);
+ actor.${positionSetter}(64.5, 200, 64.5);
+ actor.${noAi}(true);
+ actor.setNoGravity(true);
+ ${setField('WitherBodyTimerFixture', wither, bodyTimer, 'actor', '1')};
+ try {
+  within(world, actor, () -> { ${invoke('WitherBodyTickFixture', wither, bodyTick, 'actor', bodyArguments)}; });
+  return world.getBlockState(position).getBlock() != ${blocks}.DIRT;
+ } finally { actor.${remove}(); }
+"""
+        ['bed', 'anchor'].each { kind ->
+            String block = (official ? 'net.minecraft.world.level.block.' : 'net.minecraft.block.') + (kind == 'bed' ? 'BedBlock' : 'RespawnAnchorBlock')
+            if (!classes.containsKey(block)) { return }
+            def use = inheritedMethod(block, ['onUse', 'activate', 'useWithoutItem'])
+            String blockField = kind == 'bed' ? (classes[blocks].fields.any { it.name == 'RED_BED' } ? 'RED_BED' : 'BED.red()') : 'RESPAWN_ANCHOR'
+            String stateValue = official ? 'setValue' : 'with'
+            String prepared = kind == 'bed' ? 'sourceState.' + stateValue + '(' + block + '.PART, ' +
+                    (official ? 'net.minecraft.world.level.block.state.properties.BedPart' : 'net.minecraft.block.enums.BedPart') + '.HEAD)' :
+                    'sourceState.' + stateValue + '(' + block + '.' + (official ? 'CHARGE' : 'CHARGES') + ', 4)'
+            def useArguments = Type.getArgumentTypes(use.work.desc).collect { type ->
+                if (type.className in [world, baseWorld]) { return 'world' }
+                if (type.className == blockState) { return 'sourceState' }
+                if (type.className == pos) { return 'sourcePosition' }
+                if (type.className.endsWith('.PlayerEntity') || type.className.endsWith('.Player')) { return 'player(world)' }
+                if (type.className in ['net.minecraft.util.Hand', 'net.minecraft.world.InteractionHand']) { return type.className + '.MAIN_HAND' }
+                if (type.className == hit) { return 'new ' + hit + '(new ' + vector + '(64.5, 200.5, 64.5), ' + direction + '.UP, sourcePosition, false)' }
+                throw new GradleException("${spec.minecraft}: unsupported native block-use fixture parameter ${type}")
+            }
+            extraBlasts[kind] = """
+   ${pos} sourcePosition = new ${pos}(64, 200, 64);
+   ${blockState} sourceState = ${blocks}.${blockField}.${defaultState}();
+   ${kind == 'bed' ? 'world.' + setBlock + '(new ' + pos + '(64, 200, 65), sourceState, 2);' : ''}
+   sourceState = ${prepared};
+   world.${setBlock}(sourcePosition, sourceState, 2);
+   ${invoke(kind == 'bed' ? 'BedUseFixture' : 'AnchorUseFixture', use.owner, use.work, blocks + '.' + blockField, useArguments)};
+   sourceRetained = world.getBlockState(sourcePosition).getBlock() == ${blocks}.${blockField};
+   world.${setBlock}(sourcePosition, ${blocks}.AIR.${defaultState}(), 2);
+   ${kind == 'bed' ? 'world.' + setBlock + '(new ' + pos + '(64, 200, 65), ' + blocks + '.AIR.' + defaultState + '(), 2);' : ''}
+   sourceEntity = null;
+"""
+            explosions[kind == 'bed' ? 'bedExplosionCancel' : 'respawnAnchorExplosionCancel'] = kind
+            explosions[kind == 'bed' ? 'bedExplosionProtection' : 'respawnAnchorExplosionPrevention'] = kind
+        }
+        if (atLeast('26.2')) {
+            String cube = entityClass(entityType, 'SULFUR_CUBE')
+            String items = official ? 'net.minecraft.world.item.Items' : 'net.minecraft.item.Items'
+            String stack = official ? 'net.minecraft.world.item.ItemStack' : 'net.minecraft.item.ItemStack'
+            extraBlasts.sulfur = """
+   ${cube} cube = new ${cube}(${entityType}.SULFUR_CUBE, world);
+   cube.setSize(2, true);
+   cube.${positionSetter}(64.5, 200, 64.5);
+   cube.setNoGravity(true);
+   cube.${noAi}(true);
+   if (!world.${spawn}(cube)) throw new IllegalStateException("Cannot spawn sulfur cube");
+   sourceEntity = cube;
+   if (!cube.equipItem(new ${stack}(${items}.TNT))) throw new IllegalStateException("Sulfur cube did not consume TNT");
+   for (int i = 0; i < 3; i++) cube.tick();
+   if (!cube.primeTime(false)) throw new IllegalStateException("Sulfur cube did not prime");
+   for (int i = 0; i < 120 && !cube.isRemoved(); i++) cube.tick();
+"""
+            explosions.sulfurCubeExplosionCancel = 'sulfur'
+            explosions.sulfurCubeExplosionProtection = 'sulfur'
+        }
+        String windImpact = 'throw new UnsupportedOperationException("Wind charges do not exist in this release");'
+        if (atLeast('1.21')) {
+            String wind = entityClass(entityType, 'WIND_CHARGE')
+            String breezeWind = entityClass(entityType, 'BREEZE_WIND_CHARGE')
+            def playerHit = inheritedMethod(wind, ['onCollision', 'onHit'])
+            def breezeHit = inheritedMethod(breezeWind, ['onCollision', 'onHit'])
+            String entityHit = official ? 'net.minecraft.world.phys.EntityHitResult' : 'net.minecraft.util.hit.EntityHitResult'
+            String windCall = invoke('PlayerWindImpactFixture', playerHit.owner, playerHit.work, 'projectile', ['new ' + entityHit + '(pig)'])
+            // Both types may inherit the same native method; reuse the invoker to
+            // avoid generating two implementations of the same accessor method.
+            String breezeCall = playerHit.owner == breezeHit.owner && playerHit.work.desc == breezeHit.work.desc ? windCall :
+                    invoke('BreezeWindImpactFixture', breezeHit.owner, breezeHit.work, 'projectile', ['new ' + entityHit + '(pig)'])
+            windImpact = """
+ ${world} world = (${world}) input;
+ ${pig} pig = new ${pig}(${entityType}.PIG, world);
+ pig.${positionSetter}(64.5, 200, 65.8);
+ world.${spawn}(pig);
+ double initialHealth = pig.getHealth();
+ try {
+  if (breeze) {
+   ${breezeWind} projectile = new ${breezeWind}(${entityType}.BREEZE_WIND_CHARGE, world);
+   projectile.${positionSetter}(64.5, 200, 64.5);
+   try { ${breezeCall}; } finally { projectile.${remove}(); }
+  } else {
+   ${wind} projectile = new ${wind}(${entityType}.WIND_CHARGE, world);
+   projectile.${positionSetter}(64.5, 200, 64.5);
+   projectile.setOwner(player(world));
+   try { ${windCall}; } finally { projectile.${remove}(); }
+  }
+  double speed = pig.${velocity}().x * pig.${velocity}().x + pig.${velocity}().y * pig.${velocity}().y + pig.${velocity}().z * pig.${velocity}().z;
+  return new BlastObservation(0, initialHealth, pig.getHealth(), speed, null);
+ } finally { pig.${remove}(); }
+"""
+        }
+        if (atLeast('1.20.3')) {
+            ['decoratedPotProjectileProtection', 'windChargeBlockDestructionProtection'].each { key ->
+                if (key.startsWith('wind') && !atLeast('1.21')) { return }
+                String block = (official ? 'net.minecraft.world.level.block.' : 'net.minecraft.block.') +
+                        (key.startsWith('wind') ? 'ChorusFlowerBlock' : 'DecoratedPotBlock')
+                def callback = method(block, ['onProjectileHit'])
+                String projectileField = key.startsWith('wind') ? 'WIND_CHARGE' : 'ARROW'
+                String projectile = entityClass(entityType, projectileField)
+                String blockField = key.startsWith('wind') ? 'CHORUS_FLOWER' : 'DECORATED_POT'
+                def callbackArguments = Type.getArgumentTypes(callback.desc).collect { type ->
+                    if (type.className in [world, baseWorld]) { return 'world' }
+                    if (type.className == blockState) { return 'world.getBlockState(position)' }
+                    if (type.className == hit) { return 'new ' + hit + '(new ' + vector + '(64.5, 200.5, 64.5), ' + direction + '.UP, position, false)' }
+                    if (type.className.contains('Projectile') || type.className == entity) { return 'projectile' }
+                    throw new GradleException("${spec.minecraft}: unsupported native projectile-block fixture parameter ${type}")
+                }
+                mutations[key] = """
+ world.${setBlock}(new ${pos}(64, 199, 64), ${blocks}.END_STONE.${defaultState}(), 3);
+ world.${setBlock}(position, ${blocks}.${blockField}.${defaultState}(), 3);
+ ${projectile} projectile = new ${projectile}(${entityType}.${projectileField}, world);
+ projectile.${positionSetter}(64.5, 200.5, 64.5);
+ projectile.${official ? 'setDeltaMovement' : 'setVelocity'}(1, 0, 0);
+ try { ${invoke(key.startsWith('wind') ? 'WindFragileFixture' : 'PotHitFixture', block, callback, blocks + '.' + blockField, callbackArguments)}; }
+ finally { projectile.${remove}(); }
+ return world.getBlockState(position).getBlock() != ${blocks}.${blockField};
+"""
+            }
+        }
+        String mobDamage = has(damageSource, 'mob') ? damageSource + '.mob(wither)' :
+                'world.' + (official ? 'damageSources' : 'getDamageSources') + '().mobAttack(wither)'
+        def fatal = inheritedMethod(pig, ['damage', 'hurtServer', 'hurt']) { work ->
+            Type.getReturnType(work.desc).sort == Type.BOOLEAN && Type.getArgumentTypes(work.desc).any { it.className == damageSource }
+        }
+        def fatalArguments = Type.getArgumentTypes(fatal.work.desc).collect { type ->
+            if (type.className == world) { return 'world' }
+            if (type.className == damageSource) { return mobDamage }
+            if (type.sort == Type.FLOAT) { return '1000.0f' }
+            throw new GradleException("${spec.minecraft}: unsupported native death fixture parameter ${type}")
+        }
+        String fatalCall = invoke('FatalDamageFixture', fatal.owner, fatal.work, 'pig', fatalArguments)
+        mutations.witherRoseFormationPrevention = """
+ world.${setBlock}(position, ${blocks}.DIRT.${defaultState}(), 3);
+ ${wither} wither = new ${wither}(${entityType}.WITHER, world);
+ try {
+  ${fatalCall};
+  return world.getBlockState(new ${pos}(64, 201, 64)).getBlock() == ${blocks}.WITHER_ROSE;
+ } finally {
+  wither.${remove}();
+  world.${setBlock}(new ${pos}(64, 201, 64), ${blocks}.AIR.${defaultState}(), 3);
+ }
+"""
+        String effectTypes = official ? 'net.minecraft.world.effect.MobEffects' : 'net.minecraft.entity.effect.StatusEffects'
+        if (classes[effectTypes].fields.any { it.name == 'WEAVING' }) {
+            String instance = official ? 'net.minecraft.world.effect.MobEffectInstance' : 'net.minecraft.entity.effect.StatusEffectInstance'
+            String addEffect = official ? 'addEffect' : 'addStatusEffect'
+            mutations.weavingCobwebFormationPrevention = """
+ for (int x = 62; x <= 66; x++) for (int z = 62; z <= 66; z++)
+  world.${setBlock}(new ${pos}(x, 200, z), ${blocks}.STONE.${defaultState}(), 3);
+ pig.${addEffect}(new ${instance}(${effectTypes}.WEAVING, 200, 0));
+ ${wither} wither = new ${wither}(${entityType}.WITHER, world);
+ try {
+  ${fatalCall};
+  for (int i = 0; i < 25; i++) world.${tickEntity}(pig);
+  for (int x = 62; x <= 66; x++) for (int z = 62; z <= 66; z++) for (int y = 200; y <= 203; y++) {
+   if (world.getBlockState(new ${pos}(x, y, z)).getBlock() == ${blocks}.COBWEB) return true;
+  }
+  return false;
+ } finally {
+  wither.${remove}();
+  for (int x = 62; x <= 66; x++) for (int z = 62; z <= 66; z++) for (int y = 200; y <= 203; y++)
+   world.${setBlock}(new ${pos}(x, y, z), ${blocks}.AIR.${defaultState}(), 3);
+ }
+"""
+        }
+        def primeCreeper = method(creeper, ['ignite', 'setIgnited', 'setFuseSpeed', 'setSwellDir'])
+        String primeArguments = Type.getArgumentTypes(primeCreeper.desc).collect { type ->
+            if (type.sort == Type.INT) { return '1' }
+            if (type.sort == Type.BOOLEAN) { return 'true' }
+            throw new GradleException("${spec.minecraft}: unsupported creeper priming test argument")
+        }.join(', ')
+        write('NativeFixtureImpl', """
+public final class NativeFixtureImpl implements NativeFixture {
+ private final ${server} server;
+ public NativeFixtureImpl(Object server) { this.server = (${server}) server; }
+ public String game() { return "${spec.minecraft}"; }
+ public Object server() { return server; }
+ public java.util.Map<String, Boolean> managementChecks() throws Exception {
+  java.util.Map<String, Boolean> outcomes = new java.util.LinkedHashMap<String, Boolean>();
+  ${serverPlayer} guest = player((${world}) primaryWorld());
+  ${commandSourceType} console = server.${commandSource}();
+  ${commandSourceType} visitor = ${permissions('console.withEntity(guest)', 0)};
+  ${commandSourceType} op1 = ${permissions('console.withEntity(guest)', 1)};
+  ${commandSourceType} op2 = ${permissions('console.withEntity(guest)', 2)};
+  try {
+   outcomes.put("console-allowed", server.${manager}().getDispatcher().execute("worldsafe help", console) == 1);
+   outcomes.put("ordinary-visitor-denied", server.${manager}().getDispatcher().execute("worldsafe help", visitor) == 0);
+   outcomes.put("op-level-one-denied", server.${manager}().getDispatcher().execute("worldsafe help", op1) == 0);
+   outcomes.put("op-level-two-allowed", server.${manager}().getDispatcher().execute("worldsafe help", op2) == 1);
+   for (${serverPlayer} connected : server.${playersManager.name}().${players}()) {
+    ${commandSourceType} owner = ${permissions('console.withEntity(connected)', 0)};
+    outcomes.put("integrated-owner-without-op-allowed", server.${manager}().getDispatcher().execute("worldsafe help", owner) == 1);
+   }
+   return outcomes;
+  } finally { guest.${remove}(); }
+ }
+ public boolean hasWindCharges() { return ${atLeast('1.21')}; }
+ public BlastObservation windImpact(Object input, boolean breeze) { ${windImpact} }
+ private ${serverPlayer} player(${world} world) { return new ${serverPlayer}(${playerArguments.join(', ')}); }
+ public void prepare() throws Exception {
+  if (command("difficulty") != 2) command("difficulty normal");
+  for (int x = 48; x <= 80; x += 16) for (int z = 48; z <= 80; z += 16) {
+   try { command("forceload query " + x + " " + z); }
+   catch (com.mojang.brigadier.exceptions.CommandSyntaxException absent) { command("forceload add " + x + " " + z); }
+  }
+  com.mojang.brigadier.tree.CommandNode<?> rules = server.${manager}().getDispatcher().getRoot().getChild("gamerule");
+  if (rules != null) for (com.mojang.brigadier.tree.CommandNode<?> rule : rules.getChildren()) {
+   String name = rule.getName();
+   String normalized = name.toLowerCase(java.util.Locale.ROOT).replace("_", "");
+   if (normalized.endsWith("firespreadradiusaroundplayer") && command("gamerule " + name) != -1) command("gamerule " + name + " -1");
+   if (normalized.endsWith("allowfireticksawayfromplayer") && command("gamerule " + name) != 1) command("gamerule " + name + " true");
+  }
+ }
+ public Object primaryWorld() { return ${primaryExpression}; }
+ public Object secondaryWorld() { return server.${worldGetter}(${worldKey}.${nether}); }
+ public int command(String input) throws Exception { return server.${manager}().getDispatcher().execute(input, server.${commandSource}()); }
+ public java.util.Map<String, String> explosionFeatures() {
+  java.util.Map<String, String> features = new java.util.LinkedHashMap<String, String>();
+  ${explosions.collect { key, value -> 'features.put("' + key + '", "' + value + '");' }.join('\n')}
+  return features;
+ }
+ private void within(${world} world, ${entity} actor, Runnable task) {
+  final boolean[] ran = {false};
+  NativeTestTasks.schedule(actor, () -> { ran[0] = true; task.run(); });
+  try {
+   world.${tickEntity}(actor);
+   if (!ran[0]) throw new IllegalStateException("Native entity tick did not execute fixture");
+  } finally { NativeTestTasks.clear(actor); }
+ }
+ public java.util.Set<String> mutationFeatures() { return new java.util.LinkedHashSet<String>(java.util.Arrays.asList(${mutations.keySet().findAll { !it.contains('-') }.collect { '"' + it + '"' }.join(', ')})); }
+ public boolean mutation(Object input, String feature) {
+  ${world} world = (${world}) input;
+  ${pos} position = new ${pos}(64, 200, 64);
+  world.${setBlock}(new ${pos}(64, 199, 64), ${blocks}.STONE.${defaultState}(), 3);
+  ${pig} pig = new ${pig}(${entityType}.PIG, world);
+  pig.${positionSetter}(64.5, 201, 64.5);
+  world.${spawn}(pig);
+  try {
+   switch (feature) {
+    ${mutations.collect { key, body -> 'case "' + key + '": {\n' + body + '\n}' }.join('\n')}
+    default: throw new IllegalArgumentException("No native mutation fixture for " + feature);
+   }
+  } finally {
+   pig.${remove}();
+   world.${setBlock}(position, ${blocks}.AIR.${defaultState}(), 3);
+   world.${setBlock}(new ${pos}(64, 199, 64), ${blocks}.AIR.${defaultState}(), 3);
+   if ("dragonEggTeleportationPrevention".equals(feature)) {
+    for (int x = 49; x <= 79; x++) for (int z = 49; z <= 79; z++) {
+     world.${setBlock}(new ${pos}(x, 199, z), ${blocks}.AIR.${defaultState}(), 2);
+     world.${setBlock}(new ${pos}(x, 200, z), ${blocks}.AIR.${defaultState}(), 2);
+    }
+   }
+  }
+ }
+ public BlastObservation blast(Object input, String source) {
+  ${world} world = (${world}) input;
+  int total = 0;
+  for (int x = 1; x <= 2; x++) for (int z = -1; z <= 1; z++) {
+   world.${setBlock}(new ${pos}(64 + x, 200, 64 + z), ${blocks}.DIRT.${defaultState}(), 3);
+   total++;
+  }
+  ${pig} pig = new ${pig}(${entityType}.PIG, world);
+  pig.${positionSetter}(64.5, 200, ("ghast".equals(source) || "skull".equals(source)) ? 65.8 : 69.5);
+  if (!world.${spawn}(pig)) throw new IllegalStateException("Cannot spawn explosion witness");
+  double initialHealth = pig.getHealth();
+  ${entity} sourceEntity;
+  Boolean sourceRetained = null;
+  if ("tnt".equals(source)) {
+   ${tnt} tnt = new ${tnt}(${entityType}.TNT, world);
+   tnt.${positionSetter}(64.5, 200, 64.5);
+   tnt.setFuse(0);
+   if (!world.${spawn}(tnt)) throw new IllegalStateException("Cannot spawn TNT");
+   sourceEntity = tnt;
+   tnt.tick();
+  } else if ("creeper".equals(source)) {
+   ${creeper} creeper = new ${creeper}(${entityType}.CREEPER, world);
+   creeper.${positionSetter}(64.5, 200, 64.5);
+   creeper.setNoGravity(true);
+   creeper.${noAi}(true);
+   if (!world.${spawn}(creeper)) throw new IllegalStateException("Cannot spawn creeper");
+   sourceEntity = creeper;
+   creeper.${primeCreeper.name}(${primeArguments});
+   for (int i = 0; i < 40 && !creeper.${removed}; i++) creeper.tick();
+  } else if ("crystal".equals(source)) {
+   ${crystal} crystal = new ${crystal}(${entityType}.END_CRYSTAL, world);
+   crystal.${positionSetter}(64.5, 200, 64.5);
+   if (!world.${spawn}(crystal)) throw new IllegalStateException("Cannot spawn crystal");
+   sourceEntity = crystal;
+   crystal.${crystalDamage.name}(${hurtArguments});
+  } else if ("wither".equals(source)) {
+   ${wither} wither = new ${wither}(${entityType}.WITHER, world);
+   wither.${positionSetter}(64.5, 200, 64.5);
+   wither.setNoGravity(true);
+   wither.${invulTimer.name}(1);
+   if (!world.${spawn}(wither)) throw new IllegalStateException("Cannot spawn wither");
+   sourceEntity = wither;
+   wither.tick();
+  } else if ("ghast".equals(source)) {
+   ${ghast} ghast = new ${ghast}(${entityType}.GHAST, world);
+   ${fireball} fireball = new ${fireball}(${entityType}.FIREBALL, world);
+   ${projectileOwner}
+   fireball.${positionSetter}(64.5, 200, 64.5);
+   if (!world.${spawn}(fireball)) throw new IllegalStateException("Cannot spawn ghast fireball");
+   sourceEntity = fireball;
+   ${collisionCall};
+   ghast.${remove}();
+  } ${extraBlasts.collect { kind, body -> 'else if ("' + kind + '".equals(source)) {\n' + body + '\n}' }.join(' ')} else throw new IllegalArgumentException(source);
+  int destroyed = 0;
+  for (int x = 1; x <= 2; x++) for (int z = -1; z <= 1; z++) {
+   ${pos} position = new ${pos}(64 + x, 200, 64 + z);
+   if (world.getBlockState(position).isAir()) destroyed++;
+   world.${setBlock}(position, ${blocks}.AIR.${defaultState}(), 3);
+  }
+  double speed = pig.${velocity}().x * pig.${velocity}().x + pig.${velocity}().y * pig.${velocity}().y + pig.${velocity}().z * pig.${velocity}().z;
+  double health = pig.getHealth();
+  pig.${remove}();
+  if (sourceEntity != null) sourceEntity.${remove}();
+  return new BlastObservation(destroyed, initialHealth, health, speed, sourceRetained);
+ }
+}
+""")
+        // The client is not a headless substitute: it opens its saved world,
+        // joins the integrated server, and executes the actual command tree.
+        String client = official ? 'net.minecraft.client.Minecraft' : 'net.minecraft.client.MinecraftClient'
+        String title = classes.containsKey('net.minecraft.client.gui.MainMenuScreen') ? 'net.minecraft.client.gui.MainMenuScreen' :
+                (official ? 'net.minecraft.client.gui.screens.TitleScreen' : 'net.minecraft.client.gui.screen.TitleScreen')
+        String ready = has(client, 'isGameLoadFinished') ? 'client.isGameLoadFinished()' :
+                'client.' + (classes[client].fields.find { it.name in ['currentScreen', 'screen'] }?.name ?: 'currentScreen') + ' instanceof ' + title
+        String open
+        if (has(client, 'createWorldOpenFlows')) { open = 'client.createWorldOpenFlows().openWorld("architecture-probe", () -> { throw new IllegalStateException("World load failed"); });' }
+        else if (has(client, 'createIntegratedServerLoader')) {
+            String loader = Type.getReturnType(method(client, ['createIntegratedServerLoader']).desc).className
+            def start = classes[loader].methods.findAll { it.name == 'start' && (it.access & 1) != 0 &&
+                    Type.getArgumentTypes(it.desc).any { t -> t.className == 'java.lang.String' } }.min { Type.getArgumentTypes(it.desc).size() }
+            if (start == null) { throw new GradleException("${spec.minecraft}: integrated world loading entry missing") }
+            def args = Type.getArgumentTypes(start.desc).collect { type ->
+                if (type.className == 'java.lang.String') { return '"architecture-probe"' }
+                if (type.className == 'java.lang.Runnable') { return '() -> { throw new IllegalStateException("World load failed"); }' }
+                if (type.className.endsWith('.Screen')) { return 'null' }
+                throw new GradleException("${spec.minecraft}: unsupported integrated world loading parameter ${type}")
+            }
+            open = 'client.createIntegratedServerLoader().start(' + args.join(', ') + ');'
+        }
+        else {
+            def candidates = classes[client].methods.findAll { it.name == 'startIntegratedServer' && Type.getArgumentTypes(it.desc).size() > 0 && Type.getArgumentTypes(it.desc)[0].className == 'java.lang.String' }
+            def start = candidates.min { Type.getArgumentTypes(it.desc).size() }
+            if (start == null) { throw new GradleException("${spec.minecraft}: singleplayer loading entry missing") }
+            List<String> args = Type.getArgumentTypes(start.desc).collect { type ->
+                if (type.className == 'java.lang.String') { return '"architecture-probe"' }
+                if (type.sort == Type.BOOLEAN) { return 'false' }
+                if (type.sort in [Type.INT, Type.LONG, Type.FLOAT, Type.DOUBLE]) { return '0' }
+                return 'null'
+            }
+            open = 'client.' + start.name + '(' + args.join(', ') + ');'
+        }
+        String getServer = method(client, ['getServer', 'getSingleplayerServer']).name
+        String stop = has(client, 'scheduleStop') ? 'scheduleStop' : 'stop'
+        write('MinecraftClientMixin', """
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+@Mixin(${client}.class)
+public abstract class MinecraftClientMixin {
+ @Unique private boolean worldsafe_started;
+ @Unique private boolean worldsafe_dispatched;
+ @Inject(method="tick", at=@At("TAIL"))
+ private void worldsafe_tick(CallbackInfo callback) {
+  ${client} client = ${client}.getInstance();
+  if (!worldsafe_started && ${ready}) {
+   worldsafe_started = true;
+   System.out.println("WORLDSAFE_ARCHITECTURE stage=opening-singleplayer-world");
+   ${open}
+  }
+  ${server} server = client.${getServer}();
+  if (!worldsafe_dispatched && client.player != null && server != null
+    && (!Boolean.getBoolean("worldsafe.behaviorTests") || BehaviorSuite.completed(server))) {
+   worldsafe_dispatched = true;
+   server.execute(() -> {
+    try {
+     int result = server.${manager}().getDispatcher().execute("worldsafe help", server.${commandSource}());
+     if (result != 1) throw new IllegalStateException("Probe command failed");
+     System.out.println("WORLDSAFE_ARCHITECTURE stage=integrated-command-confirmed");
+     client.execute(() -> client.${stop}());
+    } catch (Exception error) { throw new IllegalStateException(error); }
+   });
+  }
+ }
+}
+""")
+        def tick = method(server, ['tick', 'tickServer']) { Type.getReturnType(it.desc).sort == Type.VOID }
+        write('ServerBehaviorMixin', """
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+@Mixin(${server}.class)
+public abstract class ServerBehaviorMixin {
+ @Unique private boolean worldsafe_tested;
+ @Unique private int worldsafe_ticks;
+ @Inject(method="${tick.name + tick.desc}", at=@At("TAIL"))
+ private void worldsafe_test(CallbackInfo callback) {
+  if (!worldsafe_tested && Boolean.getBoolean("worldsafe.behaviorTests")) {
+   NativeFixture fixture = new NativeFixtureImpl(this);
+   if (fixture.primaryWorld() != null) {
+    if (worldsafe_ticks++ == 0) {
+     try { fixture.prepare(); } catch (Exception error) { throw new IllegalStateException("Cannot prepare native fixtures", error); }
+    }
+    if (worldsafe_ticks >= 100) { worldsafe_tested = true; BehaviorSuite.run(fixture); }
+   }
+  }
+ }
+}
+""")
+        write('FixtureEntityTickMixin', """
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+@Mixin(${world}.class)
+public abstract class FixtureEntityTickMixin {
+ @Inject(method="${tickEntity}(L${entity.replace('.', '/')};)V", at=@At("HEAD"))
+ private void worldsafe_fixture(${entity} entity, CallbackInfo callback) { NativeTestTasks.tick(entity); }
+}
+""")
+        new File(output, 'mixins.json').text = JsonOutput.toJson(mixins)
+    }
+}
+
+def driverSources = layout.buildDirectory.dir('generated/driver-sources')
+tasks.register('generateDriverSources') {
+    inputs.file(rootProject.file('generate-driver.gradle'))
+    inputs.property('target', project.targetSpec)
+    outputs.dir(driverSources)
+    doLast {
+        File directory = driverSources.get().asFile
+        project.delete(directory)
+        def extension = project.extensions.getByName('loom')
+        def namespaces = extension.class.classLoader.loadClass('net.fabricmc.loom.api.mappings.layered.MappingsNamespace')
+        def named = namespaces.enumConstants.find { it.name() == 'NAMED' }
+        new WorldSafeDriverSources(project.targetSpec, directory, extension.getMinecraftJars(named).collect { it.toFile() }).generate()
+    }
+}
+sourceSets.main.java.srcDir(driverSources)
+tasks.named('compileJava') { dependsOn('generateDriverSources') }
+project.ext.driverSourcesDirectory = driverSources
+tasks.named('driverMetadata') {
+    dependsOn('generateDriverSources')
+    inputs.file(driverSources.map { it.file('mixins.json') })
+}

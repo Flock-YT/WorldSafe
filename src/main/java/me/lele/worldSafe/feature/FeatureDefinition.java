@@ -2,6 +2,7 @@ package me.lele.worldSafe.feature;
 
 import me.lele.worldSafe.compat.MinecraftVersion;
 import me.lele.worldSafe.compat.ServerCapabilities;
+import me.lele.worldSafe.core.FeatureSpec;
 import org.bukkit.event.Listener;
 
 import java.util.Arrays;
@@ -21,6 +22,13 @@ public final class FeatureDefinition {
     private final String[] requiredMaterials;
     private final String[] requiredEntityTypes;
     private final ListenerFactory factory;
+
+    public FeatureDefinition(FeatureSpec spec,
+            ServerCapabilities.Capability[] requiredCapabilities, String[] requiredMaterials,
+            String[] requiredEntityTypes, ListenerFactory factory) {
+        this(spec.getKey(), spec.getMinimumVersion(), requiredCapabilities, requiredMaterials,
+                requiredEntityTypes, factory);
+    }
 
     public FeatureDefinition(String configKey, MinecraftVersion minimumVersion,
             ServerCapabilities.Capability[] requiredCapabilities, String[] requiredMaterials,

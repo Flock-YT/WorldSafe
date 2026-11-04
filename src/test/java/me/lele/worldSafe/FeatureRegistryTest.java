@@ -3,6 +3,7 @@ package me.lele.worldSafe;
 import me.lele.worldSafe.compat.MinecraftVersion;
 import me.lele.worldSafe.compat.ServerCapabilities;
 import me.lele.worldSafe.feature.FeatureDefinition;
+import me.lele.worldSafe.core.FeatureCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -46,8 +47,10 @@ class FeatureRegistryTest {
         for (FeatureDefinition feature : WorldSafe.FEATURES) {
             actualKeys.add(feature.getConfigKey());
             assertEquals(expected.get(feature.getConfigKey()), feature.getMinimumVersion(), feature.getConfigKey());
+            assertEquals(feature.getMinimumVersion(), FeatureCatalog.get(feature.getConfigKey()).getMinimumVersion());
         }
         assertEquals(expected.keySet(), actualKeys);
+        assertEquals(actualKeys, FeatureCatalog.all().keySet(), "Bukkit and Fabric must expose the same catalog");
         assertEquals(WorldSafe.FEATURES.size(), actualKeys.size(), "FEATURES contains duplicate config keys");
     }
 

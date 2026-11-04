@@ -1,4 +1,4 @@
-name: Build and Release Bukkit Plugin
+name: Build and Release WorldSafe
 
 on:
   push:
@@ -136,11 +136,17 @@ jobs:
     if: needs.detect-version.outputs.should_release == 'true'
     uses: ./.github/workflows/compatibility-matrix.yml
 
+  fabric:
+    needs: detect-version
+    if: needs.detect-version.outputs.should_release == 'true'
+    uses: ./.github/workflows/fabric-compatibility.yml
+
   release:
     needs:
       - detect-version
       - build
       - compatibility
+      - fabric
     if: needs.detect-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -158,6 +164,12 @@ jobs:
           name: release-jar
           path: dist
 
+      - name: Download verified Fabric release files
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-fabric
+          path: dist
+
       - name: Fail if tag already exists
         env:
           TAG: ${{ needs.detect-version.outputs.tag }}
@@ -173,5 +185,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.detect-version.outputs.version }}
           EXPECTED_SHA256: ${{ needs.build.outputs.sha256 }}
+          EXPECTED_FABRIC_SHA256: ${{ needs.fabric.outputs.sha256 }}
         run: |
-          bash scripts/create-release.sh "$VERSION" dist "$EXPECTED_SHA256"
+          bash scripts/create-release.sh "$VERSION" dist "$EXPECTED_SHA256" "$EXPECTED_FABRIC_SHA256"

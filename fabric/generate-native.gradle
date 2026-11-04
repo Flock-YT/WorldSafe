@@ -1,0 +1,689 @@
+import groovy.json.JsonOutput
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.MethodInsnNode
+import java.util.zip.ZipFile
+
+buildscript {
+    repositories { maven { url = 'https://maven.fabricmc.net/' }; mavenCentral() }
+    dependencies { classpath 'org.ow2.asm:asm-tree:9.10.1' }
+}
+
+/** Compile ordinary, required Mixins against each pinned game's actual API. */
+class WorldSafeNativeSources {
+    final Map spec
+    final File output
+    final Map<String, ClassNode> classes = [:]
+    final List<String> mixins = []
+    final boolean official
+    final String world
+    final String serverWorld
+    final String entity
+    final String position
+    final String state
+    final String source
+    final String commands
+    final String player
+    final String registry
+
+    WorldSafeNativeSources(Map spec, File output, List<File> jars) {
+        this.spec = spec
+        this.output = output
+        official = spec.namespace == 'official'
+        jars.each { file ->
+            new ZipFile(file).withCloseable { jar ->
+                jar.entries().each { entry ->
+                    if (entry.name.endsWith('.class') && entry.name.startsWith('net/minecraft/')) {
+                        ClassNode node = new ClassNode()
+                        int flags = ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES
+                        if (!['LivingEntity', 'World', 'ServerWorld', 'Level', 'ServerLevel'].any {
+                            entry.name.endsWith('/' + it + '.class')
+                        }) { flags |= ClassReader.SKIP_CODE }
+                        new ClassReader(jar.getInputStream(entry)).accept(node, flags)
+                        classes[node.name.replace('/', '.')] = node
+                    }
+                }
+            }
+        }
+        world = requireClass(official ? 'net.minecraft.world.level.Level' : 'net.minecraft.world.World')
+        serverWorld = requireClass(official ? 'net.minecraft.server.level.ServerLevel' : 'net.minecraft.server.world.ServerWorld')
+        entity = requireClass(official ? 'net.minecraft.world.entity.Entity' : 'net.minecraft.entity.Entity')
+        position = requireClass(official ? 'net.minecraft.core.BlockPos' : 'net.minecraft.util.math.BlockPos')
+        state = requireClass(official ? 'net.minecraft.world.level.block.state.BlockState' : 'net.minecraft.block.BlockState')
+        source = requireClass(official ? 'net.minecraft.commands.CommandSourceStack' : 'net.minecraft.server.command.ServerCommandSource')
+        commands = requireClass(official ? 'net.minecraft.commands.Commands' : 'net.minecraft.server.command.CommandManager')
+        player = requireClass(official ? 'net.minecraft.world.entity.player.Player' : 'net.minecraft.entity.player.PlayerEntity')
+        registry = requireClass(official ? 'net.minecraft.core.registries.BuiltInRegistries' :
+                (classes.containsKey('net.minecraft.registry.Registries') ? 'net.minecraft.registry.Registries' : 'net.minecraft.util.registry.Registry'))
+    }
+
+    String requireClass(String name) {
+        if (!classes.containsKey(name)) { throw new GradleException("${spec.minecraft}: missing required native class ${name}") }
+        return name
+    }
+
+    def method(String owner, List<String> names, Closure filter = { true }) {
+        def result = classes[owner]?.methods?.find { names.contains(it.name) && filter(it) }
+        if (result == null) { throw new GradleException("${spec.minecraft}: required native hook missing: ${owner} ${names}") }
+        return result
+    }
+
+    boolean has(String owner, String name) {
+        ClassNode type = classes[owner]
+        while (type != null) {
+            if (type.methods.any { it.name == name }) { return true }
+            type = classes[type.superName?.replace('/', '.')]
+        }
+        return false
+    }
+
+    def explosionConstructor(String owner, def work, String explosion, Set<String> visited = [] as Set) {
+        if (!visited.add(owner + '.' + work.name + work.desc)) { return null }
+        def direct = work.instructions.find { it instanceof MethodInsnNode && it.name == '<init>' && it.owner.replace('/', '.') == explosion }
+        if (direct != null) { return direct }
+        for (def call : work.instructions.findAll { it instanceof MethodInsnNode && ['createExplosion', 'explode'].contains(it.name) }) {
+            ClassNode type = classes[call.owner.replace('/', '.')]
+            while (type != null) {
+                def next = type.methods.find { it.name == call.name && it.desc == call.desc }
+                if (next != null) {
+                    def found = explosionConstructor(type.name.replace('/', '.'), next, explosion, visited)
+                    if (found != null) { return found }
+                    break
+                }
+                type = classes[type.superName?.replace('/', '.')]
+            }
+        }
+        return null
+    }
+
+    static String javaType(Type type) { type.className.replace('$', '.') }
+    static String selector(def method) { method.name + method.desc }
+    static String arguments(def method) {
+        Type.getArgumentTypes(method.desc).toList().withIndex().collect { type, index -> javaType(type) + ' arg' + index }.join(', ')
+    }
+    static String values(def method) { Type.getArgumentTypes(method.desc).indices.collect { 'arg' + it }.join(', ') }
+    static String boxed(Type type) {
+        return [void: 'Void', boolean: 'Boolean', int: 'Integer', long: 'Long', float: 'Float', double: 'Double'][type.className] ?: javaType(type)
+    }
+    String argument(def method, String type) {
+        int index = Type.getArgumentTypes(method.desc).findIndexOf { it.className == type }
+        if (index < 0) { throw new GradleException("${spec.minecraft}: ${method.name} has no ${type} parameter") }
+        return 'arg' + index
+    }
+    String worldArgument(def method) {
+        def index = Type.getArgumentTypes(method.desc).findIndexOf { [world, serverWorld].contains(it.className) }
+        if (index < 0) { throw new GradleException("${spec.minecraft}: ${method.name} has no world parameter") }
+        return 'arg' + index
+    }
+
+    void write(String name, String contents) {
+        File file = new File(output, name.replace('.', '/') + '.java')
+        file.parentFile.mkdirs()
+        file.setText(contents, 'UTF-8')
+    }
+
+    void mixin(String name, String target, String body, String interfaces = '') {
+        mixins.add(name)
+        write('me.lele.worldSafe.fabric.runtime.mixin.' + name, """package me.lele.worldSafe.fabric.runtime.mixin;
+import java.util.*;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import me.lele.worldSafe.fabric.*;
+import me.lele.worldSafe.fabric.runtime.RuntimeInitializer;
+import me.lele.worldSafe.core.ProtectionPolicy.ExplosionAction;
+import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.*;
+import org.spongepowered.asm.mixin.injection.callback.*;
+${target.contains('$') || (classes[target].access & Opcodes.ACC_PUBLIC) == 0 ? '@Mixin(targets="' + target + '")' : '@Mixin(' + target + '.class)'}
+public abstract class ${name} ${interfaces} {
+${body}
+}
+""")
+    }
+
+    void access() {
+        String id = official ? 'getKey' : 'getId'
+        String dimensionRegistry = classes[registry].fields.find { ['DIMENSION', 'DIMENSION_TYPE'].contains(it.name) }?.name
+        if (!official && !has(world, 'getRegistryKey') && dimensionRegistry == null) {
+            throw new GradleException("${spec.minecraft}: native dimension registry missing")
+        }
+        String dimension = official ? "((${world}) input).dimension().${has('net.minecraft.resources.ResourceKey', 'identifier') ? 'identifier' : 'location'}().toString()" :
+                (has(world, 'getRegistryKey') ? "((${world}) input).getRegistryKey().getValue().toString()" :
+                        "${registry}.${dimensionRegistry}.getId(((${world}) input).getDimension().getType()).toString()")
+        String owner = ''
+        String explosive = 'net.minecraft.entity.projectile.ExplosiveProjectileEntity'
+        if (!official && classes[explosive]?.fields?.any { it.name == 'owner' && (it.access & Opcodes.ACC_PUBLIC) != 0 }) {
+            owner += "if (input instanceof ${explosive}) return ((${explosive}) input).owner;\n"
+        }
+        String projectile = official ? 'net.minecraft.world.entity.projectile.Projectile' : 'net.minecraft.entity.projectile.ProjectileEntity'
+        if (has(projectile, 'getOwner')) { owner += "if (input instanceof ${projectile}) return ((${projectile}) input).getOwner();\n" }
+        owner += 'return null;'
+        String serverGetter = method(source, ['getServer', 'getMinecraftServer']).name
+        String permitted = has(source, 'hasPermissionLevel') ? 'source.hasPermissionLevel(2)' :
+                (official ? "${commands}.LEVEL_GAMEMASTERS.check(source.permissions())" : "${commands}.GAMEMASTERS_CHECK.allows(source.getPermissions())")
+        String server = 'net.minecraft.server.MinecraftServer'
+        def ownerMethod = classes[server].methods.find { ['isOwner', 'isHost'].contains(it.name) && it.desc == '(Lcom/mojang/authlib/GameProfile;)Z' }
+        String own = ownerMethod != null ? "source.${serverGetter}().${ownerMethod.name}(((${player}) source.getEntity()).getGameProfile())" :
+                "source.${serverGetter}().${method(server, ['getHostProfile', 'getSingleplayerProfile']).name}() != null && source.${serverGetter}().${method(server, ['getHostProfile', 'getSingleplayerProfile']).name}().equals(((${player}) source.getEntity()).getGameProfile())"
+        String reply
+        if (official) { reply = 'source.sendSuccess(() -> net.minecraft.network.chat.Component.literal(message), false);' }
+        else {
+            def feedback = method(source, ['sendFeedback'])
+            String text = classes.containsKey('net.minecraft.text.LiteralText') ? 'new net.minecraft.text.LiteralText(message)' :
+                    (classes.containsKey('net.minecraft.text.Text') ? 'net.minecraft.text.Text.literal(message)' : 'new net.minecraft.network.chat.TextComponent(message)')
+            reply = "source.sendFeedback(${feedback.desc.contains('Ljava/util/function/Supplier;') ? '() -> ' : ''}${text}, false);"
+        }
+        String itemEntity = requireClass(official ? 'net.minecraft.world.entity.item.ItemEntity' : 'net.minecraft.entity.ItemEntity')
+        String stack = official ? 'getItem' : 'getStack'
+        def projectiles = classes.keySet().findAll { it.startsWith(official ? 'net.minecraft.world.entity.projectile.' : 'net.minecraft.entity.projectile.') &&
+                !it.contains('$') && (classes[it].access & Opcodes.ACC_PUBLIC) != 0 && isEntity(it) }
+        if (projectiles.empty) { throw new GradleException("${spec.minecraft}: projectile classes missing") }
+        String projectileCheck = projectiles.collect { 'input instanceof ' + it }.join(' || ')
+        write('me.lele.worldSafe.fabric.runtime.NativeAccessImpl', """package me.lele.worldSafe.fabric.runtime;
+import me.lele.worldSafe.fabric.NativeAccess;
+public final class NativeAccessImpl implements NativeAccess {
+ public Object server(Object input) { return ((${world}) input).getServer(); }
+ public String dimension(Object input) { return ${dimension}; }
+ public String entityType(Object input) { return input == null ? "" : ${registry}.ENTITY_TYPE.${id}(((${entity}) input).getType()).toString(); }
+ public Object projectileOwner(Object input) { ${owner} }
+ public String blockType(Object input, Object pos) { return ${registry}.BLOCK.${id}(((${world}) input).getBlockState((${position}) pos).getBlock()).toString(); }
+ public String stateType(Object input) { return input == null ? "minecraft:air" : ${registry}.BLOCK.${id}(((${state}) input).getBlock()).toString(); }
+ public boolean isWitherRoseItem(Object input) { return input instanceof ${itemEntity} && "minecraft:wither_rose".equals(${registry}.ITEM.${id}(((${itemEntity}) input).${stack}().getItem()).toString()); }
+ public boolean isProjectile(Object input) { return ${projectileCheck}; }
+ public Object commandServer(Object input) { return ((${source}) input).${serverGetter}(); }
+ public boolean mayManage(Object input) { ${source} source = (${source}) input; return ${permitted} || (source.getEntity() instanceof ${player} && (${own})); }
+ public void reply(Object input, String message) { ${source} source = (${source}) input; ${reply} }
+}
+""")
+        def entityWorld = classes[entity].fields.find { it.desc == 'L' + world.replace('.', '/') + ';' }
+        if (entityWorld == null) { throw new GradleException("${spec.minecraft}: entity world field missing") }
+        mixin('EntityMixin', entity, '@Shadow private ' + world + ' ' + entityWorld.name + ';\npublic Object worldsafe$getWorld() { return ' + entityWorld.name + '; }', 'implements NativeEntityAccess')
+    }
+
+    void lifecycle() {
+        String server = 'net.minecraft.server.MinecraftServer'
+        def run = method(server, ['runServer', 'run', 'method_29741'])
+        def stop = method(server, ['shutdown', 'stopServer'])
+        mixin('MinecraftServerMixin', server, """
+ @Inject(method="${selector(run)}", at=@At("HEAD"))
+ private void worldsafe_start(CallbackInfo callback) { FabricServices.start(this); RuntimeInitializer.marker("server-run"); }
+ @Inject(method="${selector(stop)}", at=@At("HEAD"))
+ private void worldsafe_stop(CallbackInfo callback) { FabricServices.stop(this); }
+""")
+        def dispatcher = classes[commands].fields.find { it.desc == 'Lcom/mojang/brigadier/CommandDispatcher;' }
+        if (dispatcher == null) { throw new GradleException("${spec.minecraft}: command dispatcher field missing") }
+        mixin('CommandManagerMixin', commands, """
+ @Shadow @Final private CommandDispatcher<${source}> ${dispatcher.name};
+ @Inject(method="<init>", at=@At("RETURN"))
+ private void worldsafe_commands(CallbackInfo callback) {
+  ${dispatcher.name}.register(LiteralArgumentBuilder.<${source}>literal("worldsafe")
+   .executes(ctx -> FabricServices.command(ctx.getSource(), false))
+   .then(LiteralArgumentBuilder.<${source}>literal("help").executes(ctx -> { RuntimeInitializer.marker("command-executed"); return FabricServices.command(ctx.getSource(), false); }))
+   .then(LiteralArgumentBuilder.<${source}>literal("reload").executes(ctx -> FabricServices.command(ctx.getSource(), true))));
+  RuntimeInitializer.marker("commands-registered");
+ }
+""")
+    }
+
+    void explosions() {
+        String explosion = requireClass(official ? 'net.minecraft.world.level.ServerExplosion' :
+                (classes.containsKey('net.minecraft.world.explosion.ExplosionImpl') ? 'net.minecraft.world.explosion.ExplosionImpl' : 'net.minecraft.world.explosion.Explosion'))
+        def fields = classes[explosion].fields
+        def level = fields.find { ['L' + world.replace('.', '/') + ';', 'L' + serverWorld.replace('.', '/') + ';'].contains(it.desc) }
+        def actor = fields.find { it.desc == 'L' + entity.replace('.', '/') + ';' }
+        if (level == null || actor == null) { throw new GradleException("${spec.minecraft}: explosion source/world fields missing") }
+        String w = level.name, e = actor.name
+        String body = "@Shadow @Final private ${javaType(Type.getType(level.desc))} ${w};\n@Shadow @Final private ${entity} ${e};\n"
+        def collect = classes[explosion].methods.find { it.name == 'collectBlocksAndDamageEntities' }
+        if (collect != null) {
+            def blocks = fields.find { it.name == 'affectedBlocks' }
+            if (blocks == null) { throw new GradleException("${spec.minecraft}: legacy explosion block list missing") }
+            def affect = method(explosion, ['affectWorld'])
+            body += """
+ @Shadow @Final private ${javaType(Type.getType(blocks.desc))}<${position}> ${blocks.name};
+ @Inject(method="${selector(collect)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_cancel(CallbackInfo callback) { if (ExplosionPolicy.action(${w}, ${e}) == ExplosionAction.CANCEL) callback.cancel(); }
+ @Inject(method="${selector(collect)}", at=@At("RETURN"))
+ private void worldsafe_blocks(CallbackInfo callback) {
+  if (ExplosionPolicy.action(${w}, ${e}) == ExplosionAction.PROTECT_BLOCKS) ${blocks.name}.clear();
+  else ${blocks.name}.removeIf(pos -> ExplosionPolicy.protectWindChargeBlock(${w}, ${e}, pos));
+ }
+ @Inject(method="${selector(affect)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_effects(CallbackInfo callback) { if (ExplosionPolicy.action(${w}, ${e}) == ExplosionAction.CANCEL) callback.cancel(); }
+"""
+            def fire = fields.find { it.name == 'createFire' && it.desc == 'Z' }
+            if (fire != null) {
+                body += """
+ @Mutable @Shadow @Final private boolean ${fire.name};
+ @Inject(method="${selector(affect)}", at=@At("HEAD"))
+ private void worldsafe_fire(CallbackInfo callback) { if (FabricServices.enabled("fireIgnitionPrevention", ${w})) ${fire.name} = false; }
+"""
+            }
+        } else {
+            def explode = method(explosion, ['explode'])
+            def positions = method(explosion, ['getBlocksToDestroy', 'calculateExplodedPositions'])
+            boolean returnsInt = Type.getReturnType(explode.desc).sort == Type.INT
+            body += """
+ @Inject(method="${selector(explode)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_cancel(${returnsInt ? 'CallbackInfoReturnable<Integer>' : 'CallbackInfo'} callback) {
+  if (ExplosionPolicy.action(${w}, ${e}) == ExplosionAction.CANCEL) ${returnsInt ? 'callback.setReturnValue(0)' : 'callback.cancel()'};
+ }
+ @Inject(method="${selector(positions)}", at=@At("RETURN"), cancellable=true)
+ private void worldsafe_blocks(CallbackInfoReturnable<List<${position}>> callback) {
+  if (ExplosionPolicy.action(${w}, ${e}) == ExplosionAction.PROTECT_BLOCKS) callback.setReturnValue(Collections.emptyList());
+  else {
+   List<${position}> filtered = new ArrayList<${position}>(callback.getReturnValue());
+   if (filtered.removeIf(pos -> ExplosionPolicy.protectWindChargeBlock(${w}, ${e}, pos))) callback.setReturnValue(filtered);
+  }
+ }
+ @Inject(method="createFire", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_fire(CallbackInfo callback) { if (FabricServices.enabled("fireIgnitionPrevention", ${w})) callback.cancel(); }
+"""
+        }
+        mixin('ExplosionMixin', explosion, body)
+        wholeExplosion(explosion)
+    }
+
+    void wholeExplosion(String explosion) {
+        def candidates = classes[serverWorld].methods.findAll { ['createExplosion', 'explode'].contains(it.name) &&
+                Type.getArgumentTypes(it.desc).count { t -> t.sort == Type.DOUBLE } == 3 &&
+                Type.getArgumentTypes(it.desc).any { t -> t.className == entity } }
+        if (candidates.empty) { throw new GradleException("${spec.minecraft}: canonical server explosion method missing") }
+        def work = candidates.max { Type.getArgumentTypes(it.desc).size() }
+        Type result = Type.getReturnType(work.desc)
+        String cancel
+        if (result.sort == Type.VOID) { cancel = 'return;' }
+        else if (result.sort == Type.INT) { cancel = 'return 0;' }
+        else {
+            def inputs = Type.getArgumentTypes(work.desc).toList().withIndex().groupBy { pair -> pair[0].className }
+            String factory = null
+            def nativeConstructor = explosionConstructor(serverWorld, work, explosion)
+            if (nativeConstructor == null) {
+                throw new GradleException("${spec.minecraft}: canonical server explosion constructor was not found")
+            }
+            def constructors = classes[explosion].methods.findAll { it.name == '<init>' && (it.access & Opcodes.ACC_PUBLIC) != 0 }
+                    // Merged jars also expose client-only packet constructors. Use the
+                    // exact constructor invoked by vanilla's server implementation.
+                    .findAll { it.desc == nativeConstructor.desc }
+            for (def constructor : constructors) {
+                List<String> expressions = []
+                Map<String, Integer> used = [:].withDefault { 0 }
+                boolean valid = true
+                for (Type type : Type.getArgumentTypes(constructor.desc)) {
+                    String name = type.className
+                    if ([world, serverWorld].contains(name)) { expressions.add('(' + name + ')(Object)this') }
+                    else if (type.sort == Type.BOOLEAN) { expressions.add('false') }
+                    else if (name == 'java.util.List') { expressions.add('Collections.emptyList()') }
+                    else if (name.endsWith('Explosion$DestructionType') || name.endsWith('Explosion$BlockInteraction')) {
+                        def keep = classes[name]?.fields?.find { ['NONE', 'KEEP'].contains(it.name) }
+                        if (keep == null) { valid = false; break }
+                        expressions.add(name.replace('$', '.') + '.' + keep.name)
+                    } else if (inputs[name] != null && used[name] < inputs[name].size()) {
+                        expressions.add('arg' + inputs[name][used[name]++][1])
+                    } else if (name.endsWith('DamageSource') || name.endsWith('ExplosionBehavior') || name.endsWith('ExplosionDamageCalculator')) {
+                        expressions.add('null')
+                    } else { valid = false; break }
+                }
+                if (valid) { factory = 'new ' + explosion + '(' + expressions.join(', ') + ')'; break }
+            }
+            if (factory == null) { throw new GradleException("${spec.minecraft}: cannot construct an inert explosion result") }
+            cancel = 'return ' + factory + ';'
+        }
+        String call = (result.sort == Type.VOID ? '' : 'return ') + 'original.call(' + values(work) + ');'
+        mixin('WorldExplosionMixin', serverWorld, """
+ @WrapMethod(method="${selector(work)}")
+ private ${javaType(result)} worldsafe_explode(${arguments(work)}, Operation<${boxed(result)}> original) {
+  if (ExplosionPolicy.action(this, ${argument(work, entity)}) == ExplosionAction.CANCEL) { ${cancel} }
+  ${call}
+ }
+""")
+        // Early vanilla crystal damage creates an explosion with a null source.
+        // Carry its identity only for this synchronous native damage operation.
+        String crystal = requireClass(official ? 'net.minecraft.world.entity.boss.enderdragon.EndCrystal' :
+                (classes.containsKey('net.minecraft.entity.decoration.EndCrystalEntity') ?
+                        'net.minecraft.entity.decoration.EndCrystalEntity' : 'net.minecraft.entity.decoration.EnderCrystalEntity'))
+        def damage = method(crystal, ['damage', 'hurtServer', 'hurt']) {
+            Type.getReturnType(it.desc).sort == Type.BOOLEAN && (it.access & Opcodes.ACC_ABSTRACT) == 0
+        }
+        mixin('CrystalExplosionMixin', crystal, """
+ @WrapMethod(method="${selector(damage)}")
+ private boolean worldsafe_crystal(${arguments(damage)}, Operation<Boolean> original) {
+  Object previous = ExplosionPolicy.pushEntitySource(this);
+  try { return original.call(${values(damage)}); } finally { ExplosionPolicy.restoreEntitySource(previous); }
+ }
+""")
+        classes.keySet().findAll { name ->
+            name ==~ /.*\.(FireballEntity|LargeFireball|ExplodingWitherSkullEntity|WitherSkullEntity|WitherSkull|WitherSkullProjectileEntity|AbstractWindChargeEntity|AbstractWindCharge|WindChargeEntity|BreezeWindChargeEntity|WindCharge|BreezeWindCharge)/
+        }.eachWithIndex { target, index ->
+            def collision = classes[target].methods.find { ['onCollision', 'onHit'].contains(it.name) &&
+                    Type.getReturnType(it.desc).sort == Type.VOID }
+            if (collision == null) { return }
+            String remove = has(entity, 'discard') ? 'discard' : 'remove'
+            mixin('ProjectileSource' + index + 'Mixin', target, """
+ @WrapMethod(method="${selector(collision)}")
+ private void worldsafe_collision(${arguments(collision)}, Operation<Void> original) {
+  if ("minecraft:breeze_wind_charge".equals(FabricServices.nativeAccess().entityType(this))
+    && FabricServices.enabled("breezeWindChargeImpactCancel", BlockPolicy.entityWorld(this))) {
+   ((${entity})(Object)this).${remove}();
+   return;
+  }
+  Object previousSource = ExplosionPolicy.pushEntitySource(this);
+  Object previousActor = BlockPolicy.pushActor(this);
+  try { original.call(${values(collision)}); }
+  finally { BlockPolicy.restoreActor(previousActor); ExplosionPolicy.restoreEntitySource(previousSource); }
+ }
+""")
+        }
+    }
+
+    void blockExplosion(String target, String role, List<String> methods, String key) {
+        def use = method(target, methods)
+        Type result = Type.getReturnType(use.desc)
+        String w = worldArgument(use)
+        String returnValue = result.sort == Type.BOOLEAN ? 'true' : javaType(result) + '.SUCCESS'
+        String dimensionGuard = ''
+        if (role == 'bed' && use.name != 'destroyOnUse') {
+            String bedRule = 'net.minecraft.world.attribute.BedRule'
+            if (classes.containsKey(bedRule)) {
+                def attributes = method(world, ['getEnvironmentAttributes', 'environmentAttributes'])
+                String attributesType = Type.getReturnType(attributes.desc).className
+                def value = null
+                List<String> pending = [attributesType]
+                Set<String> seen = [] as Set
+                while (!pending.empty && value == null) {
+                    String current = pending.remove(0)
+                    if (!seen.add(current) || classes[current] == null) { continue }
+                    value = classes[current].methods.find { it.name in ['getAttributeValue', 'getValue'] &&
+                            Type.getArgumentTypes(it.desc).any { t -> t.className == position } }
+                    pending.addAll(classes[current].interfaces.collect { it.replace('/', '.') })
+                    if (classes[current].superName != null) { pending.add(classes[current].superName.replace('/', '.')) }
+                }
+                if (value == null) { throw new GradleException("${spec.minecraft}: native bed attribute accessor missing") }
+                String s = argument(use, state), p = argument(use, position)
+                String part = official ? 'net.minecraft.world.level.block.state.properties.BedPart' : 'net.minecraft.block.enums.BedPart'
+                String get = official ? 'getValue' : 'get'
+                String offset = official ? 'relative' : 'offset'
+                String attributeOwner = 'net.minecraft.world.attribute.EnvironmentAttributes'
+                def bedAttribute = classes[attributeOwner].fields.find { it.name in ['BED_RULE_GAMEPLAY', 'BED_RULE'] }
+                if (bedAttribute == null) { throw new GradleException("${spec.minecraft}: native bed rule attribute missing") }
+                String head = '(' + s + '.' + get + '(' + target + '.PART) == ' + part + '.HEAD ? ' + p + ' : ' +
+                        p + '.' + offset + '(' + s + '.' + get + '(' + target + '.FACING)))'
+                dimensionGuard = '((' + bedRule + ')' + w + '.' + attributes.name + '().' + value.name +
+                        '(' + attributeOwner + '.' + bedAttribute.name + ', ' + head + ')).explodes() && '
+            } else {
+                def nativeRule = classes[target].methods.findAll { work -> (work.access & (Opcodes.ACC_STATIC | Opcodes.ACC_PUBLIC)) ==
+                        (Opcodes.ACC_STATIC | Opcodes.ACC_PUBLIC) && work.desc == '(L' + world.replace('.', '/') + ';)Z' }
+                if (nativeRule.size() == 1) {
+                    dimensionGuard = '!' + target + '.' + nativeRule[0].name + '(' + w + ') && '
+                } else if (nativeRule.empty) {
+                    def dimension = method(world, ['getDimension'])
+                    String dimensionType = Type.getReturnType(dimension.desc).className
+                    def sleeping = method(dimensionType, ['canPlayersSleep'])
+                    dimensionGuard = '(!' + w + '.' + dimension.name + '().' + sleeping.name + '() || ' + w + '.getBiome(' +
+                            argument(use, position) + ') == net.minecraft.world.biome.Biomes.NETHER) && '
+                } else { throw new GradleException("${spec.minecraft}: ambiguous native bed rule") }
+            }
+        }
+        String operation = result.sort == Type.VOID ? 'original.call(' + values(use) + ');' : 'return original.call(' + values(use) + ');'
+        String cancel = result.sort == Type.VOID ? 'return;' : 'return ' + returnValue + ';'
+        mixin(role == 'bed' ? 'BedMixin' : 'AnchorMixin', target, """
+ @WrapMethod(method="${selector(use)}")
+ private ${javaType(result)} worldsafe_use(${arguments(use)}, Operation<${boxed(result)}> original) {
+  if (${dimensionGuard}FabricServices.enabled("${key}", ${w})) { ${cancel} }
+  String previous = ExplosionPolicy.pushBlockSource("${role}");
+  try { ${operation} } finally { ExplosionPolicy.restoreBlockSource(previous); }
+ }
+""")
+    }
+
+    boolean atLeast(String value) {
+        List<Integer> current = spec.minecraft.tokenize('.').collect { it as int }
+        List<Integer> minimum = value.tokenize('.').collect { it as int }
+        for (int i = 0; i < 3; i++) {
+            int a = i < current.size() ? current[i] : 0, b = i < minimum.size() ? minimum[i] : 0
+            if (a != b) { return a > b }
+        }
+        return true
+    }
+
+    boolean isEntity(String name) {
+        ClassNode type = classes[name]
+        while (type != null) {
+            if (type.name.replace('/', '.') == entity) { return true }
+            type = classes[type.superName?.replace('/', '.')]
+        }
+        return false
+    }
+
+    void context(String name, String target, def work, String actor, String reason) {
+        Type result = Type.getReturnType(work.desc)
+        String previousType = actor != null ? 'Object' : 'String'
+        String push = actor != null ? "BlockPolicy.pushActor(${actor})" : 'BlockPolicy.pushReason("' + reason + '")'
+        String restore = actor != null ? 'BlockPolicy.restoreActor(previous);' : 'BlockPolicy.restoreReason(previous);'
+        String call = (result.sort == Type.VOID ? '' : 'return ') + 'original.call(' + values(work) + ');'
+        mixin(name, target, """
+ @WrapMethod(method="${selector(work)}")
+ private ${javaType(result)} worldsafe_context(${arguments(work)}, Operation<${boxed(result)}> original) {
+  ${previousType} previous = ${push};
+  try { ${call} } finally { ${restore} }
+ }
+""")
+    }
+
+    void blockChanges() {
+        def tick = method(serverWorld, ['tickEntity', 'tickNonPassenger']) { Type.getArgumentTypes(it.desc).size() == 1 }
+        context('EntityTickMixin', serverWorld, tick, argument(tick, entity), null)
+        def passengers = classes[serverWorld].methods.findAll {
+            Type.getReturnType(it.desc).sort == Type.VOID && Type.getArgumentTypes(it.desc).size() == 2 &&
+                    Type.getArgumentTypes(it.desc).every { t -> t.className == entity }
+        }
+        if (passengers.size() != 1) { throw new GradleException("${spec.minecraft}: ambiguous passenger tick hook") }
+        def passenger = passengers[0]
+        context('PassengerTickMixin', serverWorld, passenger, 'arg1', null)
+        def setters = classes[world].methods.findAll { ['setBlockState', 'setBlock'].contains(it.name) &&
+                Type.getReturnType(it.desc).sort == Type.BOOLEAN && Type.getArgumentTypes(it.desc).any { t -> t.className == state } }
+        if (setters.empty) { throw new GradleException("${spec.minecraft}: native block setter missing") }
+        def setter = setters.max { Type.getArgumentTypes(it.desc).size() }
+        def breakers = classes[world].methods.findAll { ['breakBlock', 'destroyBlock', 'method_30093'].contains(it.name) && Type.getReturnType(it.desc).sort == Type.BOOLEAN }
+        if (breakers.empty) { throw new GradleException("${spec.minecraft}: native block destruction hook missing") }
+        def breaker = breakers.max { Type.getArgumentTypes(it.desc).size() }
+        String breakerActor = Type.getArgumentTypes(breaker.desc).any { it.className == entity } ? argument(breaker, entity) : 'null'
+        mixin('WorldBlockMixin', world, """
+ @Inject(method="${selector(setter)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_set(${arguments(setter)}, CallbackInfoReturnable<Boolean> callback) {
+  if (BlockPolicy.blockChange(this, ${argument(setter, position)}, ${argument(setter, state)}, null)) callback.setReturnValue(false);
+ }
+ @Inject(method="${selector(breaker)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_break(${arguments(breaker)}, CallbackInfoReturnable<Boolean> callback) {
+  if (BlockPolicy.blockChange(this, ${argument(breaker, position)}, null, ${breakerActor})) callback.setReturnValue(false);
+ }
+""")
+        String farmland = requireClass(official ? (classes.containsKey('net.minecraft.world.level.block.FarmlandBlock') ?
+                'net.minecraft.world.level.block.FarmlandBlock' : 'net.minecraft.world.level.block.FarmBlock') : 'net.minecraft.block.FarmlandBlock')
+        def fall = method(farmland, ['onLandedUpon', 'fallOn'])
+        context('FarmlandFallMixin', farmland, fall, argument(fall, entity), null)
+        String fire = requireClass(official ? 'net.minecraft.world.level.block.FireBlock' : 'net.minecraft.block.FireBlock')
+        context('FireTickMixin', fire, method(fire, ['scheduledTick', 'onScheduledTick', 'tick']), null, 'fire')
+        String lava = requireClass(official ? 'net.minecraft.world.level.material.LavaFluid' : 'net.minecraft.fluid.LavaFluid')
+        context('LavaTickMixin', lava, method(lava, ['randomTick', 'onRandomTick']), null, 'lava')
+        String lightning = requireClass(official ? 'net.minecraft.world.entity.LightningBolt' : 'net.minecraft.entity.LightningEntity')
+        context('LightningFireMixin', lightning, method(lightning, ['spawnFire']), 'this', null)
+        String dragon = requireClass(official ? 'net.minecraft.world.entity.boss.enderdragon.EnderDragon' :
+                'net.minecraft.entity.boss.dragon.EnderDragonEntity')
+        def dragonDestruction = classes[dragon].methods.findAll { work ->
+            def args = Type.getArgumentTypes(work.desc)
+            Type.getReturnType(work.desc).sort == Type.BOOLEAN && args.size() in [1, 2] &&
+                    args[-1].className in ['net.minecraft.util.math.Box', 'net.minecraft.util.math.BoundingBox', 'net.minecraft.world.phys.AABB']
+        }
+        if (dragonDestruction.size() != 1) { throw new GradleException("${spec.minecraft}: ambiguous dragon destruction hook") }
+        context('DragonDestructionMixin', dragon, dragonDestruction[0], null, 'dragon')
+    }
+
+    void cancelVoid(String name, String target, def work, String predicate) {
+        Type result = Type.getReturnType(work.desc)
+        String callback = result.sort == Type.VOID ? 'CallbackInfo' : 'CallbackInfoReturnable<' + boxed(result) + '>'
+        String cancel = result.sort == Type.VOID ? 'callback.cancel();' : 'callback.setReturnValue(true);'
+        mixin(name, target, """
+ @Inject(method="${selector(work)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_cancel(${arguments(work)}${arguments(work) ? ', ' : ''}${callback} callback) {
+  if (${predicate}) { ${cancel} }
+ }
+""")
+    }
+
+    void goal(String name, Closure match, String key, String typeFilter = null) {
+        String target = classes.keySet().find { match(it) }
+        if (target == null) { throw new GradleException("${spec.minecraft}: required goal for ${key} missing") }
+        def tick = method(target, ['tick'])
+        def actor = classes[target].fields.find { Type.getType(it.desc).sort == Type.OBJECT && isEntity(Type.getType(it.desc).className) }
+        if (actor == null) { throw new GradleException("${spec.minecraft}: goal owner for ${key} missing") }
+        String actorType = javaType(Type.getType(actor.desc))
+        String filter = typeFilter == null ? '' : '"' + typeFilter + '".equals(FabricServices.nativeAccess().entityType(' + actor.name + ')) && '
+        mixin(name, target, """
+ @Shadow private ${actorType} ${actor.name};
+ @Inject(method="${selector(tick)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_goal(CallbackInfo callback) {
+  if (${filter}FabricServices.enabled("${key}", BlockPolicy.entityWorld(${actor.name}))) callback.cancel();
+ }
+""")
+    }
+
+    void mechanisms() {
+        goal('EndermanPickupMixin', { it ==~ /(?i).*enderman.*\$.*(pick.*block|take.*block).*/ }, 'enderManBlockPickupProtection')
+        goal('FoxHarvestMixin', { it ==~ /(?i).*fox.*\$.*(berr).*/ }, 'foxBerryHarvestProtection')
+        goal('RabbitCropMixin', { it ==~ /(?i).*rabbit.*\$.*(carrot|crop|farm|garden).*/ }, 'rabbitCropEatingProtection')
+        String farmer = classes.keySet().find { it.endsWith('.FarmerTask') || it.endsWith('.FarmerVillagerTask') || it.endsWith('.HarvestFarmland') }
+        if (farmer == null) { throw new GradleException("${spec.minecraft}: crop farming task missing") }
+        def farm = method(farmer, ['keepRunning', 'tick']) { Type.getArgumentTypes(it.desc).any { t -> t.className == serverWorld } }
+        cancelVoid('VillagerCropMixin', farmer, farm, 'FabricServices.enabled("villagerCropModificationProtection", ' + worldArgument(farm) + ')')
+        String egg = requireClass(official ? 'net.minecraft.world.level.block.DragonEggBlock' : 'net.minecraft.block.DragonEggBlock')
+        def teleport = method(egg, ['teleport'])
+        cancelVoid('DragonEggMixin', egg, teleport, 'FabricServices.enabled("dragonEggTeleportationPrevention", ' + worldArgument(teleport) + ')')
+        String living = requireClass(official ? 'net.minecraft.world.entity.LivingEntity' : 'net.minecraft.entity.LivingEntity')
+        def killed = classes[living].methods.find { ['onKilledBy', 'createWitherRose'].contains(it.name) }
+        if (killed == null) {
+            killed = classes[living].methods.find { work -> work.name != 'onDeath' && work.instructions.any {
+                it instanceof org.objectweb.asm.tree.FieldInsnNode && it.name == 'WITHER_ROSE'
+            } }
+        }
+        if (killed != null) {
+            cancelVoid('WitherRoseMixin', living, killed, 'FabricServices.enabled("witherRoseFormationPrevention", BlockPolicy.entityWorld(this))')
+        } else {
+            def death = method(living, ['onDeath'])
+            def calls = death.instructions.findAll { it instanceof MethodInsnNode }
+            def placement = calls.find { it.name == 'setBlockState' && Type.getArgumentTypes(it.desc).any { t -> t.className == state } }
+            def spawn = calls.find { it.name == 'spawnEntity' && Type.getArgumentTypes(it.desc).any { t -> t.className == entity } }
+            if (placement == null || spawn == null) { throw new GradleException("${spec.minecraft}: legacy wither rose call sites missing") }
+            String setterTarget = 'L' + placement.owner + ';' + placement.name + placement.desc
+            String spawnTarget = 'L' + spawn.owner + ';' + spawn.name + spawn.desc
+            mixin('WitherRoseMixin', living, """
+ @WrapOperation(method="${selector(death)}", at=@At(value="INVOKE", target="${setterTarget}"))
+ private boolean worldsafe_rosePlace(${placement.owner.replace('/', '.')} receiver, ${arguments(placement)}, Operation<Boolean> original) {
+  if (FabricServices.enabled("witherRoseFormationPrevention", receiver) && "minecraft:wither_rose".equals(FabricServices.nativeAccess().stateType(${argument(placement, state)}))) return true;
+  return original.call(receiver, ${values(placement)});
+ }
+ @WrapOperation(method="${selector(death)}", at=@At(value="INVOKE", target="${spawnTarget}"))
+ private boolean worldsafe_roseDrop(${spawn.owner.replace('/', '.')} receiver, ${arguments(spawn)}, Operation<Boolean> original) {
+  if (FabricServices.enabled("witherRoseFormationPrevention", receiver) && FabricServices.nativeAccess().isWitherRoseItem(${argument(spawn, entity)})) return false;
+  return original.call(receiver, ${values(spawn)});
+ }
+""")
+        }
+        if (atLeast('1.21')) {
+            String weaving = requireClass(official ? 'net.minecraft.world.effect.WeavingMobEffect' : 'net.minecraft.entity.effect.WeavingStatusEffect')
+            def removed = method(weaving, ['onEntityRemoval', 'onMobRemoved'])
+            def parameters = Type.getArgumentTypes(removed.desc)
+            String effectWorld = parameters.any { [world, serverWorld].contains(it.className) } ? worldArgument(removed) :
+                    'BlockPolicy.entityWorld(arg' + parameters.findIndexOf { isEntity(it.className) } + ')'
+            cancelVoid('WeavingMixin', weaving, removed, 'FabricServices.enabled("weavingCobwebFormationPrevention", ' + effectWorld + ')')
+        }
+        List<Map> callbacks = []
+        if (atLeast('1.20.3')) { callbacks.add([simple: 'DecoratedPotBlock', pot: true, camp: false]) }
+        if (atLeast('1.21')) { callbacks.addAll([[simple: 'ChorusFlowerBlock', pot: false, camp: false], [simple: 'PointedDripstoneBlock', pot: false, camp: false]]) }
+        callbacks.add([simple: 'CampfireBlock', pot: false, camp: true])
+        callbacks.each { item ->
+            String target = requireClass((official ? 'net.minecraft.world.level.block.' : 'net.minecraft.block.') + item.simple)
+            if (!classes[target].methods.any { it.name == 'onProjectileHit' }) { return }
+            def hit = method(target, ['onProjectileHit'])
+            String projectile = argument(hit, requireClass(official ? 'net.minecraft.world.entity.projectile.Projectile' :
+                    (Type.getArgumentTypes(hit.desc).any { it.className == 'net.minecraft.entity.projectile.ProjectileEntity' } ? 'net.minecraft.entity.projectile.ProjectileEntity' : 'net.minecraft.entity.Entity')))
+            cancelVoid(item.simple + 'HitMixin', target, hit, "BlockPolicy.cancelProjectileBlock(${worldArgument(hit)}, ${projectile}, ${item.pot}, ${item.camp})")
+        }
+    }
+
+    void damage() {
+        String damageSource = requireClass(official ? 'net.minecraft.world.damagesource.DamageSource' : 'net.minecraft.entity.damage.DamageSource')
+        String attacking = method(damageSource, ['getAttacker', 'getEntity']).name
+        String direct = method(damageSource, ['getSource', 'getDirectEntity']).name
+        int count = 0
+        classes.each { name, type ->
+            if (name.startsWith('net.minecraft.client.') || !isEntity(name)) { return }
+            def hurt = type.methods.findAll { ['damage', 'hurt', 'hurtServer'].contains(it.name) &&
+                    (it.access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_STATIC)) == 0 &&
+                    Type.getReturnType(it.desc).sort == Type.BOOLEAN && Type.getArgumentTypes(it.desc).any { t -> t.className == damageSource } }
+            if (hurt.empty) { return }
+            String body = hurt.withIndex().collect { work, index ->
+                String input = argument(work, damageSource)
+                return """
+ @Inject(method="${selector(work)}", at=@At("HEAD"), cancellable=true)
+ private void worldsafe_damage${index}(${arguments(work)}, CallbackInfoReturnable<Boolean> callback) {
+  if (DamagePolicy.cancel(this, ${input}.${attacking}(), ${input}.${direct}())) callback.setReturnValue(false);
+ }
+"""
+            }.join('\n')
+            mixin('Damage' + count++ + 'Mixin', name, body)
+        }
+        if (count == 0) { throw new GradleException("${spec.minecraft}: no native damage handlers found") }
+    }
+
+    void generate() {
+        output.mkdirs()
+        access()
+        lifecycle()
+        explosions()
+        String bed = requireClass(official ? 'net.minecraft.world.level.block.BedBlock' : 'net.minecraft.block.BedBlock')
+        blockExplosion(bed, 'bed', classes[bed].methods.any { it.name == 'destroyOnUse' } ? ['destroyOnUse'] : ['onUse', 'activate', 'useWithoutItem'], 'bedExplosionCancel')
+        if (atLeast('1.16')) {
+            blockExplosion(requireClass(official ? 'net.minecraft.world.level.block.RespawnAnchorBlock' : 'net.minecraft.block.RespawnAnchorBlock'), 'anchor', ['explode'], 'respawnAnchorExplosionCancel')
+        }
+        blockChanges()
+        mechanisms()
+        damage()
+        new File(output, 'mixins.json').setText(JsonOutput.toJson(mixins), 'UTF-8')
+    }
+}
+
+def nativeSources = layout.buildDirectory.dir('generated/native-sources')
+tasks.register('generateNativeSources') {
+    inputs.property('target', project.targetSpec)
+    inputs.file(rootProject.file('generate-native.gradle'))
+    outputs.dir(nativeSources)
+    doLast {
+        File directory = nativeSources.get().asFile
+        project.delete(directory)
+        if (project.targetSpec.namespace == 'intermediary') {
+            File artifact = project.configurations.getByName('mappings').singleFile
+            String digest = java.security.MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
+            if (digest != project.targetSpec.mappingsSha256) {
+                throw new GradleException("${project.targetSpec.minecraft}: pinned Yarn digest mismatch")
+            }
+        }
+        def extension = project.extensions.getByName('loom')
+        def namespaces = extension.class.classLoader.loadClass('net.fabricmc.loom.api.mappings.layered.MappingsNamespace')
+        def named = namespaces.enumConstants.find { it.name() == 'NAMED' }
+        def jars = extension.getMinecraftJars(named).collect { it.toFile() }
+        new WorldSafeNativeSources(project.targetSpec, directory, jars).generate()
+    }
+}
+sourceSets.main.java.srcDir(nativeSources)
+tasks.named('compileJava') { dependsOn('generateNativeSources') }
+tasks.named('runtimeMetadata') {
+    dependsOn('generateNativeSources')
+    inputs.file(nativeSources.map { directory -> directory.file('mixins.json') })
+}
+project.ext.nativeSourcesDirectory = nativeSources

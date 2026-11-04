@@ -1,0 +1,116 @@
+[
+  {
+    "api": "1.8.8-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 2.64
+  },
+  {
+    "api": "1.9.4-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 11.09
+  },
+  {
+    "api": "1.10.2-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 8.47
+  },
+  {
+    "api": "1.11.2-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 10.57
+  },
+  {
+    "api": "1.12.2-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 8.6
+  },
+  {
+    "api": "1.13.2-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 10.29
+  },
+  {
+    "api": "1.14.4-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 8.59
+  },
+  {
+    "api": "1.15.2-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 12.85
+  },
+  {
+    "api": "1.16.5-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 10.45
+  },
+  {
+    "api": "1.17.1-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 9.6
+  },
+  {
+    "api": "1.18.2-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 20.29
+  },
+  {
+    "api": "1.19.4-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 20.91
+  },
+  {
+    "api": "1.20.3-R0.1-SNAPSHOT",
+    "java": 17,
+    "passed": true,
+    "elapsedSeconds": 20.16
+  },
+  {
+    "api": "1.20.6-R0.1-SNAPSHOT",
+    "java": 21,
+    "passed": true,
+    "elapsedSeconds": 10.23
+  },
+  {
+    "api": "1.21-R0.1-SNAPSHOT",
+    "java": 21,
+    "passed": true,
+    "elapsedSeconds": 9.23
+  },
+  {
+    "api": "1.21.11-R0.1-SNAPSHOT",
+    "java": 21,
+    "passed": true,
+    "elapsedSeconds": 29.12
+  },
+  {
+    "api": "26.1.2-R0.1-SNAPSHOT",
+    "java": 25,
+    "passed": true,
+    "elapsedSeconds": 8.61
+  },
+  {
+    "api": "26.2-R0.1-SNAPSHOT",
+    "java": 25,
+    "passed": true,
+    "elapsedSeconds": 18.39
+  },
+  {
+    "api": "26.3-R0.1-SNAPSHOT",
+    "java": 25,
+    "passed": true,
+    "elapsedSeconds": 16.39
+  }
+]

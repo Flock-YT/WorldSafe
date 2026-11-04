@@ -4,12 +4,12 @@
 
 <img src="assets/branding/worldsafe-logo.png" alt="WorldSafe logo" width="160" height="160">
 
-WorldSafe is a lightweight Bukkit plugin that prevents various mobs/entities and game mechanics from damaging worlds.
+WorldSafe prevents mobs, entities, and game mechanics from damaging worlds. It has a Maven Bukkit plugin and an independent Fabric build sharing the same 36 protection definitions.
 
 ## Compatibility
 
-- Supports **Minecraft 1.8.8 through 26.3**.
-- Works with commonly used Bukkit, Spigot, and Paper servers.
+- **Bukkit:** Minecraft **1.8.8–26.3**, including Bukkit, Spigot, and Paper. The plugin and shared core retain Java 8 bytecode and the Spigot 1.8.8 API baseline.
+- **Fabric:** the pinned target is all **48 stable releases from 1.14 to 26.3**, in one universal JAR. The complete version matrix is verified by compilation, offline native-hook checks and code tests; see [Fabric verification](fabric/README.md). This is not a full in-game behavior certification. Snapshots, prereleases, and mechanics added by other mods are outside this target.
 
 Features that are only available in newer versions are automatically skipped on older servers, while all other available features continue to work normally. If the configuration fails to reload, the plugin continues using the previous working settings.
 
@@ -21,15 +21,48 @@ Features that are only available in newer versions are automatically skipped on 
 
 The default configuration contains only the main switch, the bStats switch, and example block protections for creepers and TNT. Add other configuration options from the [feature availability table](#feature-availability-table) as needed; features that are not configured are disabled by default.
 
+## Fabric installation and configuration
+
+Install Fabric Loader **0.20.1 or newer** for the exact game release, then put `WorldSafe-Fabric-<version>.jar` in `mods`. Fabric API is not required. Connecting players do not need the mod on their clients. For singleplayer, install it locally; protection runs in that world’s integrated server and also applies when it is opened to LAN. Installing it on a client has no local protection effect while connected to a remote server.
+
+| Minecraft | Minimum Java |
+| --- | --- |
+| 1.14–1.16.5 | 8 |
+| 1.17–1.17.1 | 16 |
+| 1.18–1.20.4 | 17 |
+| 1.20.5–1.21.11 | 21 |
+| 26.1–26.3 | 25 |
+
+Fabric uses `config/worldsafe/config.yml`. Configuration keys and feature minimum versions match Bukkit. Only TNT and creeper block protection are configured by default; unconfigured protections and dimensions are disabled. For example:
+
+```yaml
+enabled: true
+enabled-bstats: false
+tntExplosionProtection:
+  - minecraft:overworld
+  - minecraft:the_nether
+  - minecraft:the_end
+```
+
+The legacy aliases `world`, `world_nether`, and `world_the_end` map to those three dimension IDs. Use a full ID such as `example:moon` for custom dimensions. An invalid initial Fabric configuration aborts server startup; a failed reload retains the previous immutable settings. Each integrated server loads fresh settings and clears its state when stopped.
+
+Fabric permits console administration, OP level 2 or higher, and the singleplayer owner. Ordinary LAN visitors cannot administer WorldSafe. LuckPerms integration is not included. Fabric uploads no metrics: it accepts `enabled-bstats` for configuration compatibility and warns that `true` has no effect. Bukkit bStats behavior is unchanged.
+
+## Building and verification
+
+Keep the root Maven commands for Bukkit (`mvn clean verify`, then `./scripts/verify-release-jar.sh`), using JDK 17 for the default build. Fabric uses `fabric/gradlew` on JDK 25; its project version comes from the root `pom.xml`. Shared source is in `shared/src/main/java` and contains no platform types.
+
+The Fabric version lock fixes game releases, mappings, Java targets, and build tools. Native modules have exact game dependencies and remain inside one universal JAR; external behavior test drivers are excluded. See [Fabric build and acceptance commands](fabric/README.md). Compilation and startup are reported separately from native behavior acceptance. Release uses the same JAR hash covered by code verification. Full in-game tests are optional and are not the acceptance gate for this migration.
+
 ## Commands and Permissions
 
 - `/worldsafe help` - View command help.
 - `/worldsafe reload` - Reload the configuration.
-- `worldsafe.admin` - Allows the use of WorldSafe administration commands; available only to operators by default.
+- Bukkit: `worldsafe.admin` permits administration and defaults to operators. Fabric uses the console/OP 2/singleplayer-owner rules above.
 
 ## Feature Availability Table
 
-First, confirm your server version, then read the version groups from top to bottom. You can use the features in any group whose version is not newer than your server version.
+For Fabric, the platform baseline remains 1.14 even where the feature’s original minimum is older. First, confirm your server version, then read the version groups from top to bottom. You can use the features in any group whose version is not newer than your server version.
 
 > For example, if you are running version 1.13, you can use all configuration options in both the 1.8.8+ and 1.13 groups,
 > but you cannot use configuration options for 1.14+ or later versions (because some things in newer versions do not exist in older versions).
@@ -41,7 +74,7 @@ First, confirm your server version, then read the version groups from top to bot
 
 *(If you configure the full cancellation option for an explosion type, you do not need to configure the corresponding block protection option.)*
 
-- **`bedExplosionCancel`** - Fully prevent standard bed explosions. Do not add the Overworld to this configuration. Straw beds are not included because they do not explode.
+- **`bedExplosionCancel`** - Fully prevent standard bed explosions. On Bukkit, do not add the Overworld to this configuration; Fabric follows the vanilla dimension bed rules. Straw beds are not included because they do not explode.
 - **`tntExplosionCancel`** - Fully prevent TNT and TNT minecart explosions.
 - **`creeperExplosionCancel`** - Fully prevent creeper explosions.
 - **`endCrystalExplosionCancel`** - Fully prevent end crystal explosions.
@@ -113,8 +146,8 @@ First, confirm your server version, then read the version groups from top to bot
 <details>
 <summary><strong>Minecraft 1.21+</strong></summary>
 
-- **`windChargeBlockDestructionProtection`** - Prevent wind charges fired by players and breezes from breaking decorated pots, chorus flowers, and pointed dripstone through explosion lists and direct-hit block-change events, while retaining impact damage and knockback. This does not depend on `decoratedPotProjectileProtection` and does not cancel the entire projectile hit. Coverage depends on whether the server provides the corresponding events; a type of hit that does not normally break blocks cannot be used as proof that the protection is working.
-- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind charge impacts without affecting wind charges fired by players. On non-Paper servers, this can only run in best-effort mode; damage or knockback may remain because Spigot does not provide the required early explosion hook.
+- **`windChargeBlockDestructionProtection`** - Prevent wind charges fired by players and breezes from breaking decorated pots, chorus flowers, and pointed dripstone through explosion lists and direct-hit block-change events, while retaining impact damage and knockback. This does not depend on `decoratedPotProjectileProtection` and does not cancel the entire projectile hit. On Bukkit, coverage depends on whether the server provides the corresponding events; a type of hit that does not normally break blocks cannot be used as proof that the protection is working.
+- **`breezeWindChargeImpactCancel`** - Fully cancel breeze wind charge impacts without affecting wind charges fired by players. On Bukkit/Spigot servers without Paper, this can only run in best-effort mode; damage or knockback may remain because Spigot does not provide the required early explosion hook.
 - **`weavingCobwebFormationPrevention`** - Prevent the weaving effect from creating cobwebs.
 
 </details>
@@ -124,13 +157,15 @@ First, confirm your server version, then read the version groups from top to bot
 
 ### Direct Explosion Cancellation
 
-- **`sulfurCubeExplosionCancel`** - Fully prevent explosions caused when sulfur cubes consume TNT. On non-Paper servers, this can only run in best-effort mode; damage or knockback may remain because Spigot does not provide the required early explosion hook.
+- **`sulfurCubeExplosionCancel`** - Fully prevent explosions caused when sulfur cubes consume TNT. On Bukkit/Spigot servers without Paper, this can only run in best-effort mode; damage or knockback may remain because Spigot does not provide the required early explosion hook.
 
 ### Prevent Block Destruction but Keep Damage
 
 - **`sulfurCubeExplosionProtection`** - Prevent sulfur cube explosions from destroying blocks while keeping explosion damage.
 
 </details>
+
+The following bStats chart counts Bukkit installations only.
 
 ![WorldSafe Plugin Installation Chart](https://bstats.org/signatures/bukkit/WorldSafe.svg)
 

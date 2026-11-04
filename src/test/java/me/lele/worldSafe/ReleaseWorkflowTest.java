@@ -42,10 +42,13 @@ class ReleaseWorkflowTest {
             Files.write(dir.resolve(artifact), bytes);
             String digest = digest(bytes);
             Files.write(dir.resolve(artifact + ".sha256"), (digest + "  " + artifact + "\n").getBytes(StandardCharsets.UTF_8));
+            prepareFabric(dir, version);
             assertEquals(0, runRelease(shell, version, dir, digest), shell + " / " + version + ":\n"
                     + new String(Files.readAllBytes(dir.resolve("process.log")), StandardCharsets.UTF_8));
             List<String> args = Files.readAllLines(dir.resolve("gh-args"), StandardCharsets.UTF_8);
             assertEquals(Arrays.asList("release", "create", "v" + version, artifact, artifact + ".sha256"), args.subList(0, 5));
+            assertEquals(Arrays.asList("WorldSafe-Fabric-" + version + ".jar", "WorldSafe-Fabric-" + version + ".jar.sha256",
+                    "WorldSafe-Fabric-" + version + "-verification.json"), args.subList(5, 8));
             assertEquals("0123456789abcdef0123456789abcdef01234567", args.get(args.indexOf("--target") + 1));
             boolean prerelease = !version.equals("1.2.3");
             assertEquals(prerelease, args.contains("--prerelease"));
@@ -68,16 +71,56 @@ class ReleaseWorkflowTest {
     }
 
     @Test
+    void fabricDigestAndAcceptanceReportMustMatchBeforePublishing() throws Exception {
+        String version = "1.2.3";
+        String artifact = "WorldSafe-" + version + ".jar";
+        byte[] bytes = "verified build".getBytes(StandardCharsets.UTF_8);
+        String digest = digest(bytes);
+        Files.write(temporary.resolve(artifact), bytes);
+        Files.write(temporary.resolve(artifact + ".sha256"), (digest + "  " + artifact + "\n").getBytes(StandardCharsets.UTF_8));
+        prepareFabric(temporary, version);
+        Path fabric = temporary.resolve("WorldSafe-Fabric-" + version + ".jar");
+        Files.write(fabric, "tampered".getBytes(StandardCharsets.UTF_8));
+        String changed = digest("tampered".getBytes(StandardCharsets.UTF_8));
+        Files.write(temporary.resolve(fabric.getFileName() + ".sha256"),
+                (changed + "  " + fabric.getFileName() + "\n").getBytes(StandardCharsets.UTF_8));
+        assertNotEquals(0, runRelease(version, temporary, digest));
+        assertFalse(Files.exists(temporary.resolve("gh-args")));
+        prepareFabric(temporary, version);
+        Path report = temporary.resolve("WorldSafe-Fabric-" + version + "-verification.json");
+        Files.write(report, "{\"scope\":\"code\",\"passed\":false}".getBytes(StandardCharsets.UTF_8));
+        assertNotEquals(0, runRelease(version, temporary, digest));
+        assertFalse(Files.exists(temporary.resolve("gh-args")));
+        Files.delete(report);
+        assertNotEquals(0, runRelease(version, temporary, digest));
+        assertFalse(Files.exists(temporary.resolve("gh-args")));
+    }
+
+    @Test
     void releaseRequiresSameCommitCompatibilityAndVerifiedBuild() throws Exception {
         Map<?, ?> workflow = yaml(".github/workflows/build-and-release.yml");
         Map<?, ?> jobs = map(workflow.get("jobs"));
         Map<?, ?> release = map(jobs.get("release"));
-        assertEquals(Arrays.asList("detect-version", "build", "compatibility"), release.get("needs"));
+        assertEquals(Arrays.asList("detect-version", "build", "compatibility", "fabric"), release.get("needs"));
         // No always()/failure() bypass: GitHub's implicit success() gates failed or skipped prerequisites.
         assertEquals("needs.detect-version.outputs.should_release == 'true'", release.get("if"));
         Map<?, ?> compatibility = map(jobs.get("compatibility"));
         assertEquals("./.github/workflows/compatibility-matrix.yml", compatibility.get("uses"));
         assertFalse(compatibility.containsKey("continue-on-error"));
+        assertEquals("./.github/workflows/fabric-compatibility.yml", map(jobs.get("fabric")).get("uses"));
+        Map<?, ?> fabric = yaml(".github/workflows/fabric-compatibility.yml");
+        Map<?, ?> fabricVerify = map(map(fabric.get("jobs")).get("verify"));
+        assertFalse(fabricVerify.containsKey("continue-on-error"));
+        boolean codeGate = false;
+        for (Object step : (List<?>) fabricVerify.get("steps")) {
+            Map<?, ?> required = map(step);
+            assertFalse(required.containsKey("continue-on-error"));
+            assertFalse(required.containsKey("if"));
+            String run = String.valueOf(required.get("run"));
+            assertFalse(run.contains("run-fabric-architecture-probe"), "Code-only acceptance must not launch a game");
+            codeGate |= run.contains("verify-fabric-code.py");
+        }
+        assertTrue(codeGate);
         Map<?, ?> matrix = yaml(".github/workflows/compatibility-matrix.yml");
         // SnakeYAML's YAML 1.1 resolver parses the GitHub key 'on' as Boolean.TRUE.
         Map<?, ?> triggers = map(matrix.containsKey("on") ? matrix.get("on") : matrix.get(Boolean.TRUE));
@@ -113,6 +156,7 @@ class ReleaseWorkflowTest {
         List<?> releaseSteps = (List<?>) release.get("steps");
         Map<?, ?> create = map(releaseSteps.get(releaseSteps.size() - 1));
         assertEquals("${{ needs.build.outputs.sha256 }}", map(create.get("env")).get("EXPECTED_SHA256"));
+        assertEquals("${{ needs.fabric.outputs.sha256 }}", map(create.get("env")).get("EXPECTED_FABRIC_SHA256"));
         assertTrue(String.valueOf(create.get("run")).contains("bash scripts/create-release.sh"));
     }
 
@@ -126,7 +170,7 @@ class ReleaseWorkflowTest {
         Files.write(gh, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$GH_ARGUMENT_LOG\"\n".getBytes(StandardCharsets.UTF_8));
         assertTrue(gh.toFile().setExecutable(true));
         ProcessBuilder builder = new ProcessBuilder(shell, Paths.get("scripts/create-release.sh").toAbsolutePath().toString(),
-                version, directory.toString(), digest);
+                version, directory.toString(), digest, digest("verified Fabric build".getBytes(StandardCharsets.UTF_8)));
         builder.environment().put("PATH", bin + java.io.File.pathSeparator + System.getenv("PATH"));
         builder.environment().put("GH_ARGUMENT_LOG", directory.resolve("gh-args").toString());
         builder.environment().put("GITHUB_SHA", "0123456789abcdef0123456789abcdef01234567");
@@ -139,6 +183,16 @@ class ReleaseWorkflowTest {
             fail("Release script timed out");
         }
         return process.exitValue();
+    }
+
+    private void prepareFabric(Path directory, String version) throws Exception {
+        String artifact = "WorldSafe-Fabric-" + version + ".jar";
+        byte[] bytes = "verified Fabric build".getBytes(StandardCharsets.UTF_8);
+        String hash = digest(bytes);
+        Files.write(directory.resolve(artifact), bytes);
+        Files.write(directory.resolve(artifact + ".sha256"), (hash + "  " + artifact + "\n").getBytes(StandardCharsets.UTF_8));
+        String report = "{\"scope\":\"code\",\"passed\":true,\"jarSha256\":\"" + hash + "\",\"version\":\"" + version + "\"}";
+        Files.write(directory.resolve("WorldSafe-Fabric-" + version + "-verification.json"), report.getBytes(StandardCharsets.UTF_8));
     }
 
     private String digest(byte[] bytes) throws Exception {
