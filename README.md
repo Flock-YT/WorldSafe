@@ -94,7 +94,7 @@ For Fabric, the platform baseline remains 1.14 even where the feature’s origin
 
 - **`cropTrampleProtection`** - Prevent farmland from being trampled into dirt.
 - **`dragonEggTeleportationPrevention`** - Prevent dragon eggs from teleporting when touched.
-- **`fireSpreadPrevention`** - Prevent fire from spreading and burning nearby blocks.
+- **`fireSpreadPrevention`** - Prevent fire from spreading and burning nearby blocks. Fabric cancels the burn operation before it can prime TNT, preventing repeated TNT priming from a protected block; fire can still extinguish naturally.
 - **`fireIgnitionPrevention`** - Prevent fireballs, lightning, explosions, end crystals, and burning arrows from igniting blocks.
 - **`enderDragonBlockDestructionProtection`** - Prevent the Ender Dragon from destroying blocks.
 - **`enderManBlockPickupProtection`** - Prevent endermen from picking up or moving blocks.

@@ -31,6 +31,11 @@ public final class BlockPolicy {
         return actor instanceof NativeEntityAccess ? ((NativeEntityAccess) actor).worldsafe$getWorld() : null;
     }
 
+    /** Cancel the whole burn operation: vanilla can prime TNT even when its block write fails. */
+    public static boolean cancelFireBurn(Object world) {
+        return FabricServices.enabled("fireSpreadPrevention", world);
+    }
+
     public static boolean blockChange(Object world, Object position, Object nextState, Object explicitActor) {
         Object actor = explicitActor == null ? ACTOR.get() : explicitActor;
         if (actor == null && REASON.get() == null) { return false; }

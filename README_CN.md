@@ -94,7 +94,7 @@ Fabric 的平台最低版本始终为 1.14，即使某项功能的原始最低�
 
 - **`cropTrampleProtection`** - 防止耕地被踩踏成泥土。
 - **`dragonEggTeleportationPrevention`** - 防止触碰龙蛋时龙蛋瞬移。
-- **`fireSpreadPrevention`** - 防止火焰蔓延和烧毁附近方块。
+- **`fireSpreadPrevention`** - 防止火焰蔓延和烧毁附近方块。Fabric 会在燃烧操作开始前取消，阻止火焰引燃 TNT，避免保留的 TNT 方块被反复引燃生成实体；火焰仍可自然熄灭。
 - **`fireIgnitionPrevention`** - 防止火球、闪电、爆炸、末地水晶和燃烧的箭点燃方块。
 - **`enderDragonBlockDestructionProtection`** - 防止末影龙破坏方块。
 - **`enderManBlockPickupProtection`** - 防止末影人拾取或移动方块。

@@ -42,6 +42,8 @@ def collect(jar, build, lock):
                 raise ValueError("Native ABI verification does not match the embedded module: " + game)
             if any(proof.get(key, 0) <= 0 for key in ("mixins", "injections", "shadows", "references")):
                 raise ValueError("Native verification inspected no hooks: " + game)
+            if not proof.get("fireBurnHook", {}).get("passed"):
+                raise ValueError("Fire-burn cancellation was not verified: " + game)
             proof["applicableFeatures"] = [key for key, minimum in features.items() if version(game) >= version(minimum)]
             proof["notApplicableFeatures"] = [key for key, minimum in features.items() if version(game) < version(minimum)]
             results.append(proof)

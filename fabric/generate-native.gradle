@@ -509,6 +509,14 @@ public final class NativeAccessImpl implements NativeAccess {
         context('FarmlandFallMixin', farmland, fall, argument(fall, entity), null)
         String fire = requireClass(official ? 'net.minecraft.world.level.block.FireBlock' : 'net.minecraft.block.FireBlock')
         context('FireTickMixin', fire, method(fire, ['scheduledTick', 'onScheduledTick', 'tick']), null, 'fire')
+        def burn = method(fire, [official ? 'checkBurnOut' : 'trySpreadingFire']) { work ->
+            def args = Type.getArgumentTypes(work.desc)
+            Type.getReturnType(work.desc).sort == Type.VOID && args.size() == 5 &&
+                    args[0].className == world && args[1].className == position &&
+                    args[2].sort == Type.INT && args[4].sort == Type.INT &&
+                    args[3].className in ['java.util.Random', 'net.minecraft.util.math.random.Random', 'net.minecraft.util.RandomSource']
+        }
+        cancelVoid('FireBurnMixin', fire, burn, 'BlockPolicy.cancelFireBurn(' + worldArgument(burn) + ')')
         String lava = requireClass(official ? 'net.minecraft.world.level.material.LavaFluid' : 'net.minecraft.fluid.LavaFluid')
         context('LavaTickMixin', lava, method(lava, ['randomTick', 'onRandomTick']), null, 'lava')
         String lightning = requireClass(official ? 'net.minecraft.world.entity.LightningBolt' : 'net.minecraft.entity.LightningEntity')

@@ -158,9 +158,58 @@ class WorldSafeHookVerifier {
             }
         }
     }
+    /** Independent regression contract for the final, remapped fire-burn hook. */
+    Map verifyFireBurnHook(ClassNode mixin) {
+        if (mixin == null) throw new GradleException('Required FireBurnMixin is missing')
+        // Intermediary identities are stable throughout the pinned 1.14-1.21.11 releases.
+        boolean intermediary = game.containsKey('net/minecraft/class_2358')
+        String owner = intermediary ? 'net/minecraft/class_2358' : 'net/minecraft/world/level/block/FireBlock'
+        String world = intermediary ? 'net/minecraft/class_1937' : 'net/minecraft/world/level/Level'
+        String position = intermediary ? 'net/minecraft/class_2338' : 'net/minecraft/core/BlockPos'
+        String methodName = intermediary ? 'method_10196' : 'checkBurnOut'
+        List descriptors = (intermediary ? ['java/util/Random', 'net/minecraft/class_5819'] :
+                ['net/minecraft/util/RandomSource']).collect { random -> '(L' + world + ';L' + position + ';IL' + random + ';I)V' }
+        def burns = game[owner]?.methods?.findAll { it.name == methodName && it.desc in descriptors }
+        if (burns == null || burns.size() != 1) throw new GradleException('Required native fire-burn signature is missing or ambiguous')
+        String descriptor = burns[0].desc
+        String selector = methodName + descriptor
+        Map marker = values(annotations(mixin).find { it.desc == 'Lorg/spongepowered/asm/mixin/Mixin;' })
+        List targets = array(marker.value).collect { ((Type) it).internalName } + array(marker.targets).collect { it.replace('.', '/') }
+        if (targets != [owner]) throw new GradleException('FireBurnMixin must target the native fire block')
+        requireMethod(owner, methodName, descriptor)
+        def handlers = mixin.methods.findAll { annotations(it).any { annotation -> annotation.desc == 'Lorg/spongepowered/asm/mixin/injection/Inject;' } }
+        if (handlers.size() != 1) throw new GradleException('FireBurnMixin must have exactly one burn injection')
+        def handler = handlers[0]
+        Map rule = values(annotations(handler).find { it.desc == 'Lorg/spongepowered/asm/mixin/injection/Inject;' })
+        List points = array(rule.at).collect { values((AnnotationNode) it) }
+        if (array(rule.method) != [selector] || rule.cancellable != true ||
+                (rule.containsKey('require') && rule.require < 1) || points.size() != 1 ||
+                points[0].value != 'HEAD' || points[0].containsKey('shift') || points[0].containsKey('ordinal')) {
+            throw new GradleException('Fire burn must be cancelled at the exact native method HEAD')
+        }
+        // javac emits this short branch. Check its arguments and direction as well as call presence:
+        // if (BlockPolicy.cancelFireBurn(world)) callback.cancel();
+        List code = handler.instructions.findAll { it.opcode >= 0 }
+        if ((handler.access & Opcodes.ACC_STATIC) != 0 ||
+                handler.desc != descriptor.substring(0, descriptor.length() - 2) +
+                    'Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V' ||
+                code.collect { it.opcode } != [Opcodes.ALOAD, Opcodes.INVOKESTATIC, Opcodes.IFEQ,
+                    Opcodes.ALOAD, Opcodes.INVOKEVIRTUAL, Opcodes.RETURN] ||
+                code[0].var != 1 || code[1].owner != 'me/lele/worldSafe/fabric/BlockPolicy' ||
+                code[1].name != 'cancelFireBurn' || code[1].desc != '(Ljava/lang/Object;)Z' ||
+                code[3].var != 6 || code[4].owner != 'org/spongepowered/asm/mixin/injection/callback/CallbackInfo' ||
+                code[4].name != 'cancel' || code[4].desc != '()V') {
+            throw new GradleException('Fire burn handler must cancel only when the world policy requires it')
+        }
+        def destination = code[2].label
+        while (destination != null && destination.opcode < 0) destination = destination.next
+        if (destination == null || !destination.is(code[5])) throw new GradleException('Fire burn policy false branch must leave vanilla behavior enabled')
+        return [passed: true, target: owner, method: selector, at: 'HEAD', cancellable: true]
+    }
     Map verify(File runtime, List<File> jars) {
         readGame(jars)
         Set<String> actual = [] as Set
+        ClassNode fireBurn
         Map metadata
         new ZipFile(runtime).withCloseable { jar ->
             metadata = new JsonSlurper().parse(jar.getInputStream(jar.getEntry('worldsafe.mixins.json')))
@@ -169,6 +218,7 @@ class WorldSafeHookVerifier {
                 if (entry.name.endsWith('.class')) {
                     ClassNode node = new ClassNode()
                     new ClassReader(jar.getInputStream(entry)).accept(node, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES)
+                    if (node.name == 'me/lele/worldSafe/fabric/runtime/mixin/FireBurnMixin') fireBurn = node
                     if (annotations(node).any { it.desc == 'Lorg/spongepowered/asm/mixin/Mixin;' }) actual.add(node.name)
                     verifyClass(node)
                     verifyReferences(node)
@@ -179,6 +229,7 @@ class WorldSafeHookVerifier {
         if (actual != configured) throw new GradleException('Registered native Mixins differ from compiled Mixins')
         if (injections == 0 || shadows == 0 || references == 0) throw new GradleException('Native verification did not inspect the complete runtime')
         return [passed: true, mixins: actual.size(), injections: injections, shadows: shadows, references: references,
+                fireBurnHook: verifyFireBurnHook(fireBurn),
                 runtimeJarSha256: java.security.MessageDigest.getInstance('SHA-256').digest(runtime.bytes).encodeHex().toString()]
     }
 }
@@ -217,6 +268,68 @@ if (project == rootProject) {
             boolean rejected = false
             try { checker.verifyClass(invalidMixin) } catch (GradleException expected) { rejected = true }
             if (!rejected) throw new GradleException('Native verifier accepted an incompatible callback signature')
+
+            def fireFixture = { boolean intermediary, boolean modern ->
+                def verifier = new WorldSafeHookVerifier()
+                String owner = intermediary ? 'net/minecraft/class_2358' : 'net/minecraft/world/level/block/FireBlock'
+                String world = intermediary ? 'net/minecraft/class_1937' : 'net/minecraft/world/level/Level'
+                String position = intermediary ? 'net/minecraft/class_2338' : 'net/minecraft/core/BlockPos'
+                String random = intermediary ? (modern ? 'net/minecraft/class_5819' : 'java/util/Random') : 'net/minecraft/util/RandomSource'
+                String descriptor = '(L' + world + ';L' + position + ';IL' + random + ';I)V'
+                String name = intermediary ? 'method_10196' : 'checkBurnOut'
+                ClassNode fire = new ClassNode(); fire.name = owner
+                fire.methods.add(new MethodNode(Opcodes.ACC_PRIVATE, name, descriptor, null, null))
+                verifier.game[owner] = fire
+                if (intermediary) {
+                    // This identity exists before it denotes Random; class presence is not a version test.
+                    ClassNode randomClass = new ClassNode(); randomClass.name = 'net/minecraft/class_5819'
+                    verifier.game[randomClass.name] = randomClass
+                }
+                ClassNode mixin = new ClassNode(); mixin.name = 'test/FireBurnMixin'
+                AnnotationNode target = new AnnotationNode('Lorg/spongepowered/asm/mixin/Mixin;')
+                target.values = ['value', [Type.getObjectType(owner)]]; mixin.invisibleAnnotations = [target]
+                MethodNode hook = new MethodNode(Opcodes.ACC_PRIVATE, 'worldsafe_cancel',
+                        descriptor.substring(0, descriptor.length() - 2) +
+                        'Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V', null, null)
+                AnnotationNode at = new AnnotationNode('Lorg/spongepowered/asm/mixin/injection/At;'); at.values = ['value', 'HEAD']
+                AnnotationNode injection = new AnnotationNode('Lorg/spongepowered/asm/mixin/injection/Inject;')
+                injection.values = ['method', [name + descriptor], 'at', [at], 'cancellable', true]
+                hook.visibleAnnotations = [injection]
+                LabelNode end = new LabelNode()
+                hook.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1))
+                hook.instructions.add(new MethodInsnNode(Opcodes.INVOKESTATIC, 'me/lele/worldSafe/fabric/BlockPolicy', 'cancelFireBurn', '(Ljava/lang/Object;)Z', false))
+                hook.instructions.add(new JumpInsnNode(Opcodes.IFEQ, end))
+                hook.instructions.add(new VarInsnNode(Opcodes.ALOAD, 6))
+                hook.instructions.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, 'org/spongepowered/asm/mixin/injection/callback/CallbackInfo', 'cancel', '()V', false))
+                hook.instructions.add(end); hook.instructions.add(new InsnNode(Opcodes.RETURN))
+                mixin.methods.add(hook)
+                return [verifier: verifier, mixin: mixin, hook: hook, at: at, injection: injection, target: target]
+            }
+            for (def variant : [[true, false], [true, true], [false, true]]) {
+                def valid = fireFixture(*variant)
+                valid.verifier.verifyFireBurnHook(valid.mixin)
+                for (Closure mutation : [
+                    { fixture -> fixture.mixin = null },
+                    { fixture -> fixture.mixin.methods.clear() },
+                    { fixture -> fixture.target.values = ['value', [Type.getObjectType('net/minecraft/WrongBlock')]] },
+                    { fixture -> fixture.injection.values[1] = ['tick()V'] },
+                    { fixture -> fixture.injection.values[5] = false },
+                    { fixture -> fixture.injection.values.addAll(['require', 0]) },
+                    { fixture -> fixture.at.values[1] = 'RETURN' },
+                    { fixture -> fixture.at.values.addAll(['shift', ['Lorg/spongepowered/asm/mixin/injection/At\$Shift;', 'AFTER'] as String[]]) },
+                    { fixture -> fixture.hook.instructions.get(0).var = 2 },
+                    { fixture -> fixture.hook.instructions.get(1).name = 'blockChange' },
+                    { fixture -> fixture.hook.instructions.get(2).opcode = Opcodes.IFNE },
+                    { fixture -> fixture.hook.instructions.get(3).var = 1 },
+                    { fixture -> fixture.hook.instructions.remove(fixture.hook.instructions.get(4)) }
+                ]) {
+                    def broken = fireFixture(*variant)
+                    mutation(broken)
+                    boolean refused = false
+                    try { broken.verifier.verifyFireBurnHook(broken.mixin) } catch (GradleException expected) { refused = true }
+                    if (!refused) throw new GradleException('Native verifier accepted a broken fire-burn guard')
+                }
+            }
         }
     }
 } else {

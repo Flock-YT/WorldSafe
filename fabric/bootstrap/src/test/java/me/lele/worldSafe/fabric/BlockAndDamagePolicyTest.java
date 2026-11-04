@@ -91,6 +91,27 @@ class BlockAndDamagePolicyTest extends FabricTestSupport {
         BlockPolicy.restoreReason(previous);
     }
 
+    @Test void fireBurnCancellationUsesTheConfiguredDimensionWithoutActorOrTickContext() throws Exception {
+        configure("fireSpreadPrevention");
+        overworld.blocks.put(position, "minecraft:tnt");
+        assertTrue(BlockPolicy.cancelFireBurn(overworld));
+        assertFalse(BlockPolicy.cancelFireBurn(nether));
+        assertFalse(BlockPolicy.cancelFireBurn(anotherServer()));
+        assertFalse(BlockPolicy.cancelFireBurn(null));
+        FabricServices.stop(server);
+        assertFalse(BlockPolicy.cancelFireBurn(overworld));
+    }
+
+    @Test void fireBurnRemainsVanillaWhenSpreadProtectionIsOff() throws Exception {
+        configure();
+        assertFalse(BlockPolicy.cancelFireBurn(overworld));
+        configure("fireIgnitionPrevention");
+        assertFalse(BlockPolicy.cancelFireBurn(overworld));
+        write("enabled: false\nfireSpreadPrevention:\n  - minecraft:overworld\n");
+        FabricServices.start(server);
+        assertFalse(BlockPolicy.cancelFireBurn(overworld));
+    }
+
     @Test void windProtectionDoesNotSuppressOtherProjectilesOrCampfireInteractions() throws Exception {
         configure("windChargeBlockDestructionProtection");
         Entity arrow = entity("arrow").projectile(null);
