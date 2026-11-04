@@ -1,0 +1,17 @@
+// Root-build lifecycle entry points. The independent Fabric build uses build.gradle.
+plugins { id 'base' }
+
+tasks.named('assemble') {
+    description = 'Build the universal Fabric JAR using the independent build (JDK 25).'
+    dependsOn(rootProject.tasks.named('fabricArtifacts'))
+}
+tasks.named('check') {
+    description = 'Test Fabric and verify the universal JAR, including all native runtimes.'
+    dependsOn(rootProject.tasks.named('verifyFabricJar'))
+}
+tasks.named('build') {
+    description = 'Build, test and verify Fabric only (requires JDK 25).'
+}
+tasks.named('clean') {
+    description = 'Clean Fabric outputs, including test worlds (no JDK 25 required).'
+}

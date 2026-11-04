@@ -4,4 +4,6 @@ pluginManagement {
 
 rootProject.name = 'WorldSafe'
 
-include('shared', 'bukkit')
+include('shared', 'bukkit', 'fabric')
+// Expose Fabric lifecycle tasks in IDEs without configuring the independent game build.
+project(':fabric').buildFileName = 'platform.gradle'

@@ -69,3 +69,5 @@ tasks.register('verifyReleaseJar', Exec) {
     }
 }
 tasks.named('check') { dependsOn('verifyReleaseJar') }
+tasks.named('build') { dependsOn(':shared:check', ':pythonTests') }
+tasks.named('clean') { dependsOn(':shared:clean') }

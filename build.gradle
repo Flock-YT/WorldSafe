@@ -11,13 +11,12 @@ tasks.register('pythonTests', Exec) {
 tasks.register('bukkitClean') {
     group = 'bukkit'
     description = 'Clean Bukkit and shared build outputs.'
-    dependsOn(':bukkit:clean', ':shared:clean')
+    dependsOn(':bukkit:clean')
 }
-tasks.register('fabricClean', Delete) {
+tasks.register('fabricClean') {
     group = 'fabric'
     description = 'Clean Fabric build outputs, including test worlds (no JDK 25 required).'
-    // Fabric runtimes, drivers and shared outputs all live below this directory.
-    delete(layout.projectDirectory.dir('fabric/build'))
+    dependsOn(':fabric:clean')
 }
 tasks.named('clean') {
     description = 'Clean all platform build outputs, including Fabric test worlds.'
@@ -29,13 +28,14 @@ tasks.named('check') { dependsOn(':bukkit:check', ':shared:check', 'pythonTests'
 tasks.register('bukkitBuild') {
     group = 'bukkit'
     description = 'Build, test and verify Bukkit and the shared core (JDK 17).'
-    dependsOn(':bukkit:build', ':shared:check', 'pythonTests')
+    dependsOn(':bukkit:build')
 }
 // A nested build preserves Fabric's rootProject assumptions and keeps Bukkit configuration lightweight.
 tasks.register('fabricArtifacts', GradleBuild) {
     description = 'Build and check all selected Fabric runtimes (requires JDK 25).'
-    mustRunAfter('clean', 'fabricClean')
+    mustRunAfter('clean', 'fabricClean', ':fabric:clean')
     dir = file('fabric')
+    buildName = 'fabricRuntimes'
     tasks = ['check', 'shadowJar']
     startParameter.projectProperties = gradle.startParameter.projectProperties
     doFirst {
@@ -54,7 +54,7 @@ tasks.register('verifyFabricJar', Exec) {
 tasks.register('fabricBuild') {
     group = 'fabric'
     description = 'Build, test and verify the universal Fabric JAR (requires JDK 25).'
-    dependsOn('verifyFabricJar')
+    dependsOn(':fabric:build')
 }
 tasks.named('build') {
     description = 'Build, test and verify both release JARs (requires JDK 25).'

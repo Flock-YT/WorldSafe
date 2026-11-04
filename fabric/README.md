@@ -20,7 +20,7 @@ Run from the repository root with Gradle on JDK 25:
 python3 scripts/verify-fabric-code.py "fabric/build/libs/WorldSafe-Fabric-$(python3 scripts/project_version.py).jar"
 ```
 
-The root `build` task also runs this independent build and final JAR verification, alongside Bukkit (which needs a JDK 17 toolchain). Use `./gradlew fabricBuild` for Fabric alone, or `./gradlew bukkitBuild` for Bukkit alone without configuring Fabric. Root `clean` cleans both platforms; `fabricClean` cleans only Fabric. Both remove the entire `fabric/build` directory, including optional game worlds and reports.
+The root `build` task also runs this independent build and final JAR verification, alongside Bukkit (which needs a JDK 17 toolchain). Use `./gradlew :fabric:build` (or `fabricBuild`) for Fabric alone, or `./gradlew :bukkit:build` (or `bukkitBuild`) for Bukkit alone without configuring the game build. The root build exposes a lightweight `fabric` lifecycle project using `platform.gradle`, so IDEA shows sibling `bukkit`, `fabric` and `shared` nodes while the actual Fabric build remains independent. Root `clean` cleans both platforms; `fabricClean` cleans only Fabric. Both remove the entire `fabric/build` directory, including optional game worlds and reports.
 
 The default includes **all 48 locked releases**. A development-only subset can be selected with `-Ptargets=1.14,1.21.11,26.3`; it cannot pass the universal-artifact acceptance check. Do not run `clean` while preserving generated development worlds or reports under `build`.
 
